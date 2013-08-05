@@ -1,0 +1,12 @@
+function! <SID>Cwd()
+    return expand("<sfile>:p:h")
+endfunction
+
+augroup __GTK
+    au!
+    au FileType c setlocal ft+=.c-gtk
+augroup END
+
+" Set running
+"
+noremap <buffer> <leader>mr :silent! make <bar> silent! exe("!clear & " . <SID>Cwd() . "/main") <bar> redraw! <CR>
