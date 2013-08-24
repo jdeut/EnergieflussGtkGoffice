@@ -9,7 +9,9 @@ app_get_ui_element (App * app, const gchar * name)
     list = app->objects;
 
     do {
-        s = gtk_buildable_get_name (list->data);
+        if(GTK_IS_BUILDABLE(list->data)) {
+            s = gtk_buildable_get_name (list->data);
+        }
 
         if (strcmp (s, name) == 0) {
             return list->data;
