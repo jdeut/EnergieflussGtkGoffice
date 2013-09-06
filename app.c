@@ -41,7 +41,7 @@ app_init (App * app)
         g_printerr
             ("Error while loading app definitions file: %s\n",
              err->message);
-        g_error_free (err);
+        g_clear_error (&err);
         gtk_main_quit ();
     }
 
