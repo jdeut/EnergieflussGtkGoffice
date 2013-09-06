@@ -9,7 +9,7 @@ app_get_ui_element (App * app, const gchar * name)
     list = app->objects;
 
     do {
-        if(GTK_IS_BUILDABLE(list->data)) {
+        if (GTK_IS_BUILDABLE (list->data)) {
             s = gtk_buildable_get_name (list->data);
         }
 
@@ -18,6 +18,10 @@ app_get_ui_element (App * app, const gchar * name)
         }
 
     } while (list = g_slist_next (list));
+
+    g_warning
+        ("app_get_ui_element: ui element `%s` doesn't exist in ui file\n",
+         name);
 
     return NULL;
 }
