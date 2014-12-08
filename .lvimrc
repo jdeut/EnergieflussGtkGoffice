@@ -5,9 +5,9 @@ endfunction
 let extension = expand('%:t:e')
 
 if extension == 'c' || extension == 'h'
-    setlocal ft=c.c-gtk
+    runtime! ftplugin/gtk.vim
 endif
 
 " Set running
 "
-noremap <buffer> <leader>mr :silent! make <bar> silent! exe("!clear & " . <SID>Cwd() . "/main") <bar> redraw! <CR>
+"noremap <buffer> <leader>mr :silent! make <bar> silent! exe("!clear & " . <SID>Cwd() . "/main") <bar> redraw! <CR>
