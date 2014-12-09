@@ -27,6 +27,33 @@ app_get_ui_element (App * app, const gchar * name)
 }
 
 void
+app_style_init (App * app)
+{
+    GError *err = NULL;
+    GtkCssProvider *style;
+    GdkScreen *screen;
+
+    GET_UI_ELEMENT (GtkWidget, window1);
+
+    style = gtk_css_provider_new ();
+
+    gtk_css_provider_load_from_path (style, "./style.css", &err);
+
+    if (err != NULL) {
+        g_printerr ("Error while loading style file: %s\n", err->message);
+        g_clear_error (&err);
+        /*exit (1); */
+    }
+    else {
+
+        screen = gtk_window_get_screen (GTK_WINDOW (window1));
+        gtk_style_context_add_provider_for_screen (screen,
+                                                   GTK_STYLE_PROVIDER (style),
+                                                   GTK_STYLE_PROVIDER_PRIORITY_USER);
+    }
+}
+
+void
 app_init (App * app)
 {
     GError *err = NULL;
@@ -34,18 +61,18 @@ app_init (App * app)
 
     builder = gtk_builder_new ();
 
-    gtk_builder_add_from_file (builder,
-                               UI_DEFINITIONS_FILE, &err);
+    gtk_builder_add_from_file (builder, UI_DEFINITIONS_FILE, &err);
 
     if (err != NULL) {
         g_printerr
-            ("Error while loading app definitions file: %s\n",
-             err->message);
+            ("Error while loading app definitions file: %s\n", err->message);
         g_clear_error (&err);
         gtk_main_quit ();
     }
 
+    app->objects = gtk_builder_get_objects (builder);
+
     gtk_builder_connect_signals (builder, app);
 
-    app->objects = gtk_builder_get_objects (builder);
+    app_style_init (app);
 }
