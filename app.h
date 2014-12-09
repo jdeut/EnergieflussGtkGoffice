@@ -2,6 +2,7 @@
 #define __APP__
 
 #include <gtk/gtk.h>
+#include <goffice/goffice.h>
 
 #define UI_DEFINITIONS_FILE "ui.glade"
 
@@ -11,11 +12,14 @@
 typedef struct app_
 {
     GSList *objects;
-
+    GocCanvas *canvas;
+    GocItem *active_item;
 } App;
 
 void app_init (App *);
 
 GObject *app_get_ui_element (App *, const gchar *);
+
+#include "callbacks.h"
 
 #endif
