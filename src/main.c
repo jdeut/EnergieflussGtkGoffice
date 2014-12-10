@@ -50,6 +50,20 @@ populate_canvas (App * app)
     my_system_add_energy_transfer_to_environment(MY_SYSTEM(item1), ANCHOR_EAST, 5.0);
     my_system_add_energy_transfer_to_environment(MY_SYSTEM(item1), ANCHOR_NORTH, 2.0);
 
+    item1 = goc_item_new (top_level_group, MY_TYPE_SYSTEM, "x", 150.0, "y", 250.0, NULL);
+
+    g_object_get(item1, "widget", &button, NULL);
+
+    g_signal_connect (button, "button-press-event",
+                      G_CALLBACK (propagate_button_press_event_to_canvas_cb),
+                      app);
+    g_signal_connect (button, "button-release-event",
+                      G_CALLBACK (propagate_button_release_event_to_canvas_cb),
+                      app);
+    g_signal_connect (button, "motion-notify-event",
+                      G_CALLBACK (propagate_motion_notify_event_to_canvas_cb),
+                      app);
+
     item2 = goc_item_new (top_level_group, MY_TYPE_SYSTEM, "x", 300.0, "y", 100.0, NULL);
 
     g_object_get(item2, "widget", &button, NULL);
