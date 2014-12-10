@@ -73,23 +73,7 @@ motion_notify_cb (GtkWidget * widget, GdkEventMotion * event, App * app)
         tx = x - offsetx;
         ty = y - offsety;
 
-        if (GOC_IS_LINE (app->active_item)) {
-            gdouble x0, y0, x1, y1;
-
-            g_object_get (app->active_item, "x0", &x0, "y0", &y0, NULL);
-            g_object_get (app->active_item, "x1", &x1, "y1", &y1, NULL);
-
-            goc_item_set (app->active_item, "x0", x0 + tx, "y0", y0 + ty, NULL);
-            goc_item_set (app->active_item, "x1", x1 + tx, "y1", y1 + ty, NULL);
-        }
-        else if (GOC_IS_ARC (app->active_item)) {
-            gdouble xc, yc;
-
-            g_object_get (app->active_item, "xc", &xc, "yc", &yc, NULL);
-
-            goc_item_set (app->active_item, "xc", xc + tx, "yc", yc + ty, NULL);
-        }
-        else if (GOC_IS_WIDGET (app->active_item)) {
+        if (GOC_IS_WIDGET (app->active_item)) {
             gdouble x, y;
 
             g_object_get (app->active_item, "x", &x, "y", &y, NULL);
