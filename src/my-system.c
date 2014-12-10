@@ -8,6 +8,7 @@ enum
     COLUMN_ANCHOR_SINK,
     COLUMN_ENERGY_QUANTITY,
     COLUMN_ENERGY_SINK,
+    COLUMN_FROM_ENVIRONMENT,
     N_COLUMNS
 };
 
@@ -68,22 +69,26 @@ my_system_error_quark (void)
     return g_quark_from_static_string ("my-system-error-quark");
 }
 
-gboolean my_system_draw_energy_flow(MySystem *self) {
-    GocWidget *goc_widget = GOC_WIDGET(self);
+gboolean
+my_system_draw_energy_flow (MySystem * self)
+{
     GtkAllocation allocation;
     GtkTreeIter iter;
     gboolean valid;
 
-    gtk_widget_get_allocation(goc_widget->ofbox, &allocation);
+    gtk_widget_get_allocation (GOC_WIDGET(self)->ofbox, &allocation);
 
     valid =
         gtk_tree_model_get_iter_first (GTK_TREE_MODEL (self->EnergyFlow),
                                        &iter);
 
+    /* iterate through all arrows associated with self*/
     while (valid) {
-        gdouble x0, x1, y0, y1; 
+
+        gdouble x0, x1, y0, y1;
         GocItem *line;
         MySystem *sink;
+        gboolean from_environment;
         gint anchor_source, anchor_sink;
         gfloat energy_quantity;
 
@@ -93,6 +98,7 @@ gboolean my_system_draw_energy_flow(MySystem *self) {
                             COLUMN_ANCHOR_SINK, &anchor_sink,
                             COLUMN_ENERGY_SINK, &sink,
                             COLUMN_ENERGY_QUANTITY, &energy_quantity,
+                            COLUMN_FROM_ENVIRONMENT, &from_environment,
                             COLUMN_ARROW, &line, -1);
 
         if (!GOC_IS_LINE (line)) {
@@ -114,8 +120,7 @@ gboolean my_system_draw_energy_flow(MySystem *self) {
             go_arrow_init_kite (arr, 20, 20, 4);
 
             line =
-                goc_item_new (top_level_group, GOC_TYPE_LINE, "x0", 0.0, "x1",
-                              1.0, "y1", 0.0, "y0", 1.0, "end-arrow", arr,
+                goc_item_new (top_level_group, GOC_TYPE_LINE, "end-arrow", arr,
                               NULL);
 
             g_object_get (G_OBJECT (line), "style", &style, NULL);
@@ -125,48 +130,81 @@ gboolean my_system_draw_energy_flow(MySystem *self) {
 
             goc_item_lower_to_bottom (GOC_ITEM (line));
 
-            gtk_list_store_set(self->EnergyFlow, &iter, COLUMN_ARROW, line, -1);
-        } 
+            gtk_list_store_set (self->EnergyFlow, &iter, COLUMN_ARROW, line, -1);
+        }
 
-        x0 = allocation.x + allocation.width/2; 
-        y0 = allocation.y + allocation.height/2; 
+        x0 = allocation.x + allocation.width / 2;
+        y0 = allocation.y + allocation.height / 2;
 
-        if(MY_IS_SYSTEM(sink)) {
-            GocWidget *goc_widget = GOC_WIDGET(sink);
+        gdouble length = allocation.width * 0.66;
+
+        /* if arrow depicts transfer to other system */
+        if (MY_IS_SYSTEM (sink)) {
+
             GtkAllocation alloc_sink;
-            
-            gtk_widget_get_allocation(goc_widget->ofbox, &alloc_sink);
 
-            if(anchor_sink == ANCHOR_WEST) {
-                x1 = alloc_sink.x + alloc_sink.width; 
-                y1 = alloc_sink.y + alloc_sink.height/2;
-            } else if(anchor_sink == ANCHOR_SOUTH) {
-                x1 = alloc_sink.x + alloc_sink.width/2;
+            gtk_widget_get_allocation (GOC_WIDGET(sink)->ofbox, &alloc_sink);
+
+            if (anchor_sink == ANCHOR_WEST) {
+                x1 = alloc_sink.x + alloc_sink.width;
+                y1 = alloc_sink.y + alloc_sink.height / 2;
+            }
+            else if (anchor_sink == ANCHOR_SOUTH) {
+                x1 = alloc_sink.x + alloc_sink.width / 2;
                 y1 = alloc_sink.y + alloc_sink.height;
-            } else if(anchor_sink == ANCHOR_EAST) {
+            }
+            else if (anchor_sink == ANCHOR_EAST) {
                 x1 = alloc_sink.x;
-                y1 = alloc_sink.y + alloc_sink.height/2;
+                y1 = alloc_sink.y + alloc_sink.height / 2;
             }
 
-        } else {
-            gdouble length = allocation.width * 0.66;
+        }
+        /* if arrow depicts transfer to environment */
+        else if (!from_environment) {
 
-            if(anchor_source == ANCHOR_WEST) {
-                x1 = allocation.x + allocation.width + length; 
+            if (anchor_source == ANCHOR_WEST) {
+                x1 = allocation.x + allocation.width + length;
                 y1 = y0;
-            } else if(anchor_source == ANCHOR_EAST) {
-                x1 = allocation.x - length; 
+            }
+            else if (anchor_source == ANCHOR_EAST) {
+                x1 = allocation.x - length;
                 y1 = y0;
-            } else if(anchor_source == ANCHOR_SOUTH) {
+            }
+            else if (anchor_source == ANCHOR_SOUTH) {
                 x1 = x0;
-                y1 = y0 + allocation.height + length;
-            } else if(anchor_source == ANCHOR_NORTH) {
+                y1 = allocation.y + allocation.height + length;
+            }
+            else if (anchor_source == ANCHOR_NORTH) {
                 x1 = x0;
-                y1 = y0 - length;
+                y1 = allocation.y - length;
+            }
+        }
+        /* if arrow depicts transfer from environment */
+        else if (from_environment) {
+
+            if (anchor_source == ANCHOR_WEST) {
+                x1 = allocation.x + allocation.width;
+                x0 = x1 + length;
+                y1 = y0;
+            }
+            else if (anchor_source == ANCHOR_EAST) {
+                x1 = allocation.x;
+                x0 = x1 - length;
+                y1 = y0;
+            }
+            else if (anchor_source == ANCHOR_SOUTH) {
+                x1 = x0;
+                y1 = allocation.y + allocation.height;
+                y0 = y1 + length;
+            }
+            else if (anchor_source == ANCHOR_NORTH) {
+                y1 = allocation.y;
+                y0 = y1 - length;
+                x1 = x0;
             }
         }
 
-        goc_item_set (line, "x0", x0, "y0", y0, "x1", x1, "y1", y1, NULL); 
+        goc_item_set (line, "x0", x0, "y0", y0, "x1", x1, "y1", y1, NULL);
 
         valid =
             gtk_tree_model_iter_next (GTK_TREE_MODEL (self->EnergyFlow), &iter);
@@ -179,20 +217,22 @@ ofbox_size_allocate_cb (GtkWidget * widget, GdkRectangle * allocation,
                         MySystem * self)
 {
     GSList *tmp;
-    
+
     tmp = self->AssociatedSystems;
 
     while (tmp) {
         MySystem *associate = tmp->data;
-    
-        if(MY_IS_SYSTEM(associate)) {
-            my_system_draw_energy_flow(associate);
+
+        if (MY_IS_SYSTEM (associate)) {
+            /* draw all energy flows of those systems that transfer
+             * energy to self */
+            my_system_draw_energy_flow (associate);
         }
 
         tmp = tmp->next;
     }
 
-    my_system_draw_energy_flow(self);
+    my_system_draw_energy_flow (self);
 }
 
 gboolean
@@ -206,26 +246,22 @@ widget_draw_cb (GtkWidget * widget, cairo_t * cr, gpointer user_data)
 static void
 notify_widget_changed_cb (MySystem * self, GParamSpec * pspec, gpointer data)
 {
-    GocWidget *goc_widget = GOC_WIDGET (self);
-    GocOffscreenBox *ofbox = GOC_OFFSCREEN_BOX (goc_widget->ofbox);
+    GocOffscreenBox *ofbox = GOC_OFFSCREEN_BOX(GOC_WIDGET(self)->ofbox);
 
     g_print ("'widget' property changed...\n");
 
     g_signal_connect (ofbox, "size-allocate",
                       G_CALLBACK (ofbox_size_allocate_cb), self);
 
-    /*g_signal_connect (goc_widget->widget, "draw", G_CALLBACK (widget_draw_cb),*/
-                      /*self);*/
+    /*g_signal_connect (goc_widget->widget, "draw", G_CALLBACK (widget_draw_cb), */
+    /*self); */
 }
 
 static void
 notify_canvas_changed_cb (MySystem * self, GParamSpec * pspec, gpointer data)
 {
-
     g_print ("canvas changed\n");
-
 }
-
 
 static void
 my_system_class_init (MySystemClass * klass)
@@ -238,35 +274,71 @@ my_system_class_init (MySystemClass * klass)
     /*g_type_class_add_private (gobject_class, sizeof (MySystemPrivate)); */
 }
 
-void my_system_add_associate (MySystem * self, MySystem * associate) {
+void
+my_system_add_associate (MySystem * self, MySystem * associate)
+{
 
-    self->AssociatedSystems = g_slist_append(self->AssociatedSystems, associate);
+    self->AssociatedSystems =
+        g_slist_append (self->AssociatedSystems, associate);
 }
 
 gboolean
-my_system_add_energy_flow (MySystem * self, gint anchor_source, gint anchor_sink, gfloat quantity,
-                           MySystem * sink)
+my_system_add_energy_transfer_to_system (MySystem * self, gint anchor_sink,
+                                         gfloat quantity, MySystem * sink)
 {
     GtkTreeIter iter;
-    MySystem *_sink;
 
     g_return_val_if_fail (MY_IS_SYSTEM (self), FALSE);
+    g_return_val_if_fail (MY_IS_SYSTEM (sink), FALSE);
 
-    _sink = sink;
+    /* associate sink with self, so that energy_flows of self are
+     * redrawn if the allocation of sink changes */
 
-    if (!MY_IS_SYSTEM (sink)) {
-        _sink = NULL;
-    } else {
-        my_system_add_associate(_sink, self);
-    }
+    my_system_add_associate (sink, self);
+
+    gtk_list_store_append (self->EnergyFlow, &iter);
+
+    gtk_list_store_set (self->EnergyFlow, &iter,
+                        COLUMN_ANCHOR_SINK, anchor_sink,
+                        COLUMN_ENERGY_QUANTITY, quantity,
+                        COLUMN_FROM_ENVIRONMENT, FALSE,
+                        COLUMN_ENERGY_SINK, sink, -1);
+}
+
+gboolean
+my_system_add_energy_transfer_to_environment (MySystem * self,
+                                              gint anchor_source,
+                                              gfloat quantity)
+{
+    GtkTreeIter iter;
+
+    g_return_val_if_fail (MY_IS_SYSTEM (self), FALSE);
 
     gtk_list_store_append (self->EnergyFlow, &iter);
 
     gtk_list_store_set (self->EnergyFlow, &iter,
                         COLUMN_ANCHOR_SOURCE, anchor_source,
-                        COLUMN_ANCHOR_SINK, anchor_sink,
-                        COLUMN_ENERGY_QUANTITY, quantity, COLUMN_ENERGY_SINK,
-                        _sink, -1);
+                        COLUMN_ENERGY_QUANTITY, quantity, 
+                        COLUMN_FROM_ENVIRONMENT, FALSE, 
+                        -1);
+}
+
+gboolean
+my_system_add_energy_transfer_from_environment (MySystem * self,
+                                              gint anchor_source,
+                                              gfloat quantity)
+{
+    GtkTreeIter iter;
+
+    g_return_val_if_fail (MY_IS_SYSTEM (self), FALSE);
+
+    gtk_list_store_append (self->EnergyFlow, &iter);
+
+    gtk_list_store_set (self->EnergyFlow, &iter,
+                        COLUMN_ANCHOR_SOURCE, anchor_source,
+                        COLUMN_ENERGY_QUANTITY, quantity, 
+                        COLUMN_FROM_ENVIRONMENT, TRUE,
+                        -1);
 }
 
 static void
@@ -280,8 +352,8 @@ my_system_init_energy_flow_store (MySystem * self)
 {
 
     self->EnergyFlow =
-        gtk_list_store_new (N_COLUMNS, GOC_TYPE_LINE, G_TYPE_INT, G_TYPE_INT, G_TYPE_FLOAT,
-                            MY_TYPE_SYSTEM);
+        gtk_list_store_new (N_COLUMNS, GOC_TYPE_LINE, G_TYPE_INT, G_TYPE_INT,
+                            G_TYPE_FLOAT, MY_TYPE_SYSTEM, G_TYPE_BOOLEAN);
 }
 
 static void
@@ -290,8 +362,8 @@ my_system_init (MySystem * self)
     GtkWidget *button;
 
     button = gtk_button_new_with_label ("MyNewSystem");
-    goc_item_set (GOC_ITEM (self), "widget", button, "x", 250.0,
-                  "y", 350.0, "width", 100.0, "height", 50.0, NULL);
+
+    goc_item_set (GOC_ITEM (self), "widget", button, "width", 150.0, "height", 80.0, NULL);
 
     my_system_init_energy_flow_store (self);
     my_system_init_associated_systems (self);
