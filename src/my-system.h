@@ -25,7 +25,8 @@ struct _MySystem
     /* insert public members here */
 
     /* private */
-    GocItem *line_out;
+    GtkListStore *EnergyFlow;
+    GSList *AssociatedSystems;    
 };
 
 struct _MySystemClass
@@ -35,8 +36,22 @@ struct _MySystemClass
 
 GType my_system_get_type (void);
 
+enum
+{
+    ANCHOR_NORTH,
+    ANCHOR_SOUTH,
+    ANCHOR_WEST,
+    ANCHOR_EAST,
+};
+
 /* fill in public functions */
-MySystem *my_system_new (void);
+
+gboolean
+my_system_add_energy_flow (MySystem * self, gint anchor_source, gint anchor_sink, gfloat quantity,
+                           MySystem * sink);
+
+void my_system_add_associate (MySystem * self, MySystem * associate);
+gboolean my_system_draw_energy_flow(MySystem *self);
 
 G_END_DECLS
 
