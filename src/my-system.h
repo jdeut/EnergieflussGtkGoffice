@@ -18,7 +18,6 @@ G_BEGIN_DECLS
 
 typedef struct _MySystem MySystem;
 typedef struct _MySystemClass MySystemClass;
-typedef struct _MySystemPrivate MySystemPrivate;
 
 struct _MySystem
 {
@@ -26,13 +25,12 @@ struct _MySystem
     /* insert public members here */
 
     /* private */
-    MySystemPrivate *_priv;
+    GocItem *line_out;
 };
 
 struct _MySystemClass
 {
     GocWidgetClass parent_class;
-
 };
 
 GType my_system_get_type (void);
