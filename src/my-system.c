@@ -9,6 +9,8 @@ enum
     COLUMN_ENERGY_QUANTITY,
     COLUMN_ENERGY_SINK,
     COLUMN_FROM_ENVIRONMENT,
+    COLUMN_LABEL,
+    COLUMN_LABEL_TEXT,
     N_COLUMNS
 };
 
@@ -76,13 +78,13 @@ my_system_draw_energy_flow (MySystem * self)
     GtkTreeIter iter;
     gboolean valid;
 
-    gtk_widget_get_allocation (GOC_WIDGET(self)->ofbox, &allocation);
+    gtk_widget_get_allocation (GOC_WIDGET (self)->ofbox, &allocation);
 
     valid =
         gtk_tree_model_get_iter_first (GTK_TREE_MODEL (self->EnergyFlow),
                                        &iter);
 
-    /* iterate through all arrows associated with self*/
+    /* iterate through all arrows associated with self */
     while (valid) {
 
         gdouble x0, x1, y0, y1;
@@ -130,7 +132,8 @@ my_system_draw_energy_flow (MySystem * self)
 
             goc_item_lower_to_bottom (GOC_ITEM (line));
 
-            gtk_list_store_set (self->EnergyFlow, &iter, COLUMN_ARROW, line, -1);
+            gtk_list_store_set (self->EnergyFlow, &iter, COLUMN_ARROW, line,
+                                -1);
         }
 
         x0 = allocation.x + allocation.width / 2;
@@ -143,7 +146,7 @@ my_system_draw_energy_flow (MySystem * self)
 
             GtkAllocation alloc_sink;
 
-            gtk_widget_get_allocation (GOC_WIDGET(sink)->ofbox, &alloc_sink);
+            gtk_widget_get_allocation (GOC_WIDGET (sink)->ofbox, &alloc_sink);
 
             if (anchor_sink == ANCHOR_WEST) {
                 x1 = alloc_sink.x + alloc_sink.width;
@@ -246,7 +249,7 @@ widget_draw_cb (GtkWidget * widget, cairo_t * cr, gpointer user_data)
 static void
 notify_widget_changed_cb (MySystem * self, GParamSpec * pspec, gpointer data)
 {
-    GocOffscreenBox *ofbox = GOC_OFFSCREEN_BOX(GOC_WIDGET(self)->ofbox);
+    GocOffscreenBox *ofbox = GOC_OFFSCREEN_BOX (GOC_WIDGET (self)->ofbox);
 
     g_print ("'widget' property changed...\n");
 
@@ -318,15 +321,14 @@ my_system_add_energy_transfer_to_environment (MySystem * self,
 
     gtk_list_store_set (self->EnergyFlow, &iter,
                         COLUMN_ANCHOR_SOURCE, anchor_source,
-                        COLUMN_ENERGY_QUANTITY, quantity, 
-                        COLUMN_FROM_ENVIRONMENT, FALSE, 
-                        -1);
+                        COLUMN_ENERGY_QUANTITY, quantity,
+                        COLUMN_FROM_ENVIRONMENT, FALSE, -1);
 }
 
 gboolean
 my_system_add_energy_transfer_from_environment (MySystem * self,
-                                              gint anchor_source,
-                                              gfloat quantity)
+                                                gint anchor_source,
+                                                gfloat quantity)
 {
     GtkTreeIter iter;
 
@@ -336,9 +338,8 @@ my_system_add_energy_transfer_from_environment (MySystem * self,
 
     gtk_list_store_set (self->EnergyFlow, &iter,
                         COLUMN_ANCHOR_SOURCE, anchor_source,
-                        COLUMN_ENERGY_QUANTITY, quantity, 
-                        COLUMN_FROM_ENVIRONMENT, TRUE,
-                        -1);
+                        COLUMN_ENERGY_QUANTITY, quantity,
+                        COLUMN_FROM_ENVIRONMENT, TRUE, -1);
 }
 
 static void
@@ -350,10 +351,14 @@ my_system_init_associated_systems (MySystem * self)
 static void
 my_system_init_energy_flow_store (MySystem * self)
 {
-
     self->EnergyFlow =
-        gtk_list_store_new (N_COLUMNS, GOC_TYPE_LINE, G_TYPE_INT, G_TYPE_INT,
-                            G_TYPE_FLOAT, MY_TYPE_SYSTEM, G_TYPE_BOOLEAN);
+        gtk_list_store_new (N_COLUMNS,
+                            GOC_TYPE_LINE,
+                            G_TYPE_INT,
+                            G_TYPE_INT,
+                            G_TYPE_FLOAT,
+                            MY_TYPE_SYSTEM,
+                            G_TYPE_BOOLEAN, GOC_TYPE_TEXT, G_TYPE_STRING);
 }
 
 static void
@@ -363,7 +368,8 @@ my_system_init (MySystem * self)
 
     button = gtk_button_new_with_label ("MyNewSystem");
 
-    goc_item_set (GOC_ITEM (self), "widget", button, "width", 150.0, "height", 80.0, NULL);
+    goc_item_set (GOC_ITEM (self), "widget", button, "width", 150.0, "height",
+                  80.0, NULL);
 
     my_system_init_energy_flow_store (self);
     my_system_init_associated_systems (self);
