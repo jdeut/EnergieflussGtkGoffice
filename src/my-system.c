@@ -68,11 +68,10 @@ ofbox_size_allocate_cb (GtkWidget * widget, GdkRectangle * allocation,
 
     x0 = allocation->x + allocation->width;
     x1 = allocation->x + allocation->width + 50;
-    y0 = allocation->y + allocation->height/2;
-    y1 = allocation->y + allocation->height/2;
+    y0 = allocation->y + allocation->height / 2;
+    y1 = allocation->y + allocation->height / 2;
 
-    goc_item_set (self->line_out, "x0", x0, "y0",
-                  y0, "x1", x1, "y1", y1, NULL);
+    goc_item_set (self->line_out, "x0", x0, "y0", y0, "x1", x1, "y1", y1, NULL);
 }
 
 gboolean
@@ -84,8 +83,7 @@ widget_draw_cb (GtkWidget * widget, cairo_t * cr, gpointer user_data)
 }
 
 static void
-notify_widget_changed_cb (MySystem *self, GParamSpec * pspec,
-                          gpointer data)
+notify_widget_changed_cb (MySystem * self, GParamSpec * pspec, gpointer data)
 {
     GocWidget *goc_widget = GOC_WIDGET (self);
     GocOffscreenBox *ofbox = GOC_OFFSCREEN_BOX (goc_widget->ofbox);
@@ -100,15 +98,14 @@ notify_widget_changed_cb (MySystem *self, GParamSpec * pspec,
 }
 
 static void
-notify_canvas_changed_cb (MySystem *self, GParamSpec * pspec,
-                          gpointer data)
+notify_canvas_changed_cb (MySystem * self, GParamSpec * pspec, gpointer data)
 {
     GocGroup *top_level_group = NULL;
     GOArrow *arr;
     GOStyle *style;
     GocWidget *goc_widget = GOC_WIDGET (self);
 
-    g_print("canvas changed\n");
+    g_print ("canvas changed\n");
 
     top_level_group = goc_canvas_get_root (goc_widget->base.canvas);
 
@@ -130,7 +127,7 @@ notify_canvas_changed_cb (MySystem *self, GParamSpec * pspec,
     style->line.width = 20;
     style->line.color = GO_COLOR_FROM_RGBA (0, 200, 0, 255);
 
-    goc_item_lower_to_bottom(GOC_ITEM(self->line_out));
+    goc_item_lower_to_bottom (GOC_ITEM (self->line_out));
 
     if (self->line_out == NULL) {
         g_print ("err...\n");
@@ -163,9 +160,8 @@ my_system_init (MySystem * self)
     g_signal_connect (self, "notify::widget",
                       G_CALLBACK (notify_widget_changed_cb), NULL);
 
-	g_signal_connect (self, "notify::canvas",
-			  G_CALLBACK (notify_canvas_changed_cb),
-			  NULL);
+    g_signal_connect (self, "notify::canvas",
+                      G_CALLBACK (notify_canvas_changed_cb), NULL);
 
 }
 
