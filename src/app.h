@@ -21,5 +21,6 @@ void app_init (App *);
 GObject *app_get_ui_element (App *, const gchar *);
 
 #include "callbacks.h"
+#include "my-system.h"
 
 #endif
