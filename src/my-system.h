@@ -46,10 +46,13 @@ enum
 
 /* fill in public functions */
 
-gboolean my_system_add_energy_transfer_to_environment (MySystem * self, gint anchor_source, gfloat quantity);
-gboolean my_system_add_energy_transfer_to_system (MySystem * self, gint anchor_sink, gfloat quantity, MySystem * sink);
-gboolean my_system_add_energy_transfer_from_environment (MySystem * self, gint anchor_source, gfloat quantity);
 
+gboolean
+my_system_add_energy_transfer_to_system (MySystem * self, gchar * label, gint anchor_sink, gfloat quantity, MySystem * sink);
+gboolean
+my_system_add_energy_transfer_to_environment (MySystem * self, gchar * label, gint anchor_source, gfloat quantity);
+gboolean
+my_system_add_energy_transfer_from_environment (MySystem * self, gchar * label, gint anchor_source, gfloat quantity);
 void my_system_add_associate (MySystem * self, MySystem * associate);
 gboolean my_system_draw_energy_flow(MySystem *self);
 
