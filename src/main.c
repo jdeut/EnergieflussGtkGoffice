@@ -3,51 +3,18 @@
 void
 populate_canvas (App * app)
 {
-    GOStyleLine *line = NULL;
     GocGroup *top_level_group;
-    GOStyle *style;
-    GocItem *item;
-    GOArrow *arr;
+    GocItem *item1, *item2;
 
     GtkWidget *button;
 
     top_level_group = goc_canvas_get_root (app->canvas);
 
-    button = gtk_button_new_with_label ("System 1");
-
-    goc_item_new (top_level_group, GOC_TYPE_WIDGET, "widget", button, "x",
-                  100.0, "y", 200.0, "width", 100.0, "height", 50.0, NULL);
-
-    g_signal_connect (button, "button-press-event",
-                      G_CALLBACK (propagate_button_press_event_to_canvas_cb),
-                      app);
-    g_signal_connect (button, "button-release-event",
-                      G_CALLBACK (propagate_button_release_event_to_canvas_cb),
-                      app);
-    g_signal_connect (button, "motion-notify-event",
-                      G_CALLBACK (propagate_motion_notify_event_to_canvas_cb),
-                      app);
-
-    button = gtk_button_new_with_label ("System 2");
-
-    goc_item_new (top_level_group, GOC_TYPE_WIDGET, "widget", button, "x",
-                  300.0, "y", 250.0, "width", 100.0, "height", 50.0, NULL);
-
-    g_signal_connect (button, "button-press-event",
-                      G_CALLBACK (propagate_button_press_event_to_canvas_cb),
-                      app);
-    g_signal_connect (button, "button-release-event",
-                      G_CALLBACK (propagate_button_release_event_to_canvas_cb),
-                      app);
-    g_signal_connect (button, "motion-notify-event",
-                      G_CALLBACK (propagate_motion_notify_event_to_canvas_cb),
-                      app);
-
     /* Test of new GocItem */
 
-    item = goc_item_new (top_level_group, MY_TYPE_SYSTEM, NULL);
+    item1 = goc_item_new (top_level_group, MY_TYPE_SYSTEM, NULL);
 
-    g_object_get(item, "widget", &button, NULL);
+    g_object_get(item1, "widget", &button, NULL);
 
     g_signal_connect (button, "button-press-event",
                       G_CALLBACK (propagate_button_press_event_to_canvas_cb),
@@ -58,6 +25,27 @@ populate_canvas (App * app)
     g_signal_connect (button, "motion-notify-event",
                       G_CALLBACK (propagate_motion_notify_event_to_canvas_cb),
                       app);
+
+    my_system_add_energy_flow(MY_SYSTEM(item1), ANCHOR_WEST, ANCHOR_WEST, 10, NULL);
+    my_system_add_energy_flow(MY_SYSTEM(item1), ANCHOR_SOUTH, ANCHOR_SOUTH, 30, NULL);
+    my_system_add_energy_flow(MY_SYSTEM(item1), ANCHOR_EAST, ANCHOR_SOUTH, 5, NULL);
+    my_system_add_energy_flow(MY_SYSTEM(item1), ANCHOR_NORTH, ANCHOR_SOUTH, 2, NULL);
+
+    item2 = goc_item_new (top_level_group, MY_TYPE_SYSTEM, NULL);
+
+    g_object_get(item2, "widget", &button, NULL);
+
+    g_signal_connect (button, "button-press-event",
+                      G_CALLBACK (propagate_button_press_event_to_canvas_cb),
+                      app);
+    g_signal_connect (button, "button-release-event",
+                      G_CALLBACK (propagate_button_release_event_to_canvas_cb),
+                      app);
+    g_signal_connect (button, "motion-notify-event",
+                      G_CALLBACK (propagate_motion_notify_event_to_canvas_cb),
+                      app);
+
+    my_system_add_energy_flow(MY_SYSTEM(item2), ANCHOR_WEST, ANCHOR_WEST, 10, MY_SYSTEM(item1));
 }
 
 int
