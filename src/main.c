@@ -95,8 +95,7 @@ populate_canvas (App * app)
                       app);
 
     my_system_add_energy_transfer_to_system (MY_SYSTEM (item2),
-                                             "<span foreground=\"red\" size=\"xx-large\">Blue text</span> is <i>cool</i>!",
-                                             ANCHOR_WEST, 30.0,
+                                             "<span size=\"xx-large\">W<sub>el</sub></span>",
                                              MY_SYSTEM (item1));
 }
 
