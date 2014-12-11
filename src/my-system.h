@@ -3,6 +3,7 @@
 
 #include <glib-object.h>
 #include <goffice/canvas/goc-widget.h>
+#include "my-flowarrow.h"
 
 
 G_BEGIN_DECLS

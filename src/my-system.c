@@ -9,7 +9,6 @@ enum
     COLUMN_ENERGY_QUANTITY,
     COLUMN_ENERGY_SINK,
     COLUMN_FROM_ENVIRONMENT,
-    COLUMN_LABEL,
     COLUMN_LABEL_TEXT,
     N_COLUMNS
 };
@@ -71,62 +70,18 @@ my_system_error_quark (void)
     return g_quark_from_static_string ("my-system-error-quark");
 }
 
-GocItem * create_arrow(GocGroup *toplevel, gfloat energy_quantity) {
-    GOArrow *arr;
-    GOStyle *style;
-    GocItem *line;
-
-    arr = g_new0 (GOArrow, 1);
-
-    go_arrow_init_kite (arr, 20, 20, 4);
-
-    line =
-        goc_item_new (toplevel, GOC_TYPE_LINE, "end-arrow", arr,
-                      NULL);
-
-    g_object_get (G_OBJECT (line), "style", &style, NULL);
-
-    style->line.width = energy_quantity;
-    style->line.color = GO_COLOR_FROM_RGBA (0, 200, 0, 255);
-
-    goc_item_lower_to_bottom (GOC_ITEM (line));
-
-    return line;
-}
-
-GocItem * create_label(GocGroup *toplevel, gchar * label_text) {
-    GocItem *label;
-    gchar *text;
-    gboolean ret;
-
-    PangoAttrList *attr;
-
-    attr = pango_attr_list_new();
-
-    ret = pango_parse_markup(label_text, -1, 0, &attr, &text, NULL, NULL);
-
-    if(!ret)
-        g_print("can't create attribute list...\n");
-
-    label = goc_item_new (toplevel, GOC_TYPE_TEXT, "attributes", attr, "text", text, NULL);
-
-    goc_item_lower_to_bottom (GOC_ITEM (label));
-
-    return label;
-}
-
 gboolean
 my_system_draw_energy_flow (MySystem * self)
 {
 
-    GocGroup *top_level_group = NULL;
+    GocGroup *toplevel = NULL;
     GtkAllocation allocation;
     GtkTreeIter iter;
     gboolean valid;
 
-    top_level_group = goc_canvas_get_root (GOC_WIDGET(self)->base.canvas);
+    toplevel = goc_canvas_get_root (GOC_WIDGET(self)->base.canvas);
 
-    if (top_level_group == NULL) {
+    if (toplevel == NULL) {
         g_print ("can't get canvas...\n");
         return;
     }
@@ -141,7 +96,7 @@ my_system_draw_energy_flow (MySystem * self)
     while (valid) {
 
         gdouble x0, x1, y0, y1;
-        GocItem *line, *label_item;
+        GocItem *line;
         MySystem *sink;
         gboolean from_environment;
         gchar *label_text;
@@ -154,7 +109,6 @@ my_system_draw_energy_flow (MySystem * self)
                             COLUMN_ANCHOR_SINK, &anchor_sink,
                             COLUMN_ENERGY_SINK, &sink,
                             COLUMN_LABEL_TEXT, &label_text,
-                            COLUMN_LABEL, &label_item,
                             COLUMN_ENERGY_QUANTITY, &energy_quantity,
                             COLUMN_FROM_ENVIRONMENT, &from_environment,
                             COLUMN_ARROW, &line, -1);
@@ -162,20 +116,10 @@ my_system_draw_energy_flow (MySystem * self)
         // If line is not instantiated yet
         if (!GOC_IS_LINE (line)) {
 
-            line = create_arrow(top_level_group, energy_quantity);
+            line = goc_item_new (toplevel, MY_TYPE_FLOW_ARROW, "energy-quantity", energy_quantity, "label-text", label_text, NULL);
 
             gtk_list_store_set (self->EnergyFlow, &iter, COLUMN_ARROW, line,
                                 -1);
-        }
-
-        if(label_text != NULL) {
-
-            if(!GOC_IS_TEXT(label_item)) {
-                
-                label_item = create_label(top_level_group, label_text);
-                gtk_list_store_set (self->EnergyFlow, &iter, COLUMN_LABEL, label_item, -1);
-
-            }
         }
 
         /* draw line */
@@ -252,24 +196,6 @@ my_system_draw_energy_flow (MySystem * self)
         }
 
         goc_item_set (line, "x0", x0, "y0", y0, "x1", x1, "y1", y1, NULL);
-
-        /* draw text */
-        
-        if( label_text != NULL ) {
-
-            gdouble angle;
-            cairo_matrix_t matrix;
-
-            angle = atan2(y1-y0, x1-x0) + M_PI;
-
-            goc_item_set(label_item, "rotation", angle, "anchor", GO_ANCHOR_SOUTH, "x", x0+(x1-x0)/2, "y", y0+(y1-y0)/2, NULL);
-
-            cairo_matrix_init_identity(&matrix);
-            cairo_matrix_translate(&matrix, energy_quantity/2*sin(angle), -energy_quantity/2*cos(angle) );
-
-            goc_item_set_transform(label_item, &matrix);
-
-        }
 
         valid =
             gtk_tree_model_iter_next (GTK_TREE_MODEL (self->EnergyFlow), &iter);
@@ -424,7 +350,8 @@ my_system_init_energy_flow_store (MySystem * self)
                             G_TYPE_INT,
                             G_TYPE_FLOAT,
                             MY_TYPE_SYSTEM,
-                            G_TYPE_BOOLEAN, GOC_TYPE_TEXT, G_TYPE_STRING);
+                            G_TYPE_BOOLEAN, 
+                            G_TYPE_STRING);
 }
 
 static void
