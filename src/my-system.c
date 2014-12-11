@@ -79,7 +79,7 @@ my_system_draw_energy_flow (MySystem * self)
     GtkTreeIter iter;
     gboolean valid;
 
-    toplevel = goc_canvas_get_root (GOC_WIDGET(self)->base.canvas);
+    toplevel = goc_canvas_get_root (GOC_WIDGET (self)->base.canvas);
 
     if (toplevel == NULL) {
         g_print ("can't get canvas...\n");
@@ -116,7 +116,9 @@ my_system_draw_energy_flow (MySystem * self)
         // If line is not instantiated yet
         if (!GOC_IS_LINE (line)) {
 
-            line = goc_item_new (toplevel, MY_TYPE_FLOW_ARROW, "energy-quantity", energy_quantity, "label-text", label_text, NULL);
+            line =
+                goc_item_new (toplevel, MY_TYPE_FLOW_ARROW, "energy-quantity",
+                              energy_quantity, "label-text", label_text, NULL);
 
             gtk_list_store_set (self->EnergyFlow, &iter, COLUMN_ARROW, line,
                                 -1);
@@ -299,7 +301,8 @@ my_system_add_energy_transfer_to_system (MySystem * self, gchar * label_text,
 }
 
 gboolean
-my_system_add_energy_transfer_to_environment (MySystem * self, gchar * label_text,
+my_system_add_energy_transfer_to_environment (MySystem * self,
+                                              gchar * label_text,
                                               gint anchor_source,
                                               gfloat quantity)
 {
@@ -317,7 +320,8 @@ my_system_add_energy_transfer_to_environment (MySystem * self, gchar * label_tex
 }
 
 gboolean
-my_system_add_energy_transfer_from_environment (MySystem * self, gchar * label_text,
+my_system_add_energy_transfer_from_environment (MySystem * self,
+                                                gchar * label_text,
                                                 gint anchor_source,
                                                 gfloat quantity)
 {
@@ -349,9 +353,7 @@ my_system_init_energy_flow_store (MySystem * self)
                             G_TYPE_INT,
                             G_TYPE_INT,
                             G_TYPE_FLOAT,
-                            MY_TYPE_SYSTEM,
-                            G_TYPE_BOOLEAN, 
-                            G_TYPE_STRING);
+                            MY_TYPE_SYSTEM, G_TYPE_BOOLEAN, G_TYPE_STRING);
 }
 
 static void

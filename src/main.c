@@ -96,7 +96,8 @@ populate_canvas (App * app)
                       app);
 
     my_system_add_energy_transfer_to_system (MY_SYSTEM (item2),
-                                             "<span size=\"xx-large\">W<sub>el</sub></span>", ANCHOR_WEST, 30,
+                                             "<span size=\"xx-large\">W<sub>el</sub></span>",
+                                             ANCHOR_WEST, 30,
                                              MY_SYSTEM (item1));
 }
 

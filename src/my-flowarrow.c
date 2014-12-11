@@ -88,35 +88,39 @@ my_flow_arrow_error_quark (void)
 }
 
 void
-my_flow_arrow_draw (GocItem const *item, cairo_t *cr)
+my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
 {
     GocGroup *toplevel = NULL;
-    MyFlowArrow *self = MY_FLOW_ARROW(item);
+    MyFlowArrow *self = MY_FLOW_ARROW (item);
 
-    MyFlowArrowClass *class = MY_FLOW_ARROW_GET_CLASS(self);
-    GocItemClass *parent_class = g_type_class_peek_parent(class);
+    MyFlowArrowClass *class = MY_FLOW_ARROW_GET_CLASS (self);
+    GocItemClass *parent_class = g_type_class_peek_parent (class);
 
     toplevel = goc_canvas_get_root (item->canvas);
 
     /* chaining up */
-    parent_class->draw(GOC_ITEM(self), cr);
+    parent_class->draw (GOC_ITEM (self), cr);
 
-    if(self->_priv->label_text != NULL) {
+    if (self->_priv->label_text != NULL) {
 
-        if(!GOC_IS_TEXT(self->_priv->label)) {
+        if (!GOC_IS_TEXT (self->_priv->label)) {
             gchar *text;
             gboolean ret;
 
             PangoAttrList *attr;
 
-            attr = pango_attr_list_new();
+            attr = pango_attr_list_new ();
 
-            ret = pango_parse_markup(self->_priv->label_text, -1, 0, &attr, &text, NULL, NULL);
+            ret =
+                pango_parse_markup (self->_priv->label_text, -1, 0, &attr,
+                                    &text, NULL, NULL);
 
-            if(!ret)
-                g_print("can't create attribute list...\n");
+            if (!ret)
+                g_print ("can't create attribute list...\n");
 
-            self->_priv->label = goc_item_new (toplevel, GOC_TYPE_TEXT, "attributes", attr, "text", text, NULL);
+            self->_priv->label =
+                goc_item_new (toplevel, GOC_TYPE_TEXT, "attributes", attr,
+                              "text", text, NULL);
 
             goc_item_lower_to_bottom (GOC_ITEM (self->_priv->label));
         }
@@ -124,16 +128,21 @@ my_flow_arrow_draw (GocItem const *item, cairo_t *cr)
         gdouble angle, x0, x1, y0, y1;
         cairo_matrix_t matrix;
 
-        g_object_get(self, "x0", &x0, "x1", &x1, "y0", &y0, "y1", &y1, NULL);
+        g_object_get (self, "x0", &x0, "x1", &x1, "y0", &y0, "y1", &y1, NULL);
 
-        angle = atan2(y1-y0, x1-x0) + M_PI;
+        angle = atan2 (y1 - y0, x1 - x0) + M_PI;
 
-        goc_item_set(self->_priv->label, "rotation", angle, "anchor", GO_ANCHOR_SOUTH, "x", x0+(x1-x0)/2, "y", y0+(y1-y0)/2, NULL);
+        goc_item_set (self->_priv->label, "rotation", angle, "anchor",
+                      GO_ANCHOR_SOUTH, "x", x0 + (x1 - x0) / 2, "y",
+                      y0 + (y1 - y0) / 2, NULL);
 
-        cairo_matrix_init_identity(&matrix);
-        cairo_matrix_translate(&matrix, self->_priv->energy_quantity/2*sin(angle), -self->_priv->energy_quantity/2*cos(angle) );
+        cairo_matrix_init_identity (&matrix);
+        cairo_matrix_translate (&matrix,
+                                self->_priv->energy_quantity / 2 * sin (angle),
+                                -self->_priv->energy_quantity / 2 *
+                                cos (angle));
 
-        goc_item_set_transform(self->_priv->label, &matrix);
+        goc_item_set_transform (self->_priv->label, &matrix);
     }
 }
 
@@ -155,8 +164,7 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
         g_param_spec_string ("label-text",
                              "label-text",
                              "Label text",
-                             NULL,
-                             G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
+                             NULL, G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
 
     obj_properties[PROP_ENERGY_QUANTITY] =
         g_param_spec_double ("energy-quantity",
@@ -176,7 +184,8 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
 static void
 notify_canvas_changed_cb (MyFlowArrow * self, GParamSpec * pspec, gpointer data)
 {
-    GOStyle *style; 
+    GOStyle *style;
+
     goc_item_lower_to_bottom (GOC_ITEM (self));
     g_object_get (G_OBJECT (self), "style", &style, NULL);
 
@@ -196,7 +205,7 @@ my_flow_arrow_init (MyFlowArrow * self)
 
     go_arrow_init_kite (self->_priv->arrow, 20, 20, 4);
 
-    g_object_set(self, "end-arrow", self->_priv->arrow, NULL);
+    g_object_set (self, "end-arrow", self->_priv->arrow, NULL);
 
     g_signal_connect (self, "notify::canvas",
                       G_CALLBACK (notify_canvas_changed_cb), NULL);
