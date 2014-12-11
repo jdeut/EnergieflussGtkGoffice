@@ -3,7 +3,7 @@
 
 #include <glib-object.h>
 #include <goffice/canvas/goc-line.h>
-
+#include "app.h"
 
 G_BEGIN_DECLS
 

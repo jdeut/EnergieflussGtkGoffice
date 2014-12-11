@@ -80,6 +80,58 @@ my_flow_arrow_get_property (GObject * object,
     }
 }
 
+static gboolean
+my_flow_arrow_button_pressed (GocItem * item, int button, double x, double y)
+{
+
+    GtkWidget *toplevel;
+
+    MyFlowArrow *self = MY_FLOW_ARROW (item);
+    MyFlowArrowClass *class = MY_FLOW_ARROW_GET_CLASS (self);
+    GocItemClass *parent_class = g_type_class_peek_parent (class);
+
+    parent_class->button_pressed (GOC_ITEM (self), button, x, y);
+
+    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (item->canvas));
+
+    if (gtk_widget_is_toplevel (toplevel)) {
+        dialog_property_editor (G_OBJECT (item), "test", GTK_WINDOW (toplevel));
+    }
+
+    g_print ("button pressed...\n");
+
+    return FALSE;
+}
+
+static gboolean
+my_flow_arrow_leave_notify (GocItem * item, double x, double y)
+{
+
+    MyFlowArrow *self = MY_FLOW_ARROW (item);
+    MyFlowArrowClass *class = MY_FLOW_ARROW_GET_CLASS (self);
+    GocItemClass *parent_class = g_type_class_peek_parent (class);
+
+    parent_class->leave_notify (GOC_ITEM (self), x, y);
+
+    g_print ("leave arrow...\n");
+
+    return FALSE;
+}
+
+static gboolean
+my_flow_arrow_enter_notify (GocItem * item, double x, double y)
+{
+
+    MyFlowArrow *self = MY_FLOW_ARROW (item);
+    MyFlowArrowClass *class = MY_FLOW_ARROW_GET_CLASS (self);
+    GocItemClass *parent_class = g_type_class_peek_parent (class);
+
+    parent_class->enter_notify (GOC_ITEM (self), x, y);
+
+    g_print ("enter arrow...\n");
+
+    return FALSE;
+}
 
 GQuark
 my_flow_arrow_error_quark (void)
@@ -104,45 +156,51 @@ my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
     if (self->_priv->label_text != NULL) {
 
         if (!GOC_IS_TEXT (self->_priv->label)) {
+            GError *err = NULL;
             gchar *text;
-            gboolean ret;
 
             PangoAttrList *attr;
 
             attr = pango_attr_list_new ();
 
-            ret =
-                pango_parse_markup (self->_priv->label_text, -1, 0, &attr,
-                                    &text, NULL, NULL);
+            pango_parse_markup (self->_priv->label_text, -1, 0, &attr,
+                                    &text, NULL, &err);
 
-            if (!ret)
-                g_print ("can't create attribute list...\n");
+            if (err != NULL) {
+                g_printerr ("Error parsing str '%s': %s\n", self->_priv->label_text, err->message);
+                g_clear_error (&err);
 
-            self->_priv->label =
-                goc_item_new (toplevel, GOC_TYPE_TEXT, "attributes", attr,
-                              "text", text, NULL);
+            } else {
 
-            goc_item_lower_to_bottom (GOC_ITEM (self->_priv->label));
+                self->_priv->label =
+                    goc_item_new (toplevel, GOC_TYPE_TEXT, "attributes", attr,
+                                  "text", text, NULL);
+
+                goc_item_lower_to_bottom (GOC_ITEM (self->_priv->label));
+            }
         }
 
-        gdouble angle, x0, x1, y0, y1;
-        cairo_matrix_t matrix;
 
-        g_object_get (self, "x0", &x0, "x1", &x1, "y0", &y0, "y1", &y1, NULL);
+        if(GOC_IS_TEXT(self->_priv->label)) {
+            gdouble angle, x0, x1, y0, y1;
+            cairo_matrix_t matrix;
 
-        angle = atan2 (y1 - y0, x1 - x0) + M_PI;
+            g_object_get (self, "x0", &x0, "x1", &x1, "y0", &y0, "y1", &y1, NULL);
 
-        goc_item_set (self->_priv->label, "rotation", angle, "anchor",
-                      GO_ANCHOR_SOUTH, "x", x0 + (x1 - x0) / 2, "y",
-                      y0 + (y1 - y0) / 2, NULL);
+            angle = atan2 (y1 - y0, x1 - x0) + M_PI;
 
-        cairo_matrix_init_identity (&matrix);
-        cairo_matrix_translate (&matrix,
-                                self->_priv->energy_quantity / 2 * sin (angle),
-                                -self->_priv->energy_quantity / 2 *
-                                cos (angle));
+            goc_item_set (self->_priv->label, "rotation", angle, "anchor",
+                          GO_ANCHOR_SOUTH, "x", x0 + (x1 - x0) / 2, "y",
+                          y0 + (y1 - y0) / 2, NULL);
 
-        goc_item_set_transform (self->_priv->label, &matrix);
+            cairo_matrix_init_identity (&matrix);
+            cairo_matrix_translate (&matrix,
+                                    self->_priv->energy_quantity / 2 * sin (angle),
+                                    -self->_priv->energy_quantity / 2 *
+                                    cos (angle));
+
+            goc_item_set_transform (self->_priv->label, &matrix);
+        }
     }
 }
 
@@ -164,14 +222,14 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
         g_param_spec_string ("label-text",
                              "label-text",
                              "Label text",
-                             NULL, G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
+                             NULL, G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
     obj_properties[PROP_ENERGY_QUANTITY] =
         g_param_spec_double ("energy-quantity",
                              "energy-quantity",
                              "The energy quantity that is transfered",
                              0, G_MAXDOUBLE, 1,
-                             G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
+                             G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
     g_object_class_install_properties (gobject_class,
                                        N_PROPERTIES, obj_properties);
@@ -179,6 +237,9 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
     g_type_class_add_private (gobject_class, sizeof (MyFlowArrowPrivate));
 
     gi_class->draw = my_flow_arrow_draw;
+    gi_class->enter_notify = my_flow_arrow_enter_notify;
+    gi_class->leave_notify = my_flow_arrow_leave_notify;
+    gi_class->button_pressed = my_flow_arrow_button_pressed;
 }
 
 static void
@@ -191,7 +252,38 @@ notify_canvas_changed_cb (MyFlowArrow * self, GParamSpec * pspec, gpointer data)
 
     style->line.width = self->_priv->energy_quantity;
     style->line.color = GO_COLOR_FROM_RGBA (0, 200, 0, 255);
+}
 
+static void
+notify_energy_quantity_changed_cb (MyFlowArrow * self, GParamSpec * pspec, gpointer data)
+{
+    GOStyle *style;
+    GtkWidget *canvas;
+
+    g_object_get (G_OBJECT (self), "style", &style, NULL);
+
+    style->line.width = self->_priv->energy_quantity;
+    canvas = GTK_WIDGET(GOC_ITEM(self)->canvas);
+
+    if(GTK_IS_WIDGET(canvas))
+        gtk_widget_queue_draw(canvas);
+}
+
+static void
+notify_label_text_changed_cb (MyFlowArrow * self, GParamSpec * pspec, gpointer data)
+{
+    GOStyle *style;
+    GtkWidget *canvas;
+
+    canvas = GTK_WIDGET(GOC_ITEM(self)->canvas);
+
+    if(G_IS_OBJECT(self->_priv->label)) {
+        g_object_unref(self->_priv->label);
+    }
+
+    if(GTK_IS_WIDGET(canvas)) {
+        gtk_widget_queue_draw(canvas);
+    }
 }
 
 static void
@@ -209,6 +301,12 @@ my_flow_arrow_init (MyFlowArrow * self)
 
     g_signal_connect (self, "notify::canvas",
                       G_CALLBACK (notify_canvas_changed_cb), NULL);
+
+    g_signal_connect (self, "notify::energy-quantity",
+                      G_CALLBACK (notify_energy_quantity_changed_cb), NULL);
+
+    g_signal_connect (self, "notify::label-text",
+                      G_CALLBACK (notify_label_text_changed_cb), NULL);
 }
 
 static void
