@@ -257,16 +257,15 @@ my_system_draw_energy_flow (MySystem * self)
         
         if( label_text != NULL ) {
 
-            gfloat angle;
+            gdouble angle;
             cairo_matrix_t matrix;
 
-            angle = atan2f(y1-y0, x1-x0) - M_PI;
+            angle = atan2(y1-y0, x1-x0) + M_PI;
+
+            goc_item_set(label_item, "rotation", angle, "anchor", GO_ANCHOR_SOUTH, "x", x0+(x1-x0)/2, "y", y0+(y1-y0)/2, NULL);
 
             cairo_matrix_init_identity(&matrix);
-            cairo_matrix_translate(&matrix, 0, -(energy_quantity/2) );
-            cairo_matrix_rotate(&matrix, angle);
-
-            goc_item_set(label_item, "anchor", GO_ANCHOR_SOUTH, "x", x0+(x1-x0)/2, "y", y0+(y1-y0)/2, NULL);
+            cairo_matrix_translate(&matrix, energy_quantity/2*sin(angle), -energy_quantity/2*cos(angle) );
 
             goc_item_set_transform(label_item, &matrix);
 
