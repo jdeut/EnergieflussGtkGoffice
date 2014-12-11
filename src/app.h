@@ -22,5 +22,6 @@ GObject *app_get_ui_element (App *, const gchar *);
 
 #include "callbacks.h"
 #include "my-system.h"
+#include "my-flowarrow.h"
 
 #endif

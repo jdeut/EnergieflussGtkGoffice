@@ -30,9 +30,10 @@ populate_canvas (App * app)
 
     my_system_add_energy_transfer_from_environment (MY_SYSTEM (item1), NULL,
                                                     ANCHOR_WEST, 10.0);
+
     my_system_add_energy_transfer_from_environment (MY_SYSTEM (item1), NULL,
                                                     ANCHOR_SOUTH, 30.0);
-    my_system_add_energy_transfer_from_environment (MY_SYSTEM (item1), NULL,
+    my_system_add_energy_transfer_from_environment (MY_SYSTEM (item1), "test",
                                                     ANCHOR_EAST, 5.0);
     my_system_add_energy_transfer_from_environment (MY_SYSTEM (item1), NULL,
                                                     ANCHOR_NORTH, 2.0);
