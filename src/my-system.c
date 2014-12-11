@@ -79,6 +79,20 @@ my_system_draw_energy_flow (MySystem * self)
     GtkTreeIter iter;
     gboolean valid;
 
+    /*double x0, y0, x1, y1;*/
+    /*goc_canvas_get_bounds(GOC_WIDGET(self)->base.canvas, &x0, &y0, &x1, &y1);*/
+
+    /*allocation.x = 0;*/
+    /*allocation.y = 0;*/
+    /*allocation.width = x1;*/
+    /*allocation.height = y1;*/
+
+    /*[>gtk_widget_set_allocation(GTK_WIDGET(GOC_WIDGET(self)->base.canvas), &allocation);<]*/
+
+    /*gtk_layout_set_size(GTK_LAYOUT(GOC_WIDGET(self)->base.canvas), x1, y1);*/
+
+    /*g_print("%f %f %f %f\n", x0, y0, x1, y1);*/
+
     toplevel = goc_canvas_get_root (GOC_WIDGET (self)->base.canvas);
 
     if (toplevel == NULL) {
@@ -256,15 +270,27 @@ notify_canvas_changed_cb (MySystem * self, GParamSpec * pspec, gpointer data)
     g_print ("canvas changed\n");
 }
 
+static gboolean
+my_system_button_pressed (GocItem * item, int button, double x, double y)
+{
+    g_print("MySystem button pressed...\n");
+}
+
 static void
 my_system_class_init (MySystemClass * klass)
 {
     GObjectClass *gobject_class;
+    GocItemClass *gi_class;
 
     gobject_class = G_OBJECT_CLASS (klass);
+    gi_class = (GocItemClass *) klass;
+
+    /*g_type_class_add_private (gobject_class, sizeof (MySystemPrivate)); */
+
     gobject_class->finalize = my_system_finalize;
     gobject_class->dispose = my_system_dispose;
-    /*g_type_class_add_private (gobject_class, sizeof (MySystemPrivate)); */
+
+    gi_class->button_pressed = my_system_button_pressed;
 }
 
 void
