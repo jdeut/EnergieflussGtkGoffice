@@ -71,7 +71,7 @@ my_system_error_quark (void)
 }
 
 void
-my_system_draw_energy_flow (GocItem const * item, cairo_t *cr)
+my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
 {
 
     MySystem *self;
@@ -80,7 +80,7 @@ my_system_draw_energy_flow (GocItem const * item, cairo_t *cr)
     GtkTreeIter iter;
     gboolean valid;
 
-    self = MY_SYSTEM(item);
+    self = MY_SYSTEM (item);
 
     MySystemClass *class = MY_SYSTEM_GET_CLASS (self);
     GocItemClass *parent_class = g_type_class_peek_parent (class);
@@ -234,13 +234,13 @@ ofbox_size_allocate_cb (GtkWidget * widget, GdkRectangle * allocation,
         if (MY_IS_SYSTEM (associate)) {
             /* draw all energy flows of those systems that transfer
              * energy to self */
-            goc_item_invalidate(GOC_ITEM(associate));
+            goc_item_invalidate (GOC_ITEM (associate));
         }
 
         tmp = tmp->next;
     }
 
-    goc_item_invalidate(GOC_ITEM(self));
+    goc_item_invalidate (GOC_ITEM (self));
 }
 
 gboolean
@@ -314,28 +314,38 @@ my_system_change_flow_arrow_direction (MySystem * self, MyFlowArrow * arrow)
 
         MyFlowArrow *iter_arrow;
         MySystem *iter_sink;
-        gint iter_from_environment;
+        gfloat iter_energy_quantity;
+        gchar *iter_label;
+        gint iter_from_environment, iter_anchor_sink;
 
 
         gtk_tree_model_get (GTK_TREE_MODEL (self->EnergyFlow), &iter,
+                            COLUMN_ENERGY_QUANTITY, &iter_energy_quantity,
+                            COLUMN_ANCHOR_SINK, &iter_anchor_sink,
                             COLUMN_ENERGY_SINK, &iter_sink,
+                            COLUMN_LABEL_TEXT, &iter_label,
                             COLUMN_FROM_ENVIRONMENT, &iter_from_environment,
                             COLUMN_ARROW, &iter_arrow, -1);
 
         if (iter_arrow == arrow) {
 
-            /*if(MY_IS_SYSTEM(iter_sink)) { */
-            /*my_system_remove_associate(self, iter_sink); */
-            /*} */
+            /* if arrow connects to systems */
+            if (MY_IS_SYSTEM (iter_sink)) {
+                my_system_add_energy_transfer_to_system (iter_sink, iter_label, iter_anchor_sink, iter_energy_quantity, self);
+                my_system_remove_associate (iter_sink, self);
+                my_system_remove_flow_arrow (self, arrow);
+            }
+            else {
 
-            if (iter_from_environment)
-                iter_from_environment = FALSE;
-            else
-                iter_from_environment = TRUE;
+                if (iter_from_environment)
+                    iter_from_environment = FALSE;
+                else
+                    iter_from_environment = TRUE;
 
-            gtk_list_store_set (self->EnergyFlow, &iter,
-                                COLUMN_FROM_ENVIRONMENT, iter_from_environment,
-                                -1);
+                gtk_list_store_set (self->EnergyFlow, &iter,
+                                    COLUMN_FROM_ENVIRONMENT,
+                                    iter_from_environment, -1);
+            }
 
             break;
         }
@@ -344,8 +354,8 @@ my_system_change_flow_arrow_direction (MySystem * self, MyFlowArrow * arrow)
             gtk_tree_model_iter_next (GTK_TREE_MODEL (self->EnergyFlow), &iter);
     }
 
-    goc_item_invalidate(GOC_ITEM(self));
-    goc_item_invalidate(GOC_ITEM(arrow));
+    goc_item_invalidate (GOC_ITEM (self));
+    goc_item_invalidate (GOC_ITEM (arrow));
 }
 
 void
