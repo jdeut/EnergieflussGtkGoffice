@@ -167,19 +167,23 @@ my_system_draw_energy_flow (GocItem const * item, cairo_t *cr)
         else if (!from_environment) {
 
             if (anchor_source == ANCHOR_WEST) {
-                x1 = allocation.x + allocation.width + length;
+                x0 = allocation.x + allocation.width;
+                x1 = x0 + length;
                 y1 = y0;
             }
             else if (anchor_source == ANCHOR_EAST) {
+                x0 = allocation.x;
                 x1 = allocation.x - length;
                 y1 = y0;
             }
             else if (anchor_source == ANCHOR_SOUTH) {
                 x1 = x0;
+                y0 = allocation.y + allocation.height;
                 y1 = allocation.y + allocation.height + length;
             }
             else if (anchor_source == ANCHOR_NORTH) {
                 x1 = x0;
+                y0 = allocation.y;
                 y1 = allocation.y - length;
             }
         }
