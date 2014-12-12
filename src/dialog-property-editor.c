@@ -15,11 +15,19 @@ dialog_property_editor_response_cb (GtkWidget * dialog,
 }
 
 void my_flow_button_arrow_orientation_cb  (GtkButton * button, MyFlowArrow * flowarrow) {
+
     MySystem *system;
+    GtkDialog *dialog;
 
     system = my_flow_arrow_get_linked_system (flowarrow);
 
     my_system_change_flow_arrow_direction (system, flowarrow);
+
+    dialog = (GtkDialog *) gtk_widget_get_toplevel(GTK_WIDGET(button));
+
+    if(GTK_IS_DIALOG(dialog)) {
+        gtk_widget_destroy(GTK_WIDGET(dialog));
+    }
 }
 
 void
