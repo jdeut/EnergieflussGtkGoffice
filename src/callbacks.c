@@ -147,7 +147,7 @@ button_press_cb (GtkWidget * widget, GdkEventButton * event, App * app)
 }
 
 void
-button_add_clicked_cb (GtkWidget * widget, App * app)
+button_add_system_clicked_cb (GtkWidget * widget, App * app)
 {
 
     GocGroup *top_level_group;
