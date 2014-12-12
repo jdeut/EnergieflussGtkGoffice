@@ -3,8 +3,6 @@
 
 #include <glib-object.h>
 #include <goffice/canvas/goc-widget.h>
-#include "my-flowarrow.h"
-
 
 G_BEGIN_DECLS
 
@@ -35,6 +33,10 @@ struct _MySystemClass
     GocWidgetClass parent_class;
 };
 
+
+#include "my-flowarrow.h"
+
+
 GType my_system_get_type (void);
 
 enum
@@ -54,8 +56,14 @@ gboolean
 my_system_add_energy_transfer_to_environment (MySystem * self, gchar * label, gint anchor_source, gfloat quantity);
 gboolean
 my_system_add_energy_transfer_from_environment (MySystem * self, gchar * label, gint anchor_source, gfloat quantity);
-void my_system_add_associate (MySystem * self, MySystem * associate);
-gboolean my_system_draw_energy_flow(MySystem *self);
+gboolean
+my_system_remove_flow_arrow (MySystem * self, MyFlowArrow * arrow);
+void 
+my_system_add_associate (MySystem * self, MySystem * associate);
+void
+my_system_remove_associate (MySystem * self, MySystem * associate);
+gboolean 
+my_system_draw_energy_flow(MySystem *self);
 
 G_END_DECLS
 

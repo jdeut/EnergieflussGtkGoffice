@@ -6,6 +6,7 @@ enum
     /* property entries */
     PROP_LABEL_TEXT,
     PROP_ENERGY_QUANTITY,
+    PROP_LINKED_SYSTEM,
     N_PROPERTIES
 };
 
@@ -22,6 +23,7 @@ struct _MyFlowArrowPrivate
     gchar *label_text;
     GOArrow *arrow;
     GocItem *label;
+    MySystem *linked_system;
     gfloat energy_quantity;
     /* private members go here */
 };
@@ -46,6 +48,12 @@ my_flow_arrow_set_property (GObject * object,
             self->_priv->label_text = g_value_dup_string (value);
             break;
 
+        case PROP_LINKED_SYSTEM:{
+                MySystem *linked_system =
+                    MY_SYSTEM (g_value_get_object (value));
+                my_flow_arrow_set_linked_system (self, linked_system);
+                return;
+            }
         case PROP_ENERGY_QUANTITY:
             self->_priv->energy_quantity = g_value_get_double (value);
             break;
@@ -68,6 +76,9 @@ my_flow_arrow_get_property (GObject * object,
         case PROP_LABEL_TEXT:
             g_value_set_string (value, self->_priv->label_text);
             break;
+        case PROP_LINKED_SYSTEM:
+            g_value_set_object (value, self->_priv->linked_system);
+            break;
 
         case PROP_ENERGY_QUANTITY:
             g_value_set_double (value, self->_priv->energy_quantity);
@@ -78,6 +89,25 @@ my_flow_arrow_get_property (GObject * object,
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
     }
+}
+
+MySystem *
+my_flow_arrow_get_linked_system (MyFlowArrow * self)
+{
+
+    g_return_if_fail (MY_IS_FLOW_ARROW (self));
+
+    return self->_priv->linked_system;
+}
+
+void
+my_flow_arrow_set_linked_system (MyFlowArrow * self, MySystem * system)
+{
+
+    g_return_if_fail (MY_IS_SYSTEM (system));
+    g_return_if_fail (MY_IS_FLOW_ARROW (self));
+
+    self->_priv->linked_system = system;
 }
 
 static gboolean
@@ -164,13 +194,15 @@ my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
             attr = pango_attr_list_new ();
 
             pango_parse_markup (self->_priv->label_text, -1, 0, &attr,
-                                    &text, NULL, &err);
+                                &text, NULL, &err);
 
             if (err != NULL) {
-                g_printerr ("Error parsing str '%s': %s\n", self->_priv->label_text, err->message);
+                g_printerr ("Error parsing str '%s': %s\n",
+                            self->_priv->label_text, err->message);
                 g_clear_error (&err);
 
-            } else {
+            }
+            else {
 
                 self->_priv->label =
                     goc_item_new (toplevel, GOC_TYPE_TEXT, "attributes", attr,
@@ -181,11 +213,12 @@ my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
         }
 
 
-        if(GOC_IS_TEXT(self->_priv->label)) {
+        if (GOC_IS_TEXT (self->_priv->label)) {
             gdouble angle, x0, x1, y0, y1;
             cairo_matrix_t matrix;
 
-            g_object_get (self, "x0", &x0, "x1", &x1, "y0", &y0, "y1", &y1, NULL);
+            g_object_get (self, "x0", &x0, "x1", &x1, "y0", &y0, "y1", &y1,
+                          NULL);
 
             angle = atan2 (y1 - y0, x1 - x0) + M_PI;
 
@@ -195,7 +228,8 @@ my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
 
             cairo_matrix_init_identity (&matrix);
             cairo_matrix_translate (&matrix,
-                                    self->_priv->energy_quantity / 2 * sin (angle),
+                                    self->_priv->energy_quantity / 2 *
+                                    sin (angle),
                                     -self->_priv->energy_quantity / 2 *
                                     cos (angle));
 
@@ -231,6 +265,12 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
                              0, G_MAXDOUBLE, 1,
                              G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
+    obj_properties[PROP_LINKED_SYSTEM] =
+        g_param_spec_object ("linked-system",
+                             "linked system",
+                             "A pointer to the linked system",
+                             MY_TYPE_SYSTEM, G_PARAM_READWRITE);
+
     g_object_class_install_properties (gobject_class,
                                        N_PROPERTIES, obj_properties);
 
@@ -255,7 +295,8 @@ notify_canvas_changed_cb (MyFlowArrow * self, GParamSpec * pspec, gpointer data)
 }
 
 static void
-notify_energy_quantity_changed_cb (MyFlowArrow * self, GParamSpec * pspec, gpointer data)
+notify_energy_quantity_changed_cb (MyFlowArrow * self, GParamSpec * pspec,
+                                   gpointer data)
 {
     GOStyle *style;
     GtkWidget *canvas;
@@ -263,26 +304,27 @@ notify_energy_quantity_changed_cb (MyFlowArrow * self, GParamSpec * pspec, gpoin
     g_object_get (G_OBJECT (self), "style", &style, NULL);
 
     style->line.width = self->_priv->energy_quantity;
-    canvas = GTK_WIDGET(GOC_ITEM(self)->canvas);
+    canvas = GTK_WIDGET (GOC_ITEM (self)->canvas);
 
-    if(GTK_IS_WIDGET(canvas))
-        gtk_widget_queue_draw(canvas);
+    if (GTK_IS_WIDGET (canvas))
+        gtk_widget_queue_draw (canvas);
 }
 
 static void
-notify_label_text_changed_cb (MyFlowArrow * self, GParamSpec * pspec, gpointer data)
+notify_label_text_changed_cb (MyFlowArrow * self, GParamSpec * pspec,
+                              gpointer data)
 {
     GOStyle *style;
     GtkWidget *canvas;
 
-    canvas = GTK_WIDGET(GOC_ITEM(self)->canvas);
+    canvas = GTK_WIDGET (GOC_ITEM (self)->canvas);
 
-    if(G_IS_OBJECT(self->_priv->label)) {
-        g_object_unref(self->_priv->label);
+    if (G_IS_OBJECT (self->_priv->label)) {
+        g_object_unref (self->_priv->label);
     }
 
-    if(GTK_IS_WIDGET(canvas)) {
-        gtk_widget_queue_draw(canvas);
+    if (GTK_IS_WIDGET (canvas)) {
+        gtk_widget_queue_draw (canvas);
     }
 }
 
@@ -307,6 +349,24 @@ my_flow_arrow_init (MyFlowArrow * self)
 
     g_signal_connect (self, "notify::label-text",
                       G_CALLBACK (notify_label_text_changed_cb), NULL);
+}
+
+void
+my_flow_arrow_destroy (MyFlowArrow * self)
+{
+
+    g_return_if_fail (MY_IS_FLOW_ARROW (self));
+
+    g_signal_handlers_disconnect_by_func(self, notify_canvas_changed_cb, NULL);
+
+    if(GOC_IS_TEXT(self->_priv->label)) {
+        goc_item_destroy (GOC_ITEM (self->_priv->label));
+    }
+
+    g_free (self->_priv->arrow);
+
+    g_object_run_dispose (G_OBJECT (self));
+    g_object_unref (self);
 }
 
 static void

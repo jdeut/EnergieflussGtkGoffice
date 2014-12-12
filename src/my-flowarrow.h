@@ -3,7 +3,6 @@
 
 #include <glib-object.h>
 #include <goffice/canvas/goc-line.h>
-#include "app.h"
 
 G_BEGIN_DECLS
 
@@ -35,10 +34,19 @@ struct _MyFlowArrowClass
 
 };
 
+
+#include "my-system.h"
+
+
 GType my_flow_arrow_get_type (void);
 
 /* fill in public functions */
 MyFlowArrow *my_flow_arrow_new (void);
+
+void
+my_flow_arrow_set_linked_system (MyFlowArrow * self, MySystem * system);
+MySystem *
+my_flow_arrow_get_linked_system (MyFlowArrow * self);
 
 G_END_DECLS
 
