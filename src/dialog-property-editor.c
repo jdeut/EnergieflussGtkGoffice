@@ -18,10 +18,17 @@ void
 my_flow_arrow_destroy_clicked_cb (GtkButton * button, MyFlowArrow * flowarrow)
 {
     MySystem *system;
+    GtkDialog *dialog;
 
     system = my_flow_arrow_get_linked_system (flowarrow);
 
     my_system_remove_flow_arrow (system, flowarrow);
+
+    dialog = (GtkDialog *) gtk_widget_get_toplevel(GTK_WIDGET(button));
+
+    if(GTK_IS_DIALOG(dialog)) {
+        gtk_widget_destroy(GTK_WIDGET(dialog));
+    }
 }
 
 void
