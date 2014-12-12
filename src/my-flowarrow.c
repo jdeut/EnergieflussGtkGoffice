@@ -220,7 +220,11 @@ my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
             g_object_get (self, "x0", &x0, "x1", &x1, "y0", &y0, "y1", &y1,
                           NULL);
 
-            angle = atan2 (y1 - y0, x1 - x0) + M_PI;
+            angle = atan2 (y1 - y0, x1 - x0);
+
+            if(angle < 0) {
+                angle += 2*M_PI;
+            }
 
             goc_item_set (self->_priv->label, "rotation", angle, "anchor",
                           GO_ANCHOR_SOUTH, "x", x0 + (x1 - x0) / 2, "y",
