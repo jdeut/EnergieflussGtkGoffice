@@ -146,7 +146,7 @@ button_press_cb (GtkWidget * widget, GdkEventButton * event, App * app)
     }
 }
 
-void button_add_arrow_clicked_cb (GtkWidget * widget, App * app) {
+G_MODULE_EXPORT void button_add_arrow_clicked_cb (GtkWidget * widget, App * app) {
 
     guint contextid;
     gchar *msg = {"Message"};
@@ -158,7 +158,7 @@ void button_add_arrow_clicked_cb (GtkWidget * widget, App * app) {
     gtk_statusbar_push(statusbar1, contextid, msg);
 }
 
-void
+G_MODULE_EXPORT void
 button_add_system_clicked_cb (GtkWidget * widget, App * app)
 {
 
