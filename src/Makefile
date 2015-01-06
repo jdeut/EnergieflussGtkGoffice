@@ -1,16 +1,30 @@
-SYS:=$(shell uname) 
-PKGS=gtk+-3.0 gmodule-2.0
-CFLAGS=-ggdb `pkg-config --cflags $(PKGS)`
-CC=gcc
-LDLIBS=-lm `pkg-config --libs $(PKGS)`
-FILES_FOR_BUNDLE=main.exe style.css ui.glade dialog-property-editor.ui
+DEV=1
+
 CFILES=$(shell find . -iname "*.c")
 OBJ=$(patsubst %.c, %.o, $(CFILES))
 
+SYS:=$(shell uname) 
+
+CC=gcc
+PKGS=gtk+-3.0 gmodule-2.0 librsvg-2.0
+PKGS_LINUX=$(PKGS) libgsf-1
+CFLAGS=`pkg-config --cflags $(PKGS_LINUX)`
+LDLIBS=-lm `pkg-config --libs $(PKGS_LINUX)` 
+
+ifeq ($(DEV), 1)
+  CFLAGS:=-ggdb -I$$HOME/Src/goffice $(CFLAGS)
+  LDLIBS:=$$HOME/Src/goffice/goffice/.libs/libgoffice-0.10.a $(LDLIBS)
+else
+  PKGS:=libgoffice-0.10 $(PKGS)
+endif
+
+FILES_FOR_BUNDLE=main.exe style.css ui.glade dialog-property-editor.ui
+
 # if system is win32 (msys2)
 ifneq (, $(findstring MSYS, $(SYS)))
-  CFLAGS=-ggdb -I../../goffice/ `pkg-config --cflags $(PKGS) libgsf-win32-1`
-  LDLIBS=-mwindows -L../../goffice/goffice -lgoffice-0.10 -L/mingw64/lib `pkg-config --libs $(PKGS) libgsf-win32-1 librsvg-2.0` -lz
+  PKGS=$(PKGS) libgsf-win32-1 
+  CFLAGS=-ggdb -I../../goffice/ `pkg-config --cflags $(PKGS)`
+  LDLIBS=-mwindows -L../../goffice/goffice -lgoffice-0.10 -L/mingw64/lib `pkg-config --libs $(PKGS)` -lz
 endif
 
 main: $(OBJ)
