@@ -23,6 +23,7 @@ struct _MyFlowArrowPrivate
     gchar *label_text;
     GOArrow *arrow;
     GocItem *label;
+    GocItem *drag_point;
     MySystem *linked_system;
     gfloat energy_quantity;
     /* private members go here */
@@ -143,6 +144,10 @@ my_flow_arrow_leave_notify (GocItem * item, double x, double y)
 
     parent_class->leave_notify (GOC_ITEM (self), x, y);
 
+    if(GOC_IS_ITEM(self->_priv->drag_point)) {
+        goc_item_hide(self->_priv->drag_point);
+    }
+
     g_print ("leave arrow...\n");
 
     return FALSE;
@@ -151,12 +156,26 @@ my_flow_arrow_leave_notify (GocItem * item, double x, double y)
 static gboolean
 my_flow_arrow_enter_notify (GocItem * item, double x, double y)
 {
+    GocGroup *toplevel = NULL;
+    gdouble x1, y1;
 
     MyFlowArrow *self = MY_FLOW_ARROW (item);
     MyFlowArrowClass *class = MY_FLOW_ARROW_GET_CLASS (self);
     GocItemClass *parent_class = g_type_class_peek_parent (class);
 
     parent_class->enter_notify (GOC_ITEM (self), x, y);
+
+    g_object_get (self, "x1", &x1, "y1", &y1, NULL);
+
+    toplevel = goc_canvas_get_root (item->canvas);
+
+    if(!GOC_IS_ITEM(self->_priv->drag_point)) {
+        self->_priv->drag_point = goc_item_new(toplevel, GOC_TYPE_CIRCLE, "x", x1, "y", y1, "radius", 5.0, NULL);
+    }
+    else {
+        g_object_set(self->_priv->drag_point, "x", x1, "y", y1, NULL);
+        goc_item_show(self->_priv->drag_point);
+    }
 
     g_print ("enter arrow...\n");
 
