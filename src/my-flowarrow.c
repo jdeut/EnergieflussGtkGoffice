@@ -240,6 +240,8 @@ my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
             goc_item_set_transform (self->_priv->label, &matrix);
         }
     }
+
+    gtk_widget_queue_draw(GTK_WIDGET(item->canvas));
 }
 
 static void
