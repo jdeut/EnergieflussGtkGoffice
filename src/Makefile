@@ -22,7 +22,8 @@ FILES_FOR_BUNDLE=main.exe style.css ui.glade dialog-property-editor.ui
 
 # if system is win32 (msys2)
 ifneq (, $(findstring MSYS, $(SYS)))
-  PKGS=$(PKGS) libgsf-win32-1 
+  # the order matters since libgsf-win32-1 is a static library
+  PKGS:=libgsf-win32-1 $(PKGS)
   CFLAGS=-ggdb -I../../goffice/ `pkg-config --cflags $(PKGS)`
   LDLIBS=-mwindows -L../../goffice/goffice -lgoffice-0.10 -L/mingw64/lib `pkg-config --libs $(PKGS)` -lz
 endif
