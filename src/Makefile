@@ -1,4 +1,9 @@
-DEV=1
+DEV=0
+
+
+DOC_MODULE=energie
+DOC_DIR=../docs/reference/$(DOC_MODULE)
+
 
 CFILES=$(shell find . -iname "*.c")
 OBJ=$(patsubst %.c, %.o, $(CFILES))
@@ -39,6 +44,14 @@ ifneq (, $(findstring MSYS, $(SYS)))
 	  mkdir -p bundle/share/icons/Adwaita
 	  cp -r /mingw64/share/icons/Adwaita/* bundle/share/icons/Adwaita
 endif
+
+doc:
+	gtkdoc-scan --module=$(DOC_MODULE) --source-dir=system
+	CFLAGS="$(CFLAGS)" LDFLAGS="$(LDLIBS) system/my-flowarrow.o system/my-system.o dialog-property-editor.o" gtkdoc-scangobj --module=$(DOC_MODULE)
+	gtkdoc-mkdb --module=$(DOC_MODULE) --output-format=xml
+	mkdir -p $(DOC_DIR)
+	cd $(DOC_DIR) && gtkdoc-mkhtml $(DOC_MODULE) ../../../src/$(DOC_MODULE)-docs.xml
+	gtkdoc-fixxref --module=$(DOC_MODULE) --module-dir=$(DOC_DIR)
 
 clean:
 	rm -f $(OBJ) main
