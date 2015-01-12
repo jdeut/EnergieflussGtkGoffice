@@ -46,12 +46,15 @@ ifneq (, $(findstring MSYS, $(SYS)))
 endif
 
 doc:
-	gtkdoc-scan --module=$(DOC_MODULE) --source-dir=system
-	CFLAGS="$(CFLAGS)" LDFLAGS="$(LDLIBS) system/my-flowarrow.o system/my-system.o dialog-property-editor.o" gtkdoc-scangobj --module=$(DOC_MODULE)
-	gtkdoc-mkdb --module=$(DOC_MODULE) --output-format=xml
+	gtkdoc-scan --module=$(DOC_MODULE) --output-dir=.tmp --source-dir=system
+	CFLAGS="$(CFLAGS)" LDFLAGS="$(LDLIBS) system/my-flowarrow.o system/my-system.o dialog-property-editor.o" gtkdoc-scangobj --module=$(DOC_MODULE) --output-dir=.tmp 
+	cd .tmp && gtkdoc-mkdb --module=$(DOC_MODULE) --output-format=xml 
+
 	mkdir -p $(DOC_DIR)
-	cd $(DOC_DIR) && gtkdoc-mkhtml $(DOC_MODULE) ../../../src/$(DOC_MODULE)-docs.xml
-	gtkdoc-fixxref --module=$(DOC_MODULE) --module-dir=$(DOC_DIR)
+	echo $$PWD
+	cd $(DOC_DIR) && gtkdoc-mkhtml $(DOC_MODULE) ../../../src/.tmp/$(DOC_MODULE)-docs.xml
+	cd .tmp && gtkdoc-fixxref --module=$(DOC_MODULE) --module-dir=../$(DOC_DIR)
+	rm -rf .tmp
 
 clean:
 	rm -f $(OBJ) main
