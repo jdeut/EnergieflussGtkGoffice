@@ -159,15 +159,12 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
 
             if(-M_PI/4 < alpha && alpha <= M_PI/4) {
                 anchor_sink = ANCHOR_WEST;
-                g_print("west\n");
             }
             else if(M_PI/4 < alpha && alpha <= 3*M_PI/4) {
                 anchor_sink = ANCHOR_NORTH;
-                g_print("north\n");
             }
             else if(3*M_PI/4 < alpha && alpha <= 5*M_PI/4) {
                 anchor_sink = ANCHOR_EAST;
-                g_print("east\n");
             }
 
             if (anchor_sink == ANCHOR_WEST) {
