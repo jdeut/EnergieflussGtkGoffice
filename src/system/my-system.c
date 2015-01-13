@@ -143,22 +143,47 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
         gdouble length = allocation.width * 0.66;
 
         /* if arrow depicts transfer to other system */
-        if (MY_IS_SYSTEM (sink)) {
+        if (MY_IS_SYSTEM (sink)) {  
 
+            gdouble dx, dy, alpha;
             GtkAllocation alloc_sink;
 
             gtk_widget_get_allocation (GOC_WIDGET (sink)->ofbox, &alloc_sink);
+            
+            dx = alloc_sink.x - allocation.x;
+            dy = alloc_sink.y - allocation.y;
+
+            alpha = atan2(dy, dx);
+
+            anchor_sink = ANCHOR_SOUTH;
+
+            if(-M_PI/4 < alpha && alpha <= M_PI/4) {
+                anchor_sink = ANCHOR_WEST;
+                g_print("west\n");
+            }
+            else if(M_PI/4 < alpha && alpha <= 3*M_PI/4) {
+                anchor_sink = ANCHOR_NORTH;
+                g_print("north\n");
+            }
+            else if(3*M_PI/4 < alpha && alpha <= 5*M_PI/4) {
+                anchor_sink = ANCHOR_EAST;
+                g_print("east\n");
+            }
 
             if (anchor_sink == ANCHOR_WEST) {
-                x1 = alloc_sink.x + alloc_sink.width;
+                x1 = alloc_sink.x;
                 y1 = alloc_sink.y + alloc_sink.height / 2;
             }
             else if (anchor_sink == ANCHOR_SOUTH) {
                 x1 = alloc_sink.x + alloc_sink.width / 2;
                 y1 = alloc_sink.y + alloc_sink.height;
             }
+            else if (anchor_sink == ANCHOR_NORTH) {
+                x1 = alloc_sink.x + alloc_sink.width / 2;
+                y1 = alloc_sink.y;
+            }
             else if (anchor_sink == ANCHOR_EAST) {
-                x1 = alloc_sink.x;
+                x1 = alloc_sink.x + alloc_sink.width;
                 y1 = alloc_sink.y + alloc_sink.height / 2;
             }
 
