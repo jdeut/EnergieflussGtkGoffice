@@ -368,6 +368,10 @@ my_flow_arrow_destroy (MyFlowArrow * self)
         goc_item_destroy (GOC_ITEM (self->_priv->label));
     }
 
+    if(MY_IS_DRAG_POINT(self->_priv->drag_point)) {
+        goc_item_destroy (GOC_ITEM (self->_priv->drag_point));
+    }
+
     g_free (self->_priv->arrow);
 
     g_object_run_dispose (G_OBJECT (self));
