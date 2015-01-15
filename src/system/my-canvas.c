@@ -31,9 +31,36 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
                              gpointer data)
 {
     MyCanvas *self = MY_CANVAS (canvas);
+    MySystem *linked_system;
+    MyFlowArrow *arrow;
+    GocItem *item;
 
     if (MY_IS_DRAG_POINT (self->_priv->active_item)) {
+
+        gdouble d =
+            goc_item_distance (GOC_ITEM (self->group_systems), event->button.x, event->button.y, &item);
+
+        g_object_get(self->_priv->active_item, "linked-item", &arrow, NULL);
+
+        if(MY_IS_FLOW_ARROW(arrow)) {
+
+            g_object_get(arrow, "linked-system", &linked_system, NULL);
+
+            /* only do it if drag point is over a system but not over the system the corresponding arrow is linked with*/
+
+            if (d == 0. && MY_IS_SYSTEM (item) && MY_SYSTEM(linked_system) != MY_SYSTEM(item)) {
+                
+                my_system_change_sink_of_arrow(linked_system, arrow, MY_SYSTEM(item));
+
+            } else {
+                g_print("sd\n");
+
+                my_system_change_sink_of_arrow(linked_system, arrow, NULL);
+            }
+        }
+
         my_drag_point_end_dragging (MY_DRAG_POINT (self->_priv->active_item));
+
     }
 
     self->_priv->active_item = NULL;
@@ -43,26 +70,6 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
 
 gboolean
 my_canvas_drag_drag_point(MyCanvas *self, gdouble x, gdouble y)  {
-
-    MySystem *linked_system;
-    MyFlowArrow *arrow;
-    GocItem *item;
-
-    gdouble d =
-        goc_item_distance (GOC_ITEM (self->group_systems), x, y, &item);
-
-    g_object_get(self->_priv->active_item, "linked-item", &arrow, NULL);
-
-    if(MY_IS_FLOW_ARROW(arrow)) {
-
-        g_object_get(arrow, "linked-system", &linked_system, NULL);
-
-        /* only do it if drag point is over a system but not over the system the corresponding arrow is linked with*/
-
-        if (d == 0. && MY_IS_SYSTEM (item) && MY_SYSTEM(linked_system) != MY_SYSTEM(item)) {
-            g_print ("kok\n");
-        }
-    }
 
     goc_item_set (self->_priv->active_item, "x", x, "y", y, NULL);
 }

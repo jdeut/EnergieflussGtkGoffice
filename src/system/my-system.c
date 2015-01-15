@@ -456,6 +456,44 @@ my_system_remove_flow_arrow (MySystem * self, MyFlowArrow * arrow)
     }
 }
 
+
+gboolean
+my_system_change_sink_of_arrow (MySystem * self, MyFlowArrow * arrow,
+                                MySystem * sink)
+{
+    gboolean valid;
+    GtkTreeIter iter;
+
+    g_return_val_if_fail (MY_IS_SYSTEM (self), FALSE);
+    g_return_val_if_fail (MY_IS_SYSTEM (sink) || sink == NULL, FALSE);
+    g_return_val_if_fail (MY_IS_FLOW_ARROW (arrow), FALSE);
+
+    valid =
+        gtk_tree_model_get_iter_first (GTK_TREE_MODEL (self->EnergyFlow),
+                                       &iter);
+
+    /* iterate through all arrows associated with self */
+    while (valid) {
+
+        MyFlowArrow *iter_arrow;
+
+        gtk_tree_model_get (GTK_TREE_MODEL (self->EnergyFlow), &iter,
+                            COLUMN_ARROW, &iter_arrow, -1);
+
+        if(iter_arrow == arrow) {
+            g_print("laksfn\n");
+
+            gtk_list_store_set (self->EnergyFlow, &iter,
+                                COLUMN_ENERGY_SINK, sink, -1);
+        }
+
+        valid =
+            gtk_tree_model_iter_next (GTK_TREE_MODEL (self->EnergyFlow), &iter);
+    }
+
+    return TRUE;
+}
+
 gboolean
 my_system_add_energy_transfer_to_system (MySystem * self, gchar * label_text,
                                          gint anchor_sink, gfloat quantity,
