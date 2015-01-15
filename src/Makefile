@@ -3,6 +3,7 @@ DEV=0
 
 DOC_MODULE=energie
 DOC_DIR=../docs/reference/$(DOC_MODULE)
+DOC_OBJ=$(shell find system/ -iname "*.o") dialog-property-editor.o
 
 
 CFILES=$(shell find . -iname "*.c")
@@ -47,7 +48,7 @@ endif
 
 doc:
 	gtkdoc-scan --module=$(DOC_MODULE) --output-dir=.tmp --source-dir=system
-	CFLAGS="$(CFLAGS)" LDFLAGS="$(LDLIBS) system/my-flowarrow.o system/my-system.o dialog-property-editor.o" gtkdoc-scangobj --module=$(DOC_MODULE) --output-dir=.tmp 
+	CFLAGS="$(CFLAGS)" LDFLAGS="$(LDLIBS) $(DOC_OBJ)" gtkdoc-scangobj --module=$(DOC_MODULE) --output-dir=.tmp 
 	cd .tmp && gtkdoc-mkdb --module=$(DOC_MODULE) --output-format=xml 
 
 	mkdir -p $(DOC_DIR)
