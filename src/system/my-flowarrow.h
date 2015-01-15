@@ -4,6 +4,8 @@
 #include <glib-object.h>
 #include <goffice/canvas/goc-line.h>
 
+#include "my-dragpoint.h"
+
 G_BEGIN_DECLS
 
 #define MY_TYPE_FLOW_ARROW             (my_flow_arrow_get_type())
@@ -41,12 +43,17 @@ struct _MyFlowArrowClass
 GType my_flow_arrow_get_type (void);
 
 /* fill in public functions */
-MyFlowArrow *my_flow_arrow_new (void);
-
 void
 my_flow_arrow_set_linked_system (MyFlowArrow * self, MySystem * system);
+
 MySystem *
 my_flow_arrow_get_linked_system (MyFlowArrow * self);
+
+void
+my_flow_arrow_show_drag_points (MyFlowArrow * self);
+
+void
+my_flow_arrow_hide_drag_points (MyFlowArrow * self);
 
 G_END_DECLS
 

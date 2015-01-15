@@ -390,6 +390,7 @@ my_system_remove_associate (MySystem * self, MySystem * associate)
         g_slist_remove (self->AssociatedSystems, associate);
 }
 
+
 void
 my_system_add_associate (MySystem * self, MySystem * associate)
 {

@@ -9,10 +9,12 @@
 #define GET_UI_ELEMENT(TYPE, ELEMENT)   TYPE *ELEMENT = (TYPE *) \
                                                 app_get_ui_element(app, #ELEMENT);
 
+#include "system/my-canvas.h"
+
 typedef struct app_
 {
     GSList *objects;
-    GocCanvas *canvas;
+    MyCanvas *canvas;
     GocItem *active_item;
 } App;
 

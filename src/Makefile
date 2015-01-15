@@ -13,8 +13,8 @@ SYS:=$(shell uname)
 CC=gcc
 PKGS=gtk+-3.0 gmodule-2.0 librsvg-2.0
 PKGS_LINUX=$(PKGS) libgsf-1
-CFLAGS=`pkg-config --cflags $(PKGS_LINUX)`
-LDLIBS=-lm `pkg-config --libs $(PKGS_LINUX)` 
+CFLAGS=-ggdb `pkg-config --cflags $(PKGS_LINUX)`
+LDLIBS=-ggdb -lm `pkg-config --libs $(PKGS_LINUX)` 
 
 ifeq ($(DEV), 1)
   CFLAGS:=-ggdb -I$$HOME/Src/goffice $(CFLAGS)

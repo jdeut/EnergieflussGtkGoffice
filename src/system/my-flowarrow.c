@@ -23,7 +23,7 @@ struct _MyFlowArrowPrivate
     gchar *label_text;
     GOArrow *arrow;
     GocItem *label;
-    GocItem *drag_point;
+    MyDragPoint *drag_point;
     MySystem *linked_system;
     gfloat energy_quantity;
     /* private members go here */
@@ -92,25 +92,6 @@ my_flow_arrow_get_property (GObject * object,
     }
 }
 
-MySystem *
-my_flow_arrow_get_linked_system (MyFlowArrow * self)
-{
-
-    g_return_if_fail (MY_IS_FLOW_ARROW (self));
-
-    return self->_priv->linked_system;
-}
-
-void
-my_flow_arrow_set_linked_system (MyFlowArrow * self, MySystem * system)
-{
-
-    g_return_if_fail (MY_IS_SYSTEM (system));
-    g_return_if_fail (MY_IS_FLOW_ARROW (self));
-
-    self->_priv->linked_system = system;
-}
-
 static gboolean
 my_flow_arrow_button_pressed (GocItem * item, int button, double x, double y)
 {
@@ -144,10 +125,6 @@ my_flow_arrow_leave_notify (GocItem * item, double x, double y)
 
     parent_class->leave_notify (GOC_ITEM (self), x, y);
 
-    if(GOC_IS_ITEM(self->_priv->drag_point)) {
-        goc_item_hide(self->_priv->drag_point);
-    }
-
     g_print ("leave arrow...\n");
 
     return FALSE;
@@ -156,26 +133,12 @@ my_flow_arrow_leave_notify (GocItem * item, double x, double y)
 static gboolean
 my_flow_arrow_enter_notify (GocItem * item, double x, double y)
 {
-    GocGroup *toplevel = NULL;
-    gdouble x1, y1;
 
     MyFlowArrow *self = MY_FLOW_ARROW (item);
     MyFlowArrowClass *class = MY_FLOW_ARROW_GET_CLASS (self);
     GocItemClass *parent_class = g_type_class_peek_parent (class);
 
     parent_class->enter_notify (GOC_ITEM (self), x, y);
-
-    g_object_get (self, "x1", &x1, "y1", &y1, NULL);
-
-    toplevel = goc_canvas_get_root (item->canvas);
-
-    if(!GOC_IS_ITEM(self->_priv->drag_point)) {
-        self->_priv->drag_point = goc_item_new(toplevel, GOC_TYPE_CIRCLE, "x", x1, "y", y1, "radius", 5.0, NULL);
-    }
-    else {
-        g_object_set(self->_priv->drag_point, "x", x1, "y", y1, NULL);
-        goc_item_show(self->_priv->drag_point);
-    }
 
     g_print ("enter arrow...\n");
 
@@ -192,6 +155,7 @@ void
 my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
 {
     GocGroup *toplevel = NULL;
+    gdouble x0, x1, y0, y1;
     MyFlowArrow *self = MY_FLOW_ARROW (item);
 
     MyFlowArrowClass *class = MY_FLOW_ARROW_GET_CLASS (self);
@@ -201,6 +165,9 @@ my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
 
     /* chaining up */
     parent_class->draw (GOC_ITEM (self), cr);
+
+    g_object_get (self, "x0", &x0, "x1", &x1, "y0", &y0, "y1", &y1,
+                  NULL);
 
     if (self->_priv->label_text != NULL) {
 
@@ -233,7 +200,7 @@ my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
 
 
         if (GOC_IS_TEXT (self->_priv->label)) {
-            gdouble angle, x0, x1, y0, y1;
+            gdouble angle;
             cairo_matrix_t matrix;
 
             g_object_get (self, "x0", &x0, "x1", &x1, "y0", &y0, "y1", &y1,
@@ -241,8 +208,8 @@ my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
 
             angle = atan2 (y1 - y0, x1 - x0);
 
-            if(angle < 0) {
-                angle += 2*M_PI;
+            if (angle < 0) {
+                angle += 2 * M_PI;
             }
 
             goc_item_set (self->_priv->label, "rotation", angle, "anchor",
@@ -260,7 +227,11 @@ my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
         }
     }
 
-    gtk_widget_queue_draw(GTK_WIDGET(item->canvas));
+    if (GOC_IS_ITEM (self->_priv->drag_point)) {
+        g_object_set (self->_priv->drag_point, "x", x1, "y", y1, NULL);
+    }
+
+    gtk_widget_queue_draw (GTK_WIDGET (item->canvas));
 }
 
 static void
@@ -382,9 +353,9 @@ my_flow_arrow_destroy (MyFlowArrow * self)
 
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
-    g_signal_handlers_disconnect_by_func(self, notify_canvas_changed_cb, NULL);
+    g_signal_handlers_disconnect_by_func (self, notify_canvas_changed_cb, NULL);
 
-    if(GOC_IS_TEXT(self->_priv->label)) {
+    if (GOC_IS_TEXT (self->_priv->label)) {
         goc_item_destroy (GOC_ITEM (self->_priv->label));
     }
 
@@ -405,4 +376,55 @@ my_flow_arrow_finalize (GObject * object)
 {
     /* free/unref instance resources here */
     G_OBJECT_CLASS (my_flow_arrow_parent_class)->finalize (object);
+}
+
+/* public methods */
+
+void
+my_flow_arrow_show_drag_points (MyFlowArrow * self)
+{
+
+    GocGroup *toplevel = NULL;
+    gdouble x1, y1;
+
+    g_object_get (self, "x1", &x1, "y1", &y1, NULL);
+
+    toplevel = goc_canvas_get_root (GOC_ITEM(self)->canvas);
+
+    if (!MY_IS_DRAG_POINT (self->_priv->drag_point)) {
+        self->_priv->drag_point = (MyDragPoint*)
+            goc_item_new (toplevel, MY_TYPE_DRAG_POINT, "x", x1, "y", y1, "radius",
+                          5.0, NULL);
+    }
+    else {
+        g_object_set (self->_priv->drag_point, "x", x1, "y", y1, NULL);
+        goc_item_show (GOC_ITEM(self->_priv->drag_point));
+    }
+}
+
+void
+my_flow_arrow_hide_drag_points (MyFlowArrow * self)
+{
+    if (MY_IS_DRAG_POINT (self->_priv->drag_point)) {
+        goc_item_hide (GOC_ITEM(self->_priv->drag_point));
+    }
+}
+
+MySystem *
+my_flow_arrow_get_linked_system (MyFlowArrow * self)
+{
+
+    g_return_if_fail (MY_IS_FLOW_ARROW (self));
+
+    return self->_priv->linked_system;
+}
+
+void
+my_flow_arrow_set_linked_system (MyFlowArrow * self, MySystem * system)
+{
+
+    g_return_if_fail (MY_IS_SYSTEM (system));
+    g_return_if_fail (MY_IS_FLOW_ARROW (self));
+
+    self->_priv->linked_system = system;
 }

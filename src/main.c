@@ -8,7 +8,7 @@ populate_canvas (App * app)
 
     GtkWidget *button;
 
-    top_level_group = goc_canvas_get_root (app->canvas);
+    top_level_group = goc_canvas_get_root (GOC_CANVAS(app->canvas));
 
     /* Test of new GocItem */
 
@@ -99,6 +99,10 @@ populate_canvas (App * app)
                                              "<span size=\"xx-large\">W<sub>el</sub></span>",
                                              ANCHOR_EAST, 30,
                                              MY_SYSTEM (item1));
+
+    item1 =
+        goc_item_new (top_level_group, GOC_TYPE_CIRCLE, "x", 100.0, "y", 200.0, "radius", 20.0,
+                      NULL);
 }
 
 int
@@ -119,7 +123,7 @@ main (int argc, char *argv[])
 
     gtk_window_set_role (GTK_WINDOW (window1), "MyGtkTraining");
 
-    app->canvas = g_object_new (GOC_TYPE_CANVAS, "expand", TRUE, NULL);
+    app->canvas = g_object_new (MY_TYPE_CANVAS, "expand", TRUE, NULL);
 
     gtk_container_add (GTK_CONTAINER (scrolledwindow1),
                        GTK_WIDGET (app->canvas));
@@ -128,12 +132,12 @@ main (int argc, char *argv[])
 
     gtk_widget_show_all (window1);
 
-    g_signal_connect (app->canvas, "button-press-event",
-                      G_CALLBACK (button_press_cb), app);
-    g_signal_connect (app->canvas, "button-release-event",
-                      G_CALLBACK (button_release_cb), app);
-    g_signal_connect (app->canvas, "motion-notify-event",
-                      G_CALLBACK (motion_notify_cb), app);
+    /*g_signal_connect (app->canvas, "button-press-event",*/
+                      /*G_CALLBACK (button_press_cb), app);*/
+    /*g_signal_connect (app->canvas, "button-release-event",*/
+                      /*G_CALLBACK (button_release_cb), app);*/
+    /*g_signal_connect (app->canvas, "motion-notify-event",*/
+                      /*G_CALLBACK (motion_notify_cb), app);*/
 
     gtk_main ();
 
