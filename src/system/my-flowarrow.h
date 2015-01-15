@@ -55,6 +55,15 @@ my_flow_arrow_show_drag_points (MyFlowArrow * self);
 void
 my_flow_arrow_hide_drag_points (MyFlowArrow * self);
 
+void
+my_flow_arrow_begin_dragging (MyFlowArrow * self);
+
+gboolean
+my_flow_arrow_is_dragged (MyFlowArrow * self);
+
+void
+my_flow_arrow_end_dragging (MyFlowArrow * self);
+
 G_END_DECLS
 
 #endif /* __MY_FLOW_ARROW_H__ */

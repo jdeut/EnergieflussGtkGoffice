@@ -1,5 +1,16 @@
 #include "my-dragpoint.h"
 
+enum
+{
+    PROP_0,
+    /* property entries */
+    PROP_LINKED_ITEM,
+    N_PROPERTIES
+};
+
+
+static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
+
 /* 'private'/'protected' functions */
 static void my_drag_point_class_init (MyDragPointClass * klass);
 static void my_drag_point_init (MyDragPoint * self);
@@ -8,7 +19,8 @@ static void my_drag_point_dispose (GObject * );
 
 struct _MyDragPointPrivate
 {
-    /* private members go here */
+    GocItem *linked_item;
+    gboolean is_dragged;
 };
 
 #define MY_DRAG_POINT_GET_PRIVATE(o)      (G_TYPE_INSTANCE_GET_PRIVATE((o), \
@@ -22,6 +34,47 @@ GQuark
 my_drag_point_error_quark (void)
 {
   return g_quark_from_static_string ("my-drag-point-error-quark");
+}
+
+static void
+my_drag_point_set_property (GObject * object,
+                            guint property_id,
+                            const GValue * value, GParamSpec * pspec)
+{
+    MyDragPoint *self = MY_DRAG_POINT (object);
+
+    switch (property_id) {
+
+        case PROP_LINKED_ITEM: {
+                self->_priv->linked_item =
+                    GOC_ITEM (g_value_get_object (value));
+
+                return;
+            }
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+            break;
+    }
+}
+
+static void
+my_drag_point_get_property (GObject * object,
+                            guint property_id,
+                            GValue * value, GParamSpec * pspec)
+{
+    MyDragPoint *self = MY_DRAG_POINT (object);
+
+    switch (property_id) {
+
+        case PROP_LINKED_ITEM:
+            g_value_set_object (value, self->_priv->linked_item);
+            break;
+
+        default:
+            /* We don't have any other property... */
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+            break;
+    }
 }
 
 gboolean
@@ -65,6 +118,17 @@ my_drag_point_class_init (MyDragPointClass * klass)
 
     gobject_class->finalize = my_drag_point_finalize;
     gobject_class->dispose = my_drag_point_dispose;
+    gobject_class->set_property = my_drag_point_set_property;
+    gobject_class->get_property = my_drag_point_get_property;
+
+    obj_properties[PROP_LINKED_ITEM] =
+        g_param_spec_object ("linked-item",
+                             "linked item",
+                             "A pointer to the linked item",
+                             MY_TYPE_FLOW_ARROW, G_PARAM_READWRITE);
+
+    g_object_class_install_properties (gobject_class,
+                                       N_PROPERTIES, obj_properties);
 
     g_type_class_add_private (gobject_class,
                               sizeof (MyDragPointPrivate));
@@ -79,7 +143,8 @@ my_drag_point_init (MyDragPoint * self)
 
     /* to init any of the private data, do e.g: */
 
-    /* 	obj->_priv->_frobnicate_mode = FALSE; */
+    self->_priv->linked_item = NULL;
+    self->_priv->is_dragged = FALSE;
 }
 
 static void
@@ -103,4 +168,37 @@ my_drag_point_new (void)
     self = g_object_new (MY_TYPE_DRAG_POINT, NULL);
 
     return self;
+}
+
+
+void
+my_drag_point_begin_dragging (MyDragPoint * self)
+{
+    g_return_if_fail(MY_IS_DRAG_POINT(self));
+
+    self->_priv->is_dragged = TRUE;
+
+    if(MY_IS_FLOW_ARROW(self->_priv->linked_item)) {
+        my_flow_arrow_begin_dragging(MY_FLOW_ARROW(self->_priv->linked_item));
+    }
+}
+
+gboolean
+my_drag_point_is_dragged (MyDragPoint * self)
+{
+    g_return_if_fail(MY_IS_DRAG_POINT(self));
+
+    return self->_priv->is_dragged;
+}
+
+void
+my_drag_point_end_dragging (MyDragPoint * self)
+{
+    g_return_if_fail(MY_IS_DRAG_POINT(self));
+    
+    if(MY_IS_FLOW_ARROW(self->_priv->linked_item)) {
+        my_flow_arrow_end_dragging(MY_FLOW_ARROW(self->_priv->linked_item));
+    }
+
+    self->_priv->is_dragged = FALSE;
 }

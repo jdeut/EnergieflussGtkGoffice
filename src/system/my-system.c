@@ -105,7 +105,7 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
     while (valid) {
 
         gdouble x0, x1, y0, y1;
-        GocItem *line;
+        GocItem *arrow;
         MySystem *sink;
         gboolean from_environment;
         gchar *label_text;
@@ -120,22 +120,26 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
                             COLUMN_LABEL_TEXT, &label_text,
                             COLUMN_ENERGY_QUANTITY, &energy_quantity,
                             COLUMN_FROM_ENVIRONMENT, &from_environment,
-                            COLUMN_ARROW, &line, -1);
+                            COLUMN_ARROW, &arrow, -1);
 
-        // If line is not instantiated yet
-        if (!MY_IS_FLOW_ARROW (line)) {
+        // If arrow is not instantiated yet
+        if (!MY_IS_FLOW_ARROW (arrow)) {
 
-            line =
+            arrow =
                 goc_item_new (toplevel, MY_TYPE_FLOW_ARROW,
                               "energy-quantity", energy_quantity,
                               "label-text", label_text,
                               "linked-system", self, NULL);
 
-            gtk_list_store_set (self->EnergyFlow, &iter, COLUMN_ARROW, line,
+            gtk_list_store_set (self->EnergyFlow, &iter, COLUMN_ARROW, arrow,
                                 -1);
         }
 
-        /* draw line */
+        /*if(my_flow_arrow_is_dragged(MY_FLOW_ARROW(arrow))) {*/
+            /*continue;*/
+        /*}*/
+
+        /* draw arrow */
 
         x0 = allocation.x + allocation.width / 2;
         y0 = allocation.y + allocation.height / 2;
@@ -234,7 +238,9 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
             }
         }
 
-        goc_item_set (line, "x0", x0, "y0", y0, "x1", x1, "y1", y1, NULL);
+        if(!my_flow_arrow_is_dragged(MY_FLOW_ARROW(arrow))) {
+            goc_item_set (arrow, "x0", x0, "y0", y0, "x1", x1, "y1", y1, NULL);
+        }
 
         valid =
             gtk_tree_model_iter_next (GTK_TREE_MODEL (self->EnergyFlow), &iter);

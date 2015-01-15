@@ -21,6 +21,7 @@ static void my_flow_arrow_dispose (GObject *);
 struct _MyFlowArrowPrivate
 {
     gchar *label_text;
+    gboolean is_dragged;
     GOArrow *arrow;
     GocItem *label;
     MyDragPoint *drag_point;
@@ -152,22 +153,15 @@ my_flow_arrow_error_quark (void)
 }
 
 void
-my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
+my_flow_arrow_draw_label (MyFlowArrow * self, cairo_t * cr)
 {
+
     GocGroup *toplevel = NULL;
     gdouble x0, x1, y0, y1;
-    MyFlowArrow *self = MY_FLOW_ARROW (item);
 
-    MyFlowArrowClass *class = MY_FLOW_ARROW_GET_CLASS (self);
-    GocItemClass *parent_class = g_type_class_peek_parent (class);
+    toplevel = goc_canvas_get_root (GOC_ITEM (self)->canvas);
 
-    toplevel = goc_canvas_get_root (item->canvas);
-
-    /* chaining up */
-    parent_class->draw (GOC_ITEM (self), cr);
-
-    g_object_get (self, "x0", &x0, "x1", &x1, "y0", &y0, "y1", &y1,
-                  NULL);
+    g_object_get (self, "x0", &x0, "x1", &x1, "y0", &y0, "y1", &y1, NULL);
 
     if (self->_priv->label_text != NULL) {
 
@@ -226,10 +220,24 @@ my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
             goc_item_set_transform (self->_priv->label, &matrix);
         }
     }
+}
 
-    if (GOC_IS_ITEM (self->_priv->drag_point)) {
-        g_object_set (self->_priv->drag_point, "x", x1, "y", y1, NULL);
-    }
+void
+my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
+{
+    MyFlowArrow *self = MY_FLOW_ARROW (item);
+
+    MyFlowArrowClass *class = MY_FLOW_ARROW_GET_CLASS (self);
+    GocItemClass *parent_class = g_type_class_peek_parent (class);
+
+    /* chaining up */
+    parent_class->draw (GOC_ITEM (self), cr);
+
+    my_flow_arrow_draw_label (self, cr);
+
+    /*if (GOC_IS_ITEM (self->_priv->drag_point)) { */
+    /*g_object_set (self->_priv->drag_point, "x", x1, "y", y1, NULL); */
+    /*} */
 
     gtk_widget_queue_draw (GTK_WIDGET (item->canvas));
 }
@@ -331,6 +339,7 @@ my_flow_arrow_init (MyFlowArrow * self)
 
     /* to init any of the private data, do e.g: */
 
+    self->_priv->is_dragged = FALSE;
     self->_priv->arrow = g_new0 (GOArrow, 1);
 
     go_arrow_init_kite (self->_priv->arrow, 20, 20, 4);
@@ -381,24 +390,56 @@ my_flow_arrow_finalize (GObject * object)
 /* public methods */
 
 void
+my_flow_arrow_begin_dragging (MyFlowArrow * self)
+{
+    g_return_if_fail (MY_IS_FLOW_ARROW (self));
+
+    self->_priv->is_dragged = TRUE;
+}
+
+gboolean
+my_flow_arrow_is_dragged (MyFlowArrow * self)
+{
+    g_return_if_fail (MY_IS_FLOW_ARROW (self));
+
+    return self->_priv->is_dragged;
+}
+
+void
+my_flow_arrow_end_dragging (MyFlowArrow * self)
+{
+    g_return_if_fail (MY_IS_FLOW_ARROW (self));
+
+    self->_priv->is_dragged = FALSE;
+}
+
+void
 my_flow_arrow_show_drag_points (MyFlowArrow * self)
 {
 
     GocGroup *toplevel = NULL;
     gdouble x1, y1;
 
+    g_return_if_fail (MY_IS_FLOW_ARROW (self));
+
     g_object_get (self, "x1", &x1, "y1", &y1, NULL);
 
-    toplevel = goc_canvas_get_root (GOC_ITEM(self)->canvas);
+    toplevel = goc_canvas_get_root (GOC_ITEM (self)->canvas);
 
     if (!MY_IS_DRAG_POINT (self->_priv->drag_point)) {
-        self->_priv->drag_point = (MyDragPoint*)
-            goc_item_new (toplevel, MY_TYPE_DRAG_POINT, "x", x1, "y", y1, "radius",
-                          5.0, NULL);
+
+        self->_priv->drag_point = (MyDragPoint *)
+            goc_item_new (toplevel, MY_TYPE_DRAG_POINT, "x", x1, "y", y1,
+                          "radius", 5.0, "linked-item", self, NULL);
+
+        g_object_bind_property (self->_priv->drag_point, "x", self, "x1",
+                                G_BINDING_BIDIRECTIONAL);
+        g_object_bind_property (self->_priv->drag_point, "y", self, "y1",
+                                G_BINDING_BIDIRECTIONAL);
     }
     else {
         g_object_set (self->_priv->drag_point, "x", x1, "y", y1, NULL);
-        goc_item_show (GOC_ITEM(self->_priv->drag_point));
+        goc_item_show (GOC_ITEM (self->_priv->drag_point));
     }
 }
 
@@ -406,7 +447,7 @@ void
 my_flow_arrow_hide_drag_points (MyFlowArrow * self)
 {
     if (MY_IS_DRAG_POINT (self->_priv->drag_point)) {
-        goc_item_hide (GOC_ITEM(self->_priv->drag_point));
+        goc_item_hide (GOC_ITEM (self->_priv->drag_point));
     }
 }
 

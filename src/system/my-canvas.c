@@ -32,9 +32,11 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
 {
     MyCanvas *self = MY_CANVAS (canvas);
 
-    self->_priv->active_item = NULL;
+    if (MY_IS_DRAG_POINT (self->_priv->active_item)) {
+        my_drag_point_end_dragging (MY_DRAG_POINT (self->_priv->active_item));
+    }
 
-    g_print ("my_canvas_button_release_cb\n");
+    self->_priv->active_item = NULL;
 
     return TRUE;
 }
@@ -58,7 +60,7 @@ my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
         gdouble x_item_old, y_item_old;
         gdouble x_item_new, y_item_new;
 
-        if (event->window != gtk_layout_get_bin_window (&canvas->base)) {
+        if (GOC_IS_WIDGET(active_item)) {
 
             gint x, y;
 
@@ -81,8 +83,10 @@ my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
         if (GOC_IS_WIDGET (active_item)) {
             goc_item_set (active_item, "x", x_item_new, "y", y_item_new, NULL);
         }
-        else if (GOC_IS_CIRCLE (active_item) || MY_IS_DRAG_POINT (active_item)
-            ) {
+        else if (GOC_IS_CIRCLE (active_item)) {
+            goc_item_set (active_item, "x", x_item_new, "y", y_item_new, NULL);
+        }
+        else if (MY_IS_DRAG_POINT (active_item)) {
             goc_item_set (active_item, "x", x_item_new, "y", y_item_new, NULL);
         }
 
@@ -140,6 +144,10 @@ my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
         dx / canvas->pixels_per_unit;
 
     self->_priv->offsety = canvas->scroll_y1 + dy / canvas->pixels_per_unit;
+
+    if (MY_IS_DRAG_POINT (self->_priv->active_item)) {
+        my_drag_point_begin_dragging (MY_DRAG_POINT (self->_priv->active_item));
+    }
 
     return FALSE;
 }
