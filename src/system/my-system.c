@@ -75,7 +75,8 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
 {
 
     MySystem *self;
-    GocGroup *toplevel = NULL;
+    GocGroup *group_arrows = NULL;
+    MyCanvas *canvas;
     GtkAllocation allocation;
     GtkTreeIter iter;
     gboolean valid;
@@ -88,9 +89,11 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
     /* chaining up */
     parent_class->draw (item, cr);
 
-    toplevel = goc_canvas_get_root (GOC_WIDGET (self)->base.canvas);
+    g_object_get(self, "canvas", &canvas, NULL);
 
-    if (toplevel == NULL) {
+    group_arrows = canvas->group_arrows;
+
+    if (!GOC_IS_GROUP(group_arrows)) {
         g_print ("can't get canvas...\n");
         return;
     }
@@ -126,7 +129,7 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
         if (!MY_IS_FLOW_ARROW (arrow)) {
 
             arrow =
-                goc_item_new (toplevel, MY_TYPE_FLOW_ARROW,
+                goc_item_new (group_arrows, MY_TYPE_FLOW_ARROW,
                               "energy-quantity", energy_quantity,
                               "label-text", label_text,
                               "linked-system", self, NULL);

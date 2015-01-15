@@ -3,43 +3,15 @@
 void
 populate_canvas (App * app)
 {
-    GocGroup *top_level_group;
+    GocGroup *group_systems;
     GocItem *item1, *item2;
 
     GtkWidget *button;
 
-    top_level_group = goc_canvas_get_root (GOC_CANVAS(app->canvas));
-
-    /* Test of new GocItem */
-
-    /*item1 =*/
-        /*goc_item_new (top_level_group, MY_TYPE_SYSTEM, "x", 400.0, "y", 300.0,*/
-                      /*NULL);*/
-
-    /*g_object_get (item1, "widget", &button, NULL);*/
-
-    /*g_signal_connect (button, "button-press-event",*/
-                      /*G_CALLBACK (propagate_button_press_event_to_canvas_cb),*/
-                      /*app);*/
-    /*g_signal_connect (button, "button-release-event",*/
-                      /*G_CALLBACK (propagate_button_release_event_to_canvas_cb),*/
-                      /*app);*/
-    /*g_signal_connect (button, "motion-notify-event",*/
-                      /*G_CALLBACK (propagate_motion_notify_event_to_canvas_cb),*/
-                      /*app);*/
-
-    /*my_system_add_energy_transfer_from_environment (MY_SYSTEM (item1), NULL,*/
-                                                    /*ANCHOR_WEST, 10.0);*/
-
-    /*my_system_add_energy_transfer_from_environment (MY_SYSTEM (item1), NULL,*/
-                                                    /*ANCHOR_SOUTH, 30.0);*/
-    /*my_system_add_energy_transfer_from_environment (MY_SYSTEM (item1), "test",*/
-                                                    /*ANCHOR_EAST, 5.0);*/
-    /*my_system_add_energy_transfer_from_environment (MY_SYSTEM (item1), NULL,*/
-                                                    /*ANCHOR_NORTH, 2.0);*/
+    group_systems = app->canvas->group_systems;
 
     item1 =
-        goc_item_new (top_level_group, MY_TYPE_SYSTEM, "x", 100.0, "y", 200.0,
+        goc_item_new (group_systems, MY_TYPE_SYSTEM, "x", 100.0, "y", 200.0,
                       NULL);
 
     g_object_get (item1, "widget", &button, NULL);
@@ -64,7 +36,7 @@ populate_canvas (App * app)
                                                   ANCHOR_NORTH, 2.0);
 
     item1 =
-        goc_item_new (top_level_group, MY_TYPE_SYSTEM, "x", 100.0, "y", 100.0,
+        goc_item_new (group_systems, MY_TYPE_SYSTEM, "x", 100.0, "y", 100.0,
                       NULL);
 
     g_object_get (item1, "widget", &button, NULL);
@@ -80,7 +52,7 @@ populate_canvas (App * app)
                       app);
 
     item2 =
-        goc_item_new (top_level_group, MY_TYPE_SYSTEM, "x", 500.0, "y", 100.0,
+        goc_item_new (group_systems, MY_TYPE_SYSTEM, "x", 500.0, "y", 100.0,
                       NULL);
 
     g_object_get (item2, "widget", &button, NULL);
@@ -101,7 +73,7 @@ populate_canvas (App * app)
                                              MY_SYSTEM (item1));
 
     item1 =
-        goc_item_new (top_level_group, GOC_TYPE_CIRCLE, "x", 100.0, "y", 200.0, "radius", 20.0,
+        goc_item_new (group_systems, GOC_TYPE_CIRCLE, "x", 100.0, "y", 200.0, "radius", 20.0,
                       NULL);
 }
 

@@ -417,19 +417,20 @@ void
 my_flow_arrow_show_drag_points (MyFlowArrow * self)
 {
 
-    GocGroup *toplevel = NULL;
+    MyCanvas *canvas;
+    GocGroup *group_arrows = NULL;
     gdouble x1, y1;
 
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
-    g_object_get (self, "x1", &x1, "y1", &y1, NULL);
+    g_object_get (self, "canvas", &canvas, "x1", &x1, "y1", &y1, NULL);
 
-    toplevel = goc_canvas_get_root (GOC_ITEM (self)->canvas);
+    group_arrows = canvas->group_arrows;
 
     if (!MY_IS_DRAG_POINT (self->_priv->drag_point)) {
 
         self->_priv->drag_point = (MyDragPoint *)
-            goc_item_new (toplevel, MY_TYPE_DRAG_POINT, "x", x1, "y", y1,
+            goc_item_new (group_arrows, MY_TYPE_DRAG_POINT, "x", x1, "y", y1,
                           "radius", 5.0, "linked-item", self, NULL);
 
         g_object_bind_property (self->_priv->drag_point, "x", self, "x1",

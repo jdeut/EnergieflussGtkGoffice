@@ -35,6 +35,7 @@ struct _MySystemClass
 
 
 #include "my-flowarrow.h"
+#include "my-canvas.h"
 
 
 GType my_system_get_type (void);

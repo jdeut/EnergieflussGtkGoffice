@@ -83,10 +83,18 @@ my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
         if (GOC_IS_WIDGET (active_item)) {
             goc_item_set (active_item, "x", x_item_new, "y", y_item_new, NULL);
         }
-        else if (GOC_IS_CIRCLE (active_item)) {
+        else if (MY_IS_DRAG_POINT (active_item)) {
+            GocItem *item;
+
+            item = goc_canvas_get_item_at(canvas, x_item_new, y_item_new);
+
+            if(MY_IS_SYSTEM(item)) {
+               g_print("kok\n");
+            }
+
             goc_item_set (active_item, "x", x_item_new, "y", y_item_new, NULL);
         }
-        else if (MY_IS_DRAG_POINT (active_item)) {
+        else if (GOC_IS_CIRCLE (active_item)) {
             goc_item_set (active_item, "x", x_item_new, "y", y_item_new, NULL);
         }
 
@@ -202,9 +210,15 @@ my_canvas_class_init (MyCanvasClass * klass)
 static void
 my_canvas_init (MyCanvas * self)
 {
-    self->_priv = MY_CANVAS_GET_PRIVATE (self);
+    GocGroup *root;
 
+    root = goc_canvas_get_root(GOC_CANVAS(self));
+
+    self->_priv = MY_CANVAS_GET_PRIVATE (self);
     self->_priv->active_item = NULL;
+    
+    self->group_arrows = goc_group_new(root);
+    self->group_systems = goc_group_new(root);
 
     g_signal_connect (G_OBJECT (self), "button-press-event",
                       G_CALLBACK (my_canvas_button_press_cb), NULL);
@@ -242,7 +256,7 @@ my_canvas_show_drag_points_of_all_arrows (MyCanvas * self)
     GList *l;
     GocGroup *group;
 
-    group = goc_canvas_get_root (GOC_CANVAS (self));
+    group = self->group_arrows;
 
     for (l = group->children; l != NULL; l = l->next) {
         if (MY_IS_FLOW_ARROW (l->data)) {
