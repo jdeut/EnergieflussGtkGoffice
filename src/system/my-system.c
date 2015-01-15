@@ -73,7 +73,6 @@ my_system_error_quark (void)
 void
 my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
 {
-
     MySystem *self;
     GocGroup *group_arrows = NULL;
     MyCanvas *canvas;
@@ -89,11 +88,11 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
     /* chaining up */
     parent_class->draw (item, cr);
 
-    g_object_get(self, "canvas", &canvas, NULL);
+    g_object_get (self, "canvas", &canvas, NULL);
 
     group_arrows = canvas->group_arrows;
 
-    if (!GOC_IS_GROUP(group_arrows)) {
+    if (!GOC_IS_GROUP (group_arrows)) {
         g_print ("can't get canvas...\n");
         return;
     }
@@ -138,9 +137,9 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
                                 -1);
         }
 
-        /*if(my_flow_arrow_is_dragged(MY_FLOW_ARROW(arrow))) {*/
-            /*continue;*/
-        /*}*/
+        /*if(my_flow_arrow_is_dragged(MY_FLOW_ARROW(arrow))) { */
+        /*continue; */
+        /*} */
 
         /* draw arrow */
 
@@ -150,27 +149,27 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
         gdouble length = allocation.width * 0.66;
 
         /* if arrow depicts transfer to other system */
-        if (MY_IS_SYSTEM (sink)) {  
+        if (MY_IS_SYSTEM (sink)) {
 
             gdouble dx, dy, alpha;
             GtkAllocation alloc_sink;
 
             gtk_widget_get_allocation (GOC_WIDGET (sink)->ofbox, &alloc_sink);
-            
+
             dx = alloc_sink.x - allocation.x;
             dy = alloc_sink.y - allocation.y;
 
-            alpha = atan2(dy, dx);
+            alpha = atan2 (dy, dx);
 
             anchor_sink = ANCHOR_SOUTH;
 
-            if(-M_PI/4 < alpha && alpha <= M_PI/4) {
+            if (-M_PI / 4 < alpha && alpha <= M_PI / 4) {
                 anchor_sink = ANCHOR_WEST;
             }
-            else if(M_PI/4 < alpha && alpha <= 3*M_PI/4) {
+            else if (M_PI / 4 < alpha && alpha <= 3 * M_PI / 4) {
                 anchor_sink = ANCHOR_NORTH;
             }
-            else if(3*M_PI/4 < alpha || alpha <= -3*M_PI/4) {
+            else if (3 * M_PI / 4 < alpha || alpha <= -3 * M_PI / 4) {
                 anchor_sink = ANCHOR_EAST;
             }
 
@@ -241,7 +240,7 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
             }
         }
 
-        if(!my_flow_arrow_is_dragged(MY_FLOW_ARROW(arrow))) {
+        if (!my_flow_arrow_is_dragged (MY_FLOW_ARROW (arrow))) {
             goc_item_set (arrow, "x0", x0, "y0", y0, "x1", x1, "y1", y1, NULL);
         }
 
@@ -362,7 +361,10 @@ my_system_change_flow_arrow_direction (MySystem * self, MyFlowArrow * arrow)
 
             /* if arrow connects to systems */
             if (MY_IS_SYSTEM (iter_sink)) {
-                my_system_add_energy_transfer_to_system (iter_sink, iter_label, iter_anchor_sink, iter_energy_quantity, self);
+                my_system_add_energy_transfer_to_system (iter_sink, iter_label,
+                                                         iter_anchor_sink,
+                                                         iter_energy_quantity,
+                                                         self);
                 my_system_remove_associate (iter_sink, self);
                 my_system_remove_flow_arrow (self, arrow);
             }
@@ -529,9 +531,7 @@ my_system_init_energy_flow_store (MySystem * self)
     self->EnergyFlow =
         gtk_list_store_new (N_COLUMNS,
                             GOC_TYPE_LINE,
-                            G_TYPE_INT,
-                            G_TYPE_INT,
-                            G_TYPE_FLOAT,
+                            G_TYPE_INT, G_TYPE_INT, G_TYPE_FLOAT,
                             MY_TYPE_SYSTEM, G_TYPE_BOOLEAN, G_TYPE_STRING);
 }
 
