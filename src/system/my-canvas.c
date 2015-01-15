@@ -60,7 +60,7 @@ my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
         gdouble x_item_old, y_item_old;
         gdouble x_item_new, y_item_new;
 
-        if (GOC_IS_WIDGET(active_item)) {
+        if (GOC_IS_WIDGET (active_item)) {
 
             gint x, y;
 
@@ -86,10 +86,12 @@ my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
         else if (MY_IS_DRAG_POINT (active_item)) {
             GocItem *item;
 
-            item = goc_canvas_get_item_at(canvas, x_item_new, y_item_new);
+            gdouble d =
+                goc_item_distance (GOC_ITEM (self->group_systems), x_item_new,
+                                   y_item_new, &item);
 
-            if(MY_IS_SYSTEM(item)) {
-               g_print("kok\n");
+            if (d == 0. && MY_IS_SYSTEM (item)) {
+                g_print ("kok\n");
             }
 
             goc_item_set (active_item, "x", x_item_new, "y", y_item_new, NULL);
@@ -212,13 +214,13 @@ my_canvas_init (MyCanvas * self)
 {
     GocGroup *root;
 
-    root = goc_canvas_get_root(GOC_CANVAS(self));
+    root = goc_canvas_get_root (GOC_CANVAS (self));
 
     self->_priv = MY_CANVAS_GET_PRIVATE (self);
     self->_priv->active_item = NULL;
-    
-    self->group_arrows = goc_group_new(root);
-    self->group_systems = goc_group_new(root);
+
+    self->group_arrows = goc_group_new (root);
+    self->group_systems = goc_group_new (root);
 
     g_signal_connect (G_OBJECT (self), "button-press-event",
                       G_CALLBACK (my_canvas_button_press_cb), NULL);
