@@ -42,6 +42,32 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
 }
 
 gboolean
+my_canvas_drag_drag_point(MyCanvas *self, gdouble x, gdouble y)  {
+
+    MySystem *linked_system;
+    MyFlowArrow *arrow;
+    GocItem *item;
+
+    gdouble d =
+        goc_item_distance (GOC_ITEM (self->group_systems), x, y, &item);
+
+    g_object_get(self->_priv->active_item, "linked-item", &arrow, NULL);
+
+    if(MY_IS_FLOW_ARROW(arrow)) {
+
+        g_object_get(arrow, "linked-system", &linked_system, NULL);
+
+        /* only do it if drag point is over a system but not over the system the corresponding arrow is linked with*/
+
+        if (d == 0. && MY_IS_SYSTEM (item) && MY_SYSTEM(linked_system) != MY_SYSTEM(item)) {
+            g_print ("kok\n");
+        }
+    }
+
+    goc_item_set (self->_priv->active_item, "x", x, "y", y, NULL);
+}
+
+gboolean
 my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
                             gpointer data)
 {
@@ -84,17 +110,7 @@ my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
             goc_item_set (active_item, "x", x_item_new, "y", y_item_new, NULL);
         }
         else if (MY_IS_DRAG_POINT (active_item)) {
-            GocItem *item;
-
-            gdouble d =
-                goc_item_distance (GOC_ITEM (self->group_systems), x_item_new,
-                                   y_item_new, &item);
-
-            if (d == 0. && MY_IS_SYSTEM (item)) {
-                g_print ("kok\n");
-            }
-
-            goc_item_set (active_item, "x", x_item_new, "y", y_item_new, NULL);
+            my_canvas_drag_drag_point(self, x_item_new, y_item_new);
         }
         else if (GOC_IS_CIRCLE (active_item)) {
             goc_item_set (active_item, "x", x_item_new, "y", y_item_new, NULL);
