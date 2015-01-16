@@ -59,6 +59,8 @@ void
 my_system_change_flow_arrow_direction (MySystem * self, MyFlowArrow * arrow);
 gboolean
 my_system_remove_flow_arrow (MySystem * self, MyFlowArrow * arrow);
+gboolean
+my_system_change_sink_of_arrow (MySystem * self, MyFlowArrow * arrow, MySystem * sink);
 
 G_END_DECLS
 
