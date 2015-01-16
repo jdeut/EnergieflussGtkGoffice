@@ -25,7 +25,6 @@ struct _MySystem
 
     /* private */
     GtkListStore *EnergyFlow;
-    GSList *AssociatedSystems;    
 };
 
 struct _MySystemClass

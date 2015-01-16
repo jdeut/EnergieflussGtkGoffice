@@ -251,51 +251,6 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
 }
 
 static void
-ofbox_size_allocate_cb (GtkWidget * widget, GdkRectangle * allocation,
-                        MySystem * self)
-{
-    /*GSList *tmp;*/
-
-    /*tmp = self->AssociatedSystems;*/
-
-    /*while (tmp) {*/
-        /*MySystem *associate = tmp->data;*/
-
-        /*if (MY_IS_SYSTEM (associate)) {*/
-            /* draw all energy flows of those systems that transfer
-             * energy to self */
-            /*goc_item_invalidate (GOC_ITEM (associate));*/
-        /*}*/
-
-        /*tmp = tmp->next;*/
-    /*}*/
-
-    /*goc_item_invalidate (GOC_ITEM (self));*/
-}
-
-gboolean
-widget_draw_cb (GtkWidget * widget, cairo_t * cr, gpointer user_data)
-{
-    /*g_print("draw...\n"); */
-
-    return FALSE;
-}
-
-static void
-notify_widget_changed_cb (MySystem * self, GParamSpec * pspec, gpointer data)
-{
-    GocOffscreenBox *ofbox = GOC_OFFSCREEN_BOX (GOC_WIDGET (self)->ofbox);
-
-    g_print ("'widget' property changed...\n");
-
-    g_signal_connect (ofbox, "size-allocate",
-                      G_CALLBACK (ofbox_size_allocate_cb), self);
-
-    /*g_signal_connect (goc_widget->widget, "draw", G_CALLBACK (widget_draw_cb), */
-    /*self); */
-}
-
-static void
 notify_canvas_changed_cb (MySystem * self, GParamSpec * pspec, gpointer data)
 {
     g_print ("canvas changed\n");
@@ -478,9 +433,6 @@ my_system_add_energy_transfer_to_system (MySystem * self, gchar * label_text,
     g_return_val_if_fail (MY_IS_SYSTEM (self), FALSE);
     g_return_val_if_fail (MY_IS_SYSTEM (sink), FALSE);
 
-    /* associate sink with self, so that energy_flows of self are
-     * redrawn if the allocation of sink changes */
-
     gtk_list_store_append (self->EnergyFlow, &iter);
 
     gtk_list_store_set (self->EnergyFlow, &iter,
@@ -550,9 +502,6 @@ my_system_init (MySystem * self)
                   80.0, NULL);
 
     my_system_init_energy_flow_store (self);
-
-    g_signal_connect (self, "notify::widget",
-                      G_CALLBACK (notify_widget_changed_cb), NULL);
 
     g_signal_connect (self, "notify::canvas",
                       G_CALLBACK (notify_canvas_changed_cb), NULL);
