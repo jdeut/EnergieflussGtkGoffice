@@ -41,8 +41,6 @@ GType my_drag_point_get_type (void);
 
 /* fill in public functions */
 
-MyDragPoint *my_drag_point_new (void);
-
 void
 my_drag_point_begin_dragging (MyDragPoint * self);
 

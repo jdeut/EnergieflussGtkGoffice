@@ -49,7 +49,6 @@ enum
 
 /* fill in public functions */
 
-
 gboolean
 my_system_add_energy_transfer_to_system (MySystem * self, gchar * label, gint anchor_sink, gfloat quantity, MySystem * sink);
 gboolean

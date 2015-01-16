@@ -160,16 +160,6 @@ my_drag_point_finalize (GObject * object)
     G_OBJECT_CLASS (my_drag_point_parent_class)->finalize (object);
 }
 
-MyDragPoint *
-my_drag_point_new (void)
-{
-    MyDragPoint *self;
-
-    self = g_object_new (MY_TYPE_DRAG_POINT, NULL);
-
-    return self;
-}
-
 
 void
 my_drag_point_begin_dragging (MyDragPoint * self)

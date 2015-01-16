@@ -265,16 +265,6 @@ my_canvas_finalize (GObject * object)
     G_OBJECT_CLASS (my_canvas_parent_class)->finalize (object);
 }
 
-MyCanvas *
-my_canvas_new (void)
-{
-    MyCanvas *self;
-
-    self = g_object_new (MY_TYPE_CANVAS, NULL);
-
-    return self;
-}
-
 void
 my_canvas_show_drag_points_of_all_arrows (MyCanvas * self)
 {

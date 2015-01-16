@@ -40,7 +40,6 @@ struct _MyCanvasClass
 GType my_canvas_get_type (void);
 
 /* fill in public functions */
-MyCanvas *my_canvas_new (void);
 
 void
 my_canvas_show_drag_points_of_all_arrows (MyCanvas * self);
