@@ -55,6 +55,13 @@ my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
 gboolean
 my_canvas_button_press_cb (GocCanvas * canvas, GdkEventButton * event,
                            gpointer data);
+
+void
+my_canvas_add_flow_arrow (MyCanvas * self);
+
+void
+my_canvas_add_system (MyCanvas * self);
+
 G_END_DECLS
 
 #endif /* __MY_CANVAS_H__ */

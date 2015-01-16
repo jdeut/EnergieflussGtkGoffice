@@ -11,6 +11,8 @@ struct _MyCanvasPrivate
     /* private members go here */
     GocItem *active_item;
     gdouble offsetx, offsety;
+    guint add_arrow_mode;
+    guint add_system_mode;
 };
 
 #define MY_CANVAS_GET_PRIVATE(o)      (G_TYPE_INSTANCE_GET_PRIVATE((o), \
@@ -35,26 +37,33 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
     MyFlowArrow *arrow;
     GocItem *item;
 
+    if (self->_priv->add_arrow_mode) {
+        self->_priv->add_arrow_mode = FALSE;
+    }
+
     if (MY_IS_DRAG_POINT (self->_priv->active_item)) {
 
         gdouble d =
-            goc_item_distance (GOC_ITEM (self->group_systems), event->button.x, event->button.y, &item);
+            goc_item_distance (GOC_ITEM (self->group_systems), event->button.x,
+                               event->button.y, &item);
 
-        g_object_get(self->_priv->active_item, "linked-item", &arrow, NULL);
+        g_object_get (self->_priv->active_item, "linked-item", &arrow, NULL);
 
-        if(MY_IS_FLOW_ARROW(arrow)) {
+        if (MY_IS_FLOW_ARROW (arrow)) {
 
-            g_object_get(arrow, "linked-system", &linked_system, NULL);
+            g_object_get (arrow, "linked-system", &linked_system, NULL);
 
-            /* only do it if drag point is over a system but not over the system the corresponding arrow is linked with*/
+            /* only do it if drag point is over a system but not over the system the corresponding arrow is linked with */
 
-            if (d == 0. && MY_IS_SYSTEM (item) && MY_SYSTEM(linked_system) != MY_SYSTEM(item)) {
+            if (d == 0. && MY_IS_SYSTEM (item)
+                && MY_SYSTEM (linked_system) != MY_SYSTEM (item)) {
 
-                g_object_set(arrow, "secondary-system", item, NULL);
-                
-            } else {
+                g_object_set (arrow, "secondary-system", item, NULL);
 
-                g_object_set(arrow, "secondary-system", NULL, NULL);
+            }
+            else {
+
+                g_object_set (arrow, "secondary-system", NULL, NULL);
             }
         }
 
@@ -68,7 +77,8 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
 }
 
 gboolean
-my_canvas_drag_drag_point(MyCanvas *self, gdouble x, gdouble y)  {
+my_canvas_drag_drag_point (MyCanvas * self, gdouble x, gdouble y)
+{
 
     goc_item_set (self->_priv->active_item, "x", x, "y", y, NULL);
 }
@@ -116,7 +126,7 @@ my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
             goc_item_set (active_item, "x", x_item_new, "y", y_item_new, NULL);
         }
         else if (MY_IS_DRAG_POINT (active_item)) {
-            my_canvas_drag_drag_point(self, x_item_new, y_item_new);
+            my_canvas_drag_drag_point (self, x_item_new, y_item_new);
         }
         else if (GOC_IS_CIRCLE (active_item)) {
             goc_item_set (active_item, "x", x_item_new, "y", y_item_new, NULL);
@@ -157,6 +167,39 @@ my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
     dy = event->y;
 
     self->_priv->active_item = goc_canvas_get_item_at (canvas, x_cv, y_cv);
+
+    /* if in ADD SYSTEM MODE */
+    if (self->_priv->add_system_mode && !GOC_IS_ITEM (self->_priv->active_item)) {
+        
+        goc_item_new (MY_CANVAS(canvas)->group_systems, MY_TYPE_SYSTEM, "x", x_cv, "y",
+                      y_cv, NULL);
+
+        self->_priv->add_system_mode = FALSE;
+    }
+    /* if in ADD ARROW MODE */
+    else if (self->_priv->add_arrow_mode
+             && MY_IS_SYSTEM (self->_priv->active_item)) {
+        MyFlowArrow *arrow;
+        MyDragPoint *point;
+
+        arrow =
+            (MyFlowArrow *) goc_item_new (MY_CANVAS (self)->group_arrows,
+                                          MY_TYPE_FLOW_ARROW, "linked-system",
+                                          self->_priv->active_item, "anchor",
+                                          MY_ANCHOR_EAST, "x1", x_cv, "y1",
+                                          y_cv, "x0", x_cv, "y0", y_cv, NULL);
+
+        my_flow_arrow_show_drag_points (arrow);
+
+        point = my_flow_arrow_get_drag_point (arrow);
+
+        goc_item_set (GOC_ITEM (point), "x", x_cv, "y", y_cv, NULL);
+
+        self->_priv->active_item = GOC_ITEM (point);
+    }
+    else {
+        self->_priv->add_arrow_mode = FALSE;
+    }
 
     if (GOC_IS_CIRCLE (self->_priv->active_item)
         || MY_IS_DRAG_POINT (self->_priv->active_item)) {
@@ -240,6 +283,8 @@ my_canvas_init (MyCanvas * self)
 
     self->_priv = MY_CANVAS_GET_PRIVATE (self);
     self->_priv->active_item = NULL;
+    self->_priv->add_arrow_mode = FALSE;
+    self->_priv->add_system_mode = FALSE;
 
     self->group_arrows = goc_group_new (root);
     self->group_systems = goc_group_new (root);
@@ -278,4 +323,31 @@ my_canvas_show_drag_points_of_all_arrows (MyCanvas * self)
             my_flow_arrow_show_drag_points (MY_FLOW_ARROW (l->data));
         }
     }
+}
+
+void
+my_canvas_add_system (MyCanvas * self)
+{
+    g_return_if_fail (MY_IS_CANVAS (self));
+
+    self->_priv->add_system_mode = TRUE;
+}
+
+
+void
+my_canvas_add_flow_arrow (MyCanvas * self)
+{
+    g_return_if_fail (MY_IS_CANVAS (self));
+
+    self->_priv->add_arrow_mode = TRUE;
+}
+
+void
+my_canvas_drag_item (MyCanvas * self, GocItem * item)
+{
+
+    g_return_if_fail (MY_IS_CANVAS (self));
+    g_return_if_fail (GOC_IS_ITEM (self));
+
+    self->_priv->active_item = item;
 }

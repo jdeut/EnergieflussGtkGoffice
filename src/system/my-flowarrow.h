@@ -90,6 +90,9 @@ my_flow_arrow_is_dragged (MyFlowArrow * self);
 void
 my_flow_arrow_end_dragging (MyFlowArrow * self);
 
+MyDragPoint *
+my_flow_arrow_get_drag_point (MyFlowArrow * self);
+
 G_END_DECLS
 
 #endif /* __MY_FLOW_ARROW_H__ */

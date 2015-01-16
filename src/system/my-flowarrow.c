@@ -356,7 +356,7 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
         g_param_spec_double ("energy-quantity",
                              "energy-quantity",
                              "The energy quantity that is transfered",
-                             -G_MAXDOUBLE, G_MAXDOUBLE, 1,
+                             -G_MAXDOUBLE, G_MAXDOUBLE, -10,
                              G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
     obj_properties[PROP_X_I] =
@@ -503,8 +503,9 @@ my_flow_arrow_change_anchor_while_dragging (MyFlowArrow * self,
 
         if (MY_IS_SYSTEM (self->_priv->linked_system)) {
 
-            gtk_widget_get_allocation (GOC_WIDGET (self->_priv->linked_system)->
-                                       ofbox, &to);
+            gtk_widget_get_allocation (GOC_WIDGET
+                                       (self->_priv->linked_system)->ofbox,
+                                       &to);
 
             anchor = calculate_anchor (from, to);
 
@@ -647,6 +648,15 @@ my_flow_arrow_end_dragging (MyFlowArrow * self)
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
     self->_priv->is_dragged = FALSE;
+}
+
+MyDragPoint *
+my_flow_arrow_get_drag_point (MyFlowArrow * self)
+{
+
+    g_return_if_fail (MY_IS_FLOW_ARROW (self));
+
+    return self->_priv->drag_point;
 }
 
 void
