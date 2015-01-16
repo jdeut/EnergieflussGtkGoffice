@@ -22,6 +22,10 @@ my_flow_arrow_destroy_clicked_cb (GtkButton * button, MyFlowArrow * flowarrow)
 
     dialog = (GtkDialog *) gtk_widget_get_toplevel(GTK_WIDGET(button));
 
+    if(MY_IS_FLOW_ARROW(flowarrow)) {
+        goc_item_destroy(GOC_ITEM(flowarrow));
+    }
+
     if(GTK_IS_DIALOG(dialog)) {
         gtk_widget_destroy(GTK_WIDGET(dialog));
     }

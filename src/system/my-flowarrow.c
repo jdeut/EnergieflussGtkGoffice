@@ -567,6 +567,8 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self, GParamSpec * pspec,
     g_signal_connect (self, "notify::y1",
                       G_CALLBACK (my_flow_arrow_change_anchor_while_dragging),
                       NULL);
+
+    g_signal_handlers_disconnect_by_func(self, my_flow_arrow_canvas_changed, NULL);
 }
 
 static void
@@ -594,21 +596,6 @@ my_flow_arrow_init (MyFlowArrow * self)
 void
 my_flow_arrow_destroy (MyFlowArrow * self)
 {
-
-    g_return_if_fail (MY_IS_FLOW_ARROW (self));
-
-    if (GOC_IS_TEXT (self->_priv->label)) {
-        goc_item_destroy (GOC_ITEM (self->_priv->label));
-    }
-
-    if (MY_IS_DRAG_POINT (self->_priv->drag_point)) {
-        goc_item_destroy (GOC_ITEM (self->_priv->drag_point));
-    }
-
-    g_free (self->_priv->arrow);
-
-    g_object_run_dispose (G_OBJECT (self));
-    g_object_unref (self);
 }
 
 static void
@@ -620,6 +607,18 @@ my_flow_arrow_dispose (GObject * object)
 static void
 my_flow_arrow_finalize (GObject * object)
 {
+    MyFlowArrow *self = MY_FLOW_ARROW(object);
+
+    if (GOC_IS_TEXT (self->_priv->label)) {
+        goc_item_destroy (GOC_ITEM (self->_priv->label));
+    }
+
+    if (MY_IS_DRAG_POINT (self->_priv->drag_point)) {
+        goc_item_destroy (GOC_ITEM (self->_priv->drag_point));
+    }
+
+    g_free (self->_priv->arrow);
+
     /* free/unref instance resources here */
     G_OBJECT_CLASS (my_flow_arrow_parent_class)->finalize (object);
 }
