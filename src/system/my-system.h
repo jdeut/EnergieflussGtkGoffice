@@ -49,6 +49,9 @@ enum
 
 /* fill in public functions */
 
+MyAnchorType
+calculate_anchor (GtkAllocation from, GtkAllocation to);
+
 G_END_DECLS
 
 #endif /* __MY_SYSTEM_H__ */

@@ -363,15 +363,13 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
         g_param_spec_double ("xi",
                              "intermediate x coordinate",
                              "...",
-                             -G_MAXDOUBLE, G_MAXDOUBLE, 1,
-                             G_PARAM_READABLE);
+                             -G_MAXDOUBLE, G_MAXDOUBLE, 1, G_PARAM_READABLE);
 
     obj_properties[PROP_Y_I] =
         g_param_spec_double ("yi",
                              "intermediate y coordinate",
                              "...",
-                             -G_MAXDOUBLE, G_MAXDOUBLE, 1,
-                             G_PARAM_READABLE);
+                             -G_MAXDOUBLE, G_MAXDOUBLE, 1, G_PARAM_READABLE);
 
     obj_properties[PROP_LINKED_SYSTEM] =
         g_param_spec_object ("linked-system",
@@ -437,7 +435,7 @@ my_flow_arrow_energy_quantity_changed (MyFlowArrow * self, GParamSpec * pspec,
 
     style->line.width = ABS (self->_priv->energy_quantity);
 
-    if(!MY_IS_DRAG_POINT(self->_priv->drag_point)) {
+    if (!MY_IS_DRAG_POINT (self->_priv->drag_point)) {
         return;
     }
 
@@ -485,6 +483,55 @@ notify_label_text_changed_cb (MyFlowArrow * self, GParamSpec * pspec,
 }
 
 static void
+my_flow_arrow_change_anchor_while_dragging (MyFlowArrow * self,
+                                            GParamSpec * pspec, gpointer data)
+{
+    GtkAllocation from, to;
+    gdouble x, y;
+    MyAnchorType anchor;
+
+    if (my_flow_arrow_is_dragged (self)
+        && !MY_IS_SYSTEM (self->_priv->secondary_system)) {
+
+        if (self->_priv->energy_quantity >= 0)
+            g_object_get (self, "x0", &x, "y0", &y, NULL);
+        else
+            g_object_get (self, "x1", &x, "y1", &y, NULL);
+
+        from.x = x;
+        from.y = y;
+
+        if (MY_IS_SYSTEM (self->_priv->linked_system)) {
+
+            gtk_widget_get_allocation (GOC_WIDGET (self->_priv->linked_system)->
+                                       ofbox, &to);
+
+            anchor = calculate_anchor (from, to);
+
+            my_system_get_coordinate_of_anchor (self->_priv->linked_system,
+                                                anchor, &x, &y);
+
+            g_object_set (self, "anchor", anchor, NULL);
+
+            g_signal_handlers_block_by_func (self,
+                                             my_flow_arrow_change_anchor_while_dragging,
+                                             NULL);
+
+            if (self->_priv->energy_quantity >= 0) {
+                goc_item_set (GOC_ITEM (self), "x1", x, "y1", y, NULL);
+            }
+            else {
+                goc_item_set (GOC_ITEM (self), "x0", x, "y0", y, NULL);
+            }
+
+            g_signal_handlers_unblock_by_func (self,
+                                               my_flow_arrow_change_anchor_while_dragging,
+                                               NULL);
+        }
+    }
+}
+
+static void
 my_flow_arrow_canvas_changed (MyFlowArrow * self, GParamSpec * pspec,
                               gpointer data)
 {
@@ -506,6 +553,19 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self, GParamSpec * pspec,
 
     g_signal_connect (self, "notify::label-text",
                       G_CALLBACK (notify_label_text_changed_cb), NULL);
+
+    g_signal_connect (self, "notify::x0",
+                      G_CALLBACK (my_flow_arrow_change_anchor_while_dragging),
+                      NULL);
+    g_signal_connect (self, "notify::x1",
+                      G_CALLBACK (my_flow_arrow_change_anchor_while_dragging),
+                      NULL);
+    g_signal_connect (self, "notify::y0",
+                      G_CALLBACK (my_flow_arrow_change_anchor_while_dragging),
+                      NULL);
+    g_signal_connect (self, "notify::y1",
+                      G_CALLBACK (my_flow_arrow_change_anchor_while_dragging),
+                      NULL);
 }
 
 static void

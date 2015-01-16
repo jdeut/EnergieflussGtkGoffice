@@ -53,7 +53,6 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
                 g_object_set(arrow, "secondary-system", item, NULL);
                 
             } else {
-                g_print("sd\n");
 
                 g_object_set(arrow, "secondary-system", NULL, NULL);
             }

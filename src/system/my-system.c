@@ -57,50 +57,77 @@ my_system_error_quark (void)
     return g_quark_from_static_string ("my-system-error-quark");
 }
 
-void
-my_system_connection_set_coordinate_of_arrow_tip (GtkAllocation from,
-                                        GtkAllocation to, gdouble * x,
-                                        gdouble * y)
+MyAnchorType
+calculate_anchor (GtkAllocation from, GtkAllocation to)
 {
-    gdouble dx, dy, alpha, x1, y1;
-    MyAnchorType anchor_to;
+    gdouble dx, dy, alpha;
+    MyAnchorType anchor;
 
     dx = to.x - from.x;
     dy = to.y - from.y;
 
     alpha = atan2 (dy, dx);
 
-    anchor_to = MY_ANCHOR_SOUTH;
+    anchor = MY_ANCHOR_SOUTH;
 
     if (-M_PI / 4 < alpha && alpha <= M_PI / 4) {
-        anchor_to = MY_ANCHOR_WEST;
+        anchor = MY_ANCHOR_WEST;
     }
     else if (M_PI / 4 < alpha && alpha <= 3 * M_PI / 4) {
-        anchor_to = MY_ANCHOR_NORTH;
+        anchor = MY_ANCHOR_NORTH;
     }
     else if (3 * M_PI / 4 < alpha || alpha <= -3 * M_PI / 4) {
-        anchor_to = MY_ANCHOR_EAST;
+        anchor = MY_ANCHOR_EAST;
     }
+    return anchor;
+}
 
-    if (anchor_to == MY_ANCHOR_WEST) {
-        x1 = to.x;
-        y1 = to.y + to.height / 2;
-    }
-    else if (anchor_to == MY_ANCHOR_SOUTH) {
-        x1 = to.x + to.width / 2;
-        y1 = to.y + to.height;
-    }
-    else if (anchor_to == MY_ANCHOR_NORTH) {
-        x1 = to.x + to.width / 2;
-        y1 = to.y;
-    }
-    else if (anchor_to == MY_ANCHOR_EAST) {
-        x1 = to.x + to.width;
-        y1 = to.y + to.height / 2;
-    }
+void
+alloc_get_coordinate_of_anchor (GtkAllocation alloc, MyAnchorType anchor,
+                                gdouble * x, gdouble * y)
+{
 
-    *x = x1;
-    *y = y1;
+    if (anchor == MY_ANCHOR_WEST) {
+        *x = alloc.x;
+        *y = alloc.y + alloc.height / 2;
+    }
+    else if (anchor == MY_ANCHOR_SOUTH) {
+        *x = alloc.x + alloc.width / 2;
+        *y = alloc.y + alloc.height;
+    }
+    else if (anchor == MY_ANCHOR_NORTH) {
+        *x = alloc.x + alloc.width / 2;
+        *y = alloc.y;
+    }
+    else if (anchor == MY_ANCHOR_EAST) {
+        *x = alloc.x + alloc.width;
+        *y = alloc.y + alloc.height / 2;
+    }
+}
+
+void
+my_system_get_coordinate_of_anchor (MySystem * system, MyAnchorType anchor,
+                                    gdouble * x, gdouble * y)
+{
+    GtkAllocation alloc;
+
+    g_return_if_fail (MY_IS_SYSTEM (system));
+
+    gtk_widget_get_allocation (GOC_WIDGET (system)->ofbox, &alloc);
+
+    alloc_get_coordinate_of_anchor (alloc, anchor, x, y);
+}
+
+void
+my_system_connection_set_coordinate_of_arrow_tip (GtkAllocation from,
+                                                  GtkAllocation to, gdouble * x,
+                                                  gdouble * y)
+{
+    MyAnchorType anchor_to;
+
+    anchor_to = calculate_anchor (from, to);
+
+    alloc_get_coordinate_of_anchor (to, anchor_to, x, y);
 }
 
 void
@@ -135,10 +162,7 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
 
         gdouble x0, x1, y0, y1;
 
-        GocItem *arrow;
-
         MySystem *secondary_system, *primary_system;
-        gchar *label_text;
         gdouble arrow_len;
         MyAnchorType anchor_source, anchor_sink;
         gdouble energy_quantity;
@@ -149,6 +173,7 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
 
         g_object_get (l->data, "linked-system", &primary_system, NULL);
 
+        /* continue if arrow doesn't belong to system */
         if (primary_system != self) {
             continue;
         }
@@ -160,14 +185,10 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
 
         g_object_get (l->data,
                       "energy-quantity", &energy_quantity,
-                      "label-text", &label_text,
                       "anchor", &anchor_source,
                       "secondary-system", &secondary_system, NULL);
 
         /* draw arrow */
-
-        x0 = alloc_primary.x + alloc_primary.width / 2;
-        y0 = alloc_primary.y + alloc_primary.height / 2;
 
         arrow_len = alloc_primary.width * 0.66;
 
@@ -179,62 +200,67 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
             gtk_widget_get_allocation (GOC_WIDGET (secondary_system)->ofbox,
                                        &alloc_secondary);
 
-            if(energy_quantity < 0.0) {
-                my_system_connection_set_coordinate_of_arrow_tip(alloc_primary, alloc_secondary, &x1, &y1); 
+            if (energy_quantity < 0.0) {
+                x0 = alloc_primary.x + alloc_primary.width / 2;
+                y0 = alloc_primary.y + alloc_primary.height / 2;
 
-            } else {
+                my_system_connection_set_coordinate_of_arrow_tip (alloc_primary,
+                                                                  alloc_secondary,
+                                                                  &x1, &y1);
+
+            }
+            else {
                 x0 = alloc_secondary.x + alloc_secondary.width / 2;
                 y0 = alloc_secondary.y + alloc_secondary.height / 2;
-                    
-                my_system_connection_set_coordinate_of_arrow_tip(alloc_secondary, alloc_primary, &x1, &y1); 
+
+                my_system_connection_set_coordinate_of_arrow_tip
+                    (alloc_secondary, alloc_primary, &x1, &y1);
             }
         }
         /* if arrow depicts transfer to environment */
         else if (energy_quantity < 0.0) {
 
+            alloc_get_coordinate_of_anchor (alloc_primary, anchor_source, &x0,
+                                            &y0);
+
             if (anchor_source == MY_ANCHOR_WEST) {
-                x0 = alloc_primary.x + alloc_primary.width;
-                x1 = x0 + arrow_len;
+                x1 = x0 - arrow_len;
                 y1 = y0;
             }
             else if (anchor_source == MY_ANCHOR_EAST) {
-                x0 = alloc_primary.x;
-                x1 = alloc_primary.x - arrow_len;
+                x1 = x0 + arrow_len;
                 y1 = y0;
             }
             else if (anchor_source == MY_ANCHOR_SOUTH) {
                 x1 = x0;
-                y0 = alloc_primary.y + alloc_primary.height;
-                y1 = alloc_primary.y + alloc_primary.height + arrow_len;
+                y1 = y0 + arrow_len;
             }
             else if (anchor_source == MY_ANCHOR_NORTH) {
                 x1 = x0;
-                y0 = alloc_primary.y;
-                y1 = alloc_primary.y - arrow_len;
+                y1 = y0 - arrow_len;
             }
         }
         /* if arrow depicts transfer from environment */
         else if (energy_quantity >= 0.0) {
 
+            alloc_get_coordinate_of_anchor (alloc_primary, anchor_source, &x1,
+                                            &y1);
+
             if (anchor_source == MY_ANCHOR_WEST) {
-                x1 = alloc_primary.x + alloc_primary.width;
-                x0 = x1 + arrow_len;
-                y1 = y0;
+                x0 = x1 - arrow_len;
+                y0 = y1;
             }
             else if (anchor_source == MY_ANCHOR_EAST) {
-                x1 = alloc_primary.x;
-                x0 = x1 - arrow_len;
-                y1 = y0;
+                x0 = x1 + arrow_len;
+                y0 = y1;
             }
             else if (anchor_source == MY_ANCHOR_SOUTH) {
-                x1 = x0;
-                y1 = alloc_primary.y + alloc_primary.height;
                 y0 = y1 + arrow_len;
+                x0 = x1;
             }
             else if (anchor_source == MY_ANCHOR_NORTH) {
-                y1 = alloc_primary.y;
                 y0 = y1 - arrow_len;
-                x1 = x0;
+                x0 = x1;
             }
         }
 

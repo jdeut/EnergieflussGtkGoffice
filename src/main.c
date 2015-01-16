@@ -17,7 +17,7 @@ populate_canvas (App * app)
 
     arrow =
         goc_item_new (group_arrows, MY_TYPE_FLOW_ARROW, "energy-quantity", 10.0,
-                      "linked-system", system1, "secondary-system", NULL, "anchor", MY_ANCHOR_WEST, NULL);
+                      "linked-system", system1, "secondary-system", NULL, "anchor", MY_ANCHOR_EAST, NULL);
 
     system2 =
         goc_item_new (group_systems, MY_TYPE_SYSTEM, "x", 300.0, "y", 400.0,
