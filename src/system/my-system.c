@@ -276,6 +276,96 @@ my_system_class_init (MySystemClass * klass)
     gi_class->draw = my_system_draw_energy_flow;
 }
 
+static void
+my_system_init_energy_flow_store (MySystem * self)
+{
+    self->EnergyFlow =
+        gtk_list_store_new (N_COLUMNS,
+                            GOC_TYPE_LINE,
+                            G_TYPE_INT, G_TYPE_INT, G_TYPE_FLOAT,
+                            MY_TYPE_SYSTEM, G_TYPE_BOOLEAN, G_TYPE_STRING);
+}
+
+static gboolean
+my_system_begin_drag (GtkWidget *button, GdkEventButton * event,
+                      MySystem *self)
+{
+    GocCanvas *canvas;
+
+    g_object_get (self, "canvas", &canvas, NULL);
+
+    my_canvas_button_press_cb (canvas, event, button);
+
+    return FALSE;
+}
+
+static gboolean
+my_system_is_dragged (GtkWidget *button,
+                      GdkEventMotion * event, MySystem *self)
+{
+    GocCanvas *canvas;
+
+    g_object_get (self, "canvas", &canvas, NULL);
+
+    my_canvas_motion_notify_cb (canvas, event, button);
+
+    return FALSE;
+}
+
+static gboolean
+my_system_end_drag (GtkWidget *button, GdkEvent * event, MySystem *self)
+{
+    GocCanvas *canvas;
+
+    g_object_get (self, "canvas", &canvas, NULL);
+
+    my_canvas_button_release_cb (canvas, event, button);
+
+    return FALSE;
+}
+
+
+static void
+my_system_init (MySystem * self)
+{
+    GtkWidget *button;
+
+    button = gtk_button_new_with_label ("MyNewSystem");
+
+    goc_item_set (GOC_ITEM (self), "widget", button, "width", 150.0, "height",
+                  80.0, NULL);
+
+    my_system_init_energy_flow_store (self);
+
+
+    g_signal_connect (button, "button-press-event",
+                      G_CALLBACK (my_system_begin_drag), self);
+
+    g_signal_connect (button, "button-release-event",
+                      G_CALLBACK (my_system_end_drag), self);
+
+    g_signal_connect (button, "motion-notify-event",
+                      G_CALLBACK (my_system_is_dragged), self);
+
+    g_signal_connect (self, "notify::canvas",
+                      G_CALLBACK (notify_canvas_changed_cb), NULL);
+}
+
+static void
+my_system_dispose (GObject * object)
+{
+    G_OBJECT_CLASS (my_system_parent_class)->dispose (object);
+}
+
+static void
+my_system_finalize (GObject * object)
+{
+    /* free/unref instance resources here */
+    G_OBJECT_CLASS (my_system_parent_class)->finalize (object);
+}
+
+/* begin public methods */
+
 void
 my_system_change_flow_arrow_direction (MySystem * self, MyFlowArrow * arrow)
 {
@@ -475,92 +565,4 @@ my_system_add_energy_transfer_from_environment (MySystem * self,
                         COLUMN_ENERGY_QUANTITY, quantity,
                         COLUMN_LABEL_TEXT, label_text,
                         COLUMN_FROM_ENVIRONMENT, TRUE, -1);
-}
-
-static void
-my_system_init_energy_flow_store (MySystem * self)
-{
-    self->EnergyFlow =
-        gtk_list_store_new (N_COLUMNS,
-                            GOC_TYPE_LINE,
-                            G_TYPE_INT, G_TYPE_INT, G_TYPE_FLOAT,
-                            MY_TYPE_SYSTEM, G_TYPE_BOOLEAN, G_TYPE_STRING);
-}
-
-static gboolean
-my_system_begin_drag (GtkWidget *button, GdkEventButton * event,
-                      MySystem *self)
-{
-    GocCanvas *canvas;
-
-    g_object_get (self, "canvas", &canvas, NULL);
-
-    my_canvas_button_press_cb (canvas, event, button);
-
-    return FALSE;
-}
-
-static gboolean
-my_system_is_dragged (GtkWidget *button,
-                      GdkEventMotion * event, MySystem *self)
-{
-    GocCanvas *canvas;
-
-    g_object_get (self, "canvas", &canvas, NULL);
-
-    my_canvas_motion_notify_cb (canvas, event, button);
-
-    return FALSE;
-}
-
-static gboolean
-my_system_end_drag (GtkWidget *button, GdkEvent * event, MySystem *self)
-{
-    GocCanvas *canvas;
-
-    g_object_get (self, "canvas", &canvas, NULL);
-
-    my_canvas_button_release_cb (canvas, event, button);
-
-    return FALSE;
-}
-
-
-static void
-my_system_init (MySystem * self)
-{
-    GtkWidget *button;
-
-    button = gtk_button_new_with_label ("MyNewSystem");
-
-    goc_item_set (GOC_ITEM (self), "widget", button, "width", 150.0, "height",
-                  80.0, NULL);
-
-    my_system_init_energy_flow_store (self);
-
-
-    g_signal_connect (button, "button-press-event",
-                      G_CALLBACK (my_system_begin_drag), self);
-
-    g_signal_connect (button, "button-release-event",
-                      G_CALLBACK (my_system_end_drag), self);
-
-    g_signal_connect (button, "motion-notify-event",
-                      G_CALLBACK (my_system_is_dragged), self);
-
-    g_signal_connect (self, "notify::canvas",
-                      G_CALLBACK (notify_canvas_changed_cb), NULL);
-}
-
-static void
-my_system_dispose (GObject * object)
-{
-    G_OBJECT_CLASS (my_system_parent_class)->dispose (object);
-}
-
-static void
-my_system_finalize (GObject * object)
-{
-    /* free/unref instance resources here */
-    G_OBJECT_CLASS (my_system_parent_class)->finalize (object);
 }
