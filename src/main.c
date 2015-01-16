@@ -3,42 +3,28 @@
 void
 populate_canvas (App * app)
 {
-    GocGroup *group_systems;
-    GocItem *item1, *item2;
+    GocGroup *group_systems, *group_arrows;
+    GocItem *system1, *system2, *arrow;
 
     GtkWidget *button;
 
     group_systems = app->canvas->group_systems;
+    group_arrows = app->canvas->group_arrows;
 
-    item1 =
+    system1 =
         goc_item_new (group_systems, MY_TYPE_SYSTEM, "x", 100.0, "y", 200.0,
                       NULL);
 
-    my_system_add_energy_transfer_to_environment (MY_SYSTEM (item1), NULL,
-                                                  ANCHOR_WEST, 10.0);
-    my_system_add_energy_transfer_to_environment (MY_SYSTEM (item1), NULL,
-                                                  ANCHOR_SOUTH, 30.0);
-    my_system_add_energy_transfer_to_environment (MY_SYSTEM (item1), NULL,
-                                                  ANCHOR_EAST, 5.0);
-    my_system_add_energy_transfer_to_environment (MY_SYSTEM (item1), NULL,
-                                                  ANCHOR_NORTH, 2.0);
+    arrow =
+        goc_item_new (group_arrows, MY_TYPE_FLOW_ARROW, "energy-quantity", 10.0,
+                      "linked-system", system1, "secondary-system", NULL, "anchor", MY_ANCHOR_WEST, NULL);
 
-    item1 =
-        goc_item_new (group_systems, MY_TYPE_SYSTEM, "x", 100.0, "y", 100.0,
+    system2 =
+        goc_item_new (group_systems, MY_TYPE_SYSTEM, "x", 300.0, "y", 400.0,
                       NULL);
-
-    item2 =
-        goc_item_new (group_systems, MY_TYPE_SYSTEM, "x", 500.0, "y", 100.0,
-                      NULL);
-
-    my_system_add_energy_transfer_to_system (MY_SYSTEM (item2),
-                                             "<span size=\"xx-large\">W<sub>el</sub></span>",
-                                             ANCHOR_EAST, 30,
-                                             MY_SYSTEM (item1));
-
-    item1 =
-        goc_item_new (group_systems, GOC_TYPE_CIRCLE, "x", 100.0, "y", 200.0, "radius", 20.0,
-                      NULL);
+    arrow =
+        goc_item_new (group_arrows, MY_TYPE_FLOW_ARROW, "energy-quantity", 10.0,
+                      "linked-system", system1, "secondary-system", system2, "anchor", MY_ANCHOR_EAST, NULL);
 }
 
 int
@@ -67,13 +53,6 @@ main (int argc, char *argv[])
     populate_canvas (app);
 
     gtk_widget_show_all (window1);
-
-    /*g_signal_connect (app->canvas, "button-press-event",*/
-                      /*G_CALLBACK (button_press_cb), app);*/
-    /*g_signal_connect (app->canvas, "button-release-event",*/
-                      /*G_CALLBACK (button_release_cb), app);*/
-    /*g_signal_connect (app->canvas, "motion-notify-event",*/
-                      /*G_CALLBACK (motion_notify_cb), app);*/
 
     gtk_main ();
 

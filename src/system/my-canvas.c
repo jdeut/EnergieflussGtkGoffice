@@ -49,13 +49,13 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
             /* only do it if drag point is over a system but not over the system the corresponding arrow is linked with*/
 
             if (d == 0. && MY_IS_SYSTEM (item) && MY_SYSTEM(linked_system) != MY_SYSTEM(item)) {
-                
-                my_system_change_sink_of_arrow(linked_system, arrow, MY_SYSTEM(item));
 
+                g_object_set(arrow, "secondary-system", item, NULL);
+                
             } else {
                 g_print("sd\n");
 
-                my_system_change_sink_of_arrow(linked_system, arrow, NULL);
+                g_object_set(arrow, "secondary-system", NULL, NULL);
             }
         }
 

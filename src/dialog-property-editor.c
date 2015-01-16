@@ -14,31 +14,11 @@ dialog_property_editor_response_cb (GtkWidget * dialog,
     gtk_widget_destroy (dialog);
 }
 
-void my_flow_button_arrow_orientation_cb  (GtkButton * button, MyFlowArrow * flowarrow) {
-
-    MySystem *system;
-    GtkDialog *dialog;
-
-    system = my_flow_arrow_get_linked_system (flowarrow);
-
-    my_system_change_flow_arrow_direction (system, flowarrow);
-
-    dialog = (GtkDialog *) gtk_widget_get_toplevel(GTK_WIDGET(button));
-
-    if(GTK_IS_DIALOG(dialog)) {
-        gtk_widget_destroy(GTK_WIDGET(dialog));
-    }
-}
-
 void
 my_flow_arrow_destroy_clicked_cb (GtkButton * button, MyFlowArrow * flowarrow)
 {
     MySystem *system;
     GtkDialog *dialog;
-
-    system = my_flow_arrow_get_linked_system (flowarrow);
-
-    my_system_remove_flow_arrow (system, flowarrow);
 
     dialog = (GtkDialog *) gtk_widget_get_toplevel(GTK_WIDGET(button));
 
@@ -78,7 +58,7 @@ dialog_property_editor (GObject * object, gchar * label, GtkWindow * window)
         g_object_set (hbox, "margin-top", 10, "margin-bottom", 10,
                       "margin-left", 10, "margin-right", 10, NULL);
 
-        button = gtk_spin_button_new_with_range (1, 200, 1);
+        button = gtk_spin_button_new_with_range (-200, 200, 1);
         label = gtk_label_new ("Energiemenge");
 
         gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
@@ -126,25 +106,6 @@ dialog_property_editor (GObject * object, gchar * label, GtkWindow * window)
 
         g_signal_connect (button, "clicked",
                           G_CALLBACK (my_flow_arrow_destroy_clicked_cb),
-                          object);
-
-        /* add line to change arrow orientation*/
-        hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 10);
-        gtk_box_set_homogeneous (GTK_BOX (hbox), TRUE);
-
-        g_object_set (hbox, "margin-top", 10, "margin-bottom", 10,
-                      "margin-left", 10, "margin-right", 10, NULL);
-
-        button = gtk_button_new_with_label ("change");
-        label = gtk_label_new ("Orientation");
-
-        gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
-        gtk_box_pack_start (GTK_BOX (hbox), button, FALSE, FALSE, 0);
-
-        gtk_list_box_prepend (GTK_LIST_BOX (listbox), hbox);
-
-        g_signal_connect (button, "clicked",
-                          G_CALLBACK (my_flow_button_arrow_orientation_cb),
                           object);
 
         gtk_widget_show_all (listbox);
