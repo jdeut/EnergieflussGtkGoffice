@@ -137,10 +137,6 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
                                 -1);
         }
 
-        /*if(my_flow_arrow_is_dragged(MY_FLOW_ARROW(arrow))) { */
-        /*continue; */
-        /*} */
-
         /* draw arrow */
 
         x0 = allocation.x + allocation.width / 2;
