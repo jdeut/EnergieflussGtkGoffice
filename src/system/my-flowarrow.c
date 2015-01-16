@@ -302,9 +302,7 @@ my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
 
     my_flow_arrow_draw_label (self, cr);
 
-    /*if (GOC_IS_ITEM (self->_priv->drag_point)) { */
-    /*g_object_set (self->_priv->drag_point, "x", x1, "y", y1, NULL); */
-    /*} */
+    gtk_widget_queue_draw(GTK_WIDGET(item->canvas));
 }
 
 static void
