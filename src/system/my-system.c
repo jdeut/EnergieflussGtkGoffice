@@ -254,23 +254,23 @@ static void
 ofbox_size_allocate_cb (GtkWidget * widget, GdkRectangle * allocation,
                         MySystem * self)
 {
-    GSList *tmp;
+    /*GSList *tmp;*/
 
-    tmp = self->AssociatedSystems;
+    /*tmp = self->AssociatedSystems;*/
 
-    while (tmp) {
-        MySystem *associate = tmp->data;
+    /*while (tmp) {*/
+        /*MySystem *associate = tmp->data;*/
 
-        if (MY_IS_SYSTEM (associate)) {
+        /*if (MY_IS_SYSTEM (associate)) {*/
             /* draw all energy flows of those systems that transfer
              * energy to self */
-            goc_item_invalidate (GOC_ITEM (associate));
-        }
+            /*goc_item_invalidate (GOC_ITEM (associate));*/
+        /*}*/
 
-        tmp = tmp->next;
-    }
+        /*tmp = tmp->next;*/
+    /*}*/
 
-    goc_item_invalidate (GOC_ITEM (self));
+    /*goc_item_invalidate (GOC_ITEM (self));*/
 }
 
 gboolean
@@ -365,7 +365,6 @@ my_system_change_flow_arrow_direction (MySystem * self, MyFlowArrow * arrow)
                                                          iter_anchor_sink,
                                                          iter_energy_quantity,
                                                          self);
-                my_system_remove_associate (iter_sink, self);
                 my_system_remove_flow_arrow (self, arrow);
             }
             else {
@@ -389,27 +388,6 @@ my_system_change_flow_arrow_direction (MySystem * self, MyFlowArrow * arrow)
 
     goc_item_invalidate (GOC_ITEM (self));
     goc_item_invalidate (GOC_ITEM (arrow));
-}
-
-void
-my_system_remove_associate (MySystem * self, MySystem * associate)
-{
-    g_return_if_fail (MY_IS_SYSTEM (self));
-    g_return_if_fail (MY_IS_SYSTEM (associate));
-
-    self->AssociatedSystems =
-        g_slist_remove (self->AssociatedSystems, associate);
-}
-
-
-void
-my_system_add_associate (MySystem * self, MySystem * associate)
-{
-    g_return_if_fail (MY_IS_SYSTEM (self));
-    g_return_if_fail (MY_IS_SYSTEM (associate));
-
-    self->AssociatedSystems =
-        g_slist_append (self->AssociatedSystems, associate);
 }
 
 gboolean
@@ -439,10 +417,6 @@ my_system_remove_flow_arrow (MySystem * self, MyFlowArrow * arrow)
                             COLUMN_ARROW, &iter_arrow, -1);
 
         if (iter_arrow == arrow) {
-
-            if (MY_IS_SYSTEM (iter_sink)) {
-                my_system_remove_associate (self, iter_sink);
-            }
 
             my_flow_arrow_destroy (arrow);
 
@@ -507,8 +481,6 @@ my_system_add_energy_transfer_to_system (MySystem * self, gchar * label_text,
     /* associate sink with self, so that energy_flows of self are
      * redrawn if the allocation of sink changes */
 
-    my_system_add_associate (sink, self);
-
     gtk_list_store_append (self->EnergyFlow, &iter);
 
     gtk_list_store_set (self->EnergyFlow, &iter,
@@ -558,12 +530,6 @@ my_system_add_energy_transfer_from_environment (MySystem * self,
 }
 
 static void
-my_system_init_associated_systems (MySystem * self)
-{
-    self->AssociatedSystems = NULL;
-}
-
-static void
 my_system_init_energy_flow_store (MySystem * self)
 {
     self->EnergyFlow =
@@ -584,7 +550,6 @@ my_system_init (MySystem * self)
                   80.0, NULL);
 
     my_system_init_energy_flow_store (self);
-    my_system_init_associated_systems (self);
 
     g_signal_connect (self, "notify::widget",
                       G_CALLBACK (notify_widget_changed_cb), NULL);
