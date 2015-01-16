@@ -4,8 +4,6 @@
 #include <glib-object.h>
 #include <goffice/canvas/goc-circle.h>
 
-#include "my-flowarrow.h"
-
 
 G_BEGIN_DECLS
 
@@ -38,6 +36,8 @@ struct _MyDragPointClass
 };
 
 GType my_drag_point_get_type (void);
+
+#include "my-flowarrow.h"
 
 /* fill in public functions */
 
