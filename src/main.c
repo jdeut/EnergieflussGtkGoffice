@@ -6,8 +6,6 @@ populate_canvas (App * app)
     GocGroup *group_systems, *group_arrows;
     GocItem *system1, *system2, *arrow;
 
-    GtkWidget *button;
-
     group_systems = app->canvas->group_systems;
     group_arrows = app->canvas->group_arrows;
 

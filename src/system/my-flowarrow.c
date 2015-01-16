@@ -8,8 +8,6 @@ enum
     PROP_ENERGY_QUANTITY,
     PROP_LINKED_SYSTEM,
     PROP_SECONDARY_SYSTEM,
-    PROP_X_I,
-    PROP_Y_I,
     PROP_ANCHOR,
     N_PROPERTIES
 };
@@ -30,11 +28,9 @@ struct _MyFlowArrowPrivate
     GocItem *label;
     MyAnchorType anchor;
     MyDragPoint *drag_point;
-    gdouble x_i, y_i;
     GBinding *bind_drag_point_of_self_x;
     GBinding *bind_drag_point_of_self_y;
-    MySystem *linked_system;
-    MySystem *secondary_system;
+    MySystem *linked_system, *secondary_system;
     gdouble energy_quantity;
     /* private members go here */
 };
@@ -109,12 +105,15 @@ my_flow_arrow_set_property (GObject * object,
                 my_flow_arrow_set_linked_system (self, linked_system);
                 return;
             }
+
         case PROP_SECONDARY_SYSTEM:
             self->_priv->secondary_system = g_value_get_object (value);
             break;
+
         case PROP_ENERGY_QUANTITY:
             self->_priv->energy_quantity = g_value_get_double (value);
             break;
+
         case PROP_ANCHOR:
             self->_priv->anchor = (MyAnchorType) g_value_get_enum (value);
             break;
@@ -144,14 +143,6 @@ my_flow_arrow_get_property (GObject * object,
 
         case PROP_SECONDARY_SYSTEM:
             g_value_set_object (value, self->_priv->secondary_system);
-            break;
-
-        case PROP_X_I:
-            g_value_set_double (value, self->_priv->x_i);
-            break;
-
-        case PROP_Y_I:
-            g_value_set_double (value, self->_priv->y_i);
             break;
 
         case PROP_ENERGY_QUANTITY:
@@ -347,32 +338,20 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
     obj_properties[PROP_LABEL_TEXT] =
         g_param_spec_string ("label-text",
                              "label-text",
-                             "Label text",
+                             "Text of the arrow label.",
                              NULL, G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
     obj_properties[PROP_ENERGY_QUANTITY] =
         g_param_spec_double ("energy-quantity",
                              "energy-quantity",
-                             "The energy quantity that is transfered",
+                             "The energy quantity that is transfered. E > 0 means energy flows in the system an E < 0 means energy flows out of the system.",
                              -G_MAXDOUBLE, G_MAXDOUBLE, -10,
                              G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
-
-    obj_properties[PROP_X_I] =
-        g_param_spec_double ("xi",
-                             "intermediate x coordinate",
-                             "...",
-                             -G_MAXDOUBLE, G_MAXDOUBLE, 1, G_PARAM_READABLE);
-
-    obj_properties[PROP_Y_I] =
-        g_param_spec_double ("yi",
-                             "intermediate y coordinate",
-                             "...",
-                             -G_MAXDOUBLE, G_MAXDOUBLE, 1, G_PARAM_READABLE);
 
     obj_properties[PROP_LINKED_SYSTEM] =
         g_param_spec_object ("linked-system",
                              "linked system",
-                             "A pointer to the linked system from where the energy transport is seen",
+                             "A pointer to the system from where the energy transport is seen",
                              MY_TYPE_SYSTEM, G_PARAM_READWRITE);
 
     obj_properties[PROP_SECONDARY_SYSTEM] =
@@ -384,8 +363,8 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
     obj_properties[PROP_ANCHOR] =
         g_param_spec_enum ("anchor",
                            "anchor",
-                           "Where the arrow should snap at the linked-system",
-                           MY_TYPE_ANCHOR_TYPE, 0, G_PARAM_READWRITE);
+                           "Determines on which side of the linked-system the arrow should snap",
+                           MY_TYPE_ANCHOR_TYPE, MY_ANCHOR_EAST, G_PARAM_READWRITE);
 
     g_object_class_install_properties (gobject_class,
                                        N_PROPERTIES, obj_properties);
@@ -467,9 +446,6 @@ notify_label_text_changed_cb (MyFlowArrow * self, GParamSpec * pspec,
                               gpointer data)
 {
     GOStyle *style;
-    GtkWidget *canvas;
-
-    canvas = GTK_WIDGET (GOC_ITEM (self)->canvas);
 
     if (G_IS_OBJECT (self->_priv->label)) {
         g_object_unref (self->_priv->label);
@@ -529,7 +505,7 @@ my_flow_arrow_change_anchor_while_dragging (MyFlowArrow * self,
 }
 
 static void
-my_flow_arrow_canvas_changed (MyFlowArrow * self, GParamSpec * pspec,
+my_flow_arrow_canvas_initial_changed (MyFlowArrow * self, GParamSpec * pspec,
                               gpointer data)
 {
     MyCanvas *canvas;
@@ -564,7 +540,7 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self, GParamSpec * pspec,
                       G_CALLBACK (my_flow_arrow_change_anchor_while_dragging),
                       NULL);
 
-    g_signal_handlers_disconnect_by_func(self, my_flow_arrow_canvas_changed, NULL);
+    g_signal_handlers_disconnect_by_func(self, my_flow_arrow_canvas_initial_changed, NULL);
 }
 
 static void
@@ -586,12 +562,7 @@ my_flow_arrow_init (MyFlowArrow * self)
     g_object_set (self, "end-arrow", self->_priv->arrow, NULL);
 
     g_signal_connect (self, "notify::canvas",
-                      G_CALLBACK (my_flow_arrow_canvas_changed), NULL);
-}
-
-void
-my_flow_arrow_destroy (MyFlowArrow * self)
-{
+                      G_CALLBACK (my_flow_arrow_canvas_initial_changed), NULL);
 }
 
 static void
@@ -657,11 +628,6 @@ my_flow_arrow_get_drag_point (MyFlowArrow * self)
 void
 my_flow_arrow_show_drag_points (MyFlowArrow * self)
 {
-
-    MyCanvas *canvas;
-    GocGroup *group_arrows = NULL;
-    gdouble x1, y1;
-
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
     goc_item_show (GOC_ITEM (self->_priv->drag_point));
@@ -670,6 +636,8 @@ my_flow_arrow_show_drag_points (MyFlowArrow * self)
 void
 my_flow_arrow_hide_drag_points (MyFlowArrow * self)
 {
+    g_return_if_fail (MY_IS_FLOW_ARROW (self));
+
     if (MY_IS_DRAG_POINT (self->_priv->drag_point)) {
         goc_item_hide (GOC_ITEM (self->_priv->drag_point));
     }
@@ -678,7 +646,6 @@ my_flow_arrow_hide_drag_points (MyFlowArrow * self)
 MySystem *
 my_flow_arrow_get_linked_system (MyFlowArrow * self)
 {
-
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
     return self->_priv->linked_system;
@@ -687,7 +654,6 @@ my_flow_arrow_get_linked_system (MyFlowArrow * self)
 void
 my_flow_arrow_set_linked_system (MyFlowArrow * self, MySystem * system)
 {
-
     g_return_if_fail (MY_IS_SYSTEM (system));
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 

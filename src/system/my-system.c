@@ -160,11 +160,10 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
 
     for (l = group_arrows->children; l != NULL; l = l->next) {
 
-        gdouble x0, x1, y0, y1;
-
         MySystem *secondary_system, *primary_system;
-        gdouble arrow_len;
-        MyAnchorType anchor_source, anchor_sink;
+        MyAnchorType anchor_source;
+
+        gdouble x0, x1, y0, y1, arrow_len;
         gdouble energy_quantity;
 
         if (!MY_IS_FLOW_ARROW (l->data)) {
@@ -173,13 +172,8 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
 
         g_object_get (l->data, "linked-system", &primary_system, NULL);
 
-        /* continue if arrow doesn't belong to system */
+        /* fetch next arrow if current arrow doesn't belong to system */
         if (primary_system != self) {
-            continue;
-        }
-
-        // If arrow is not instantiated yet
-        if (!MY_IS_FLOW_ARROW (l->data)) {
             continue;
         }
 
@@ -272,18 +266,6 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
 }
 
 static void
-notify_canvas_changed_cb (MySystem * self, GParamSpec * pspec, gpointer data)
-{
-    g_print ("canvas changed\n");
-}
-
-static gboolean
-my_system_button_pressed (GocItem * item, int button, double x, double y)
-{
-    g_print ("MySystem button pressed...\n");
-}
-
-static void
 my_system_class_init (MySystemClass * klass)
 {
     GObjectClass *gobject_class;
@@ -297,7 +279,6 @@ my_system_class_init (MySystemClass * klass)
     gobject_class->finalize = my_system_finalize;
     gobject_class->dispose = my_system_dispose;
 
-    gi_class->button_pressed = my_system_button_pressed;
     gi_class->draw = my_system_draw_energy_flow;
 }
 
@@ -358,9 +339,6 @@ my_system_init (MySystem * self)
 
     g_signal_connect (button, "motion-notify-event",
                       G_CALLBACK (my_system_is_dragged), self);
-
-    g_signal_connect (self, "notify::canvas",
-                      G_CALLBACK (notify_canvas_changed_cb), NULL);
 }
 
 static void

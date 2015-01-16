@@ -28,6 +28,210 @@ my_canvas_error_quark (void)
     return g_quark_from_static_string ("my-canvas-error-quark");
 }
 
+static gboolean
+my_canvas_drag_drag_point (MyCanvas * self, gdouble x, gdouble y)
+{
+    goc_item_set (self->_priv->active_item, "x", x, "y", y, NULL);
+}
+
+
+static gboolean
+my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
+                             gpointer data)
+{
+    MyCanvas *self = MY_CANVAS (canvas);
+
+    gdouble offsetx, offsety;
+    gdouble x_cv, y_cv, dx, dy;
+
+    /* coordinates on canvas */
+    x_cv = event->x;
+    y_cv = event->y;
+
+    if (event->window != gtk_layout_get_bin_window (&canvas->base)) {
+        gint x, y;
+
+        gtk_widget_translate_coordinates (GTK_WIDGET (data),
+                                          GTK_WIDGET (canvas),
+                                          event->x, event->y, &x, &y);
+
+        /* coordinates on canvas */
+        x_cv = x;
+        y_cv = y;
+    }
+
+    dx = event->x;
+    dy = event->y;
+
+    self->_priv->active_item = goc_canvas_get_item_at (canvas, x_cv, y_cv);
+
+    /* if in ADD SYSTEM MODE */
+    if (self->_priv->add_system_mode && !GOC_IS_ITEM (self->_priv->active_item)) {
+
+        goc_item_new (MY_CANVAS (canvas)->group_systems, MY_TYPE_SYSTEM, "x",
+                      x_cv, "y", y_cv, NULL);
+
+        self->_priv->add_system_mode = FALSE;
+    }
+    /* if in ADD ARROW MODE */
+    else if (self->_priv->add_arrow_mode
+             && MY_IS_SYSTEM (self->_priv->active_item)) {
+        MyFlowArrow *arrow;
+        MyDragPoint *point;
+
+        arrow =
+            (MyFlowArrow *) goc_item_new (MY_CANVAS (self)->group_arrows,
+                                          MY_TYPE_FLOW_ARROW, "linked-system",
+                                          self->_priv->active_item, "anchor",
+                                          MY_ANCHOR_EAST, "x1", x_cv, "y1",
+                                          y_cv, "x0", x_cv, "y0", y_cv, NULL);
+
+        my_flow_arrow_show_drag_points (arrow);
+
+        point = my_flow_arrow_get_drag_point (arrow);
+
+        goc_item_set (GOC_ITEM (point), "x", x_cv, "y", y_cv, NULL);
+
+        self->_priv->active_item = GOC_ITEM (point);
+    }
+    else {
+        self->_priv->add_arrow_mode = FALSE;
+    }
+
+    if (GOC_IS_CIRCLE (self->_priv->active_item)
+        || MY_IS_DRAG_POINT (self->_priv->active_item)) {
+
+        gdouble x, y;
+
+        g_object_get (self->_priv->active_item, "x", &x, "y", &y, NULL);
+
+        dx = event->x - x;
+        dy = event->y - y;
+    }
+
+    self->_priv->offsetx = (canvas->direction == GOC_DIRECTION_RTL) ?
+        canvas->scroll_x1 + (canvas->width -
+                             dx) /
+        canvas->pixels_per_unit : canvas->scroll_x1 +
+        dx / canvas->pixels_per_unit;
+
+    self->_priv->offsety = canvas->scroll_y1 + dy / canvas->pixels_per_unit;
+
+    if (MY_IS_DRAG_POINT (self->_priv->active_item)) {
+        my_drag_point_begin_dragging (MY_DRAG_POINT (self->_priv->active_item));
+    }
+
+    return FALSE;
+}
+
+static gboolean
+my_canvas_button_press_3_cb (GocCanvas * canvas, GdkEventButton * event,
+                             gpointer data)
+{
+    GdkEventButton *event_button;
+
+    return FALSE;
+}
+
+static void
+my_canvas_class_init (MyCanvasClass * klass)
+{
+    GObjectClass *gobject_class;
+
+    gobject_class = G_OBJECT_CLASS (klass);
+
+    gobject_class->finalize = my_canvas_finalize;
+    gobject_class->dispose = my_canvas_dispose;
+
+    g_type_class_add_private (gobject_class, sizeof (MyCanvasPrivate));
+}
+
+static void
+my_canvas_init (MyCanvas * self)
+{
+    GocGroup *root;
+
+    root = goc_canvas_get_root (GOC_CANVAS (self));
+
+    self->_priv = MY_CANVAS_GET_PRIVATE (self);
+
+    self->_priv->active_item = NULL;
+    self->_priv->add_arrow_mode = FALSE;
+    self->_priv->add_system_mode = FALSE;
+
+    self->group_arrows = goc_group_new (root);
+    self->group_systems = goc_group_new (root);
+
+    g_signal_connect (G_OBJECT (self), "button-press-event",
+                      G_CALLBACK (my_canvas_button_press_cb), NULL);
+    g_signal_connect (self, "button-release-event",
+                      G_CALLBACK (my_canvas_button_release_cb), NULL);
+    g_signal_connect (self, "motion-notify-event",
+                      G_CALLBACK (my_canvas_motion_notify_cb), NULL);
+}
+
+static void
+my_canvas_dispose (GObject * object)
+{
+    G_OBJECT_CLASS (my_canvas_parent_class)->dispose (object);
+}
+
+static void
+my_canvas_finalize (GObject * object)
+{
+    G_OBJECT_CLASS (my_canvas_parent_class)->finalize (object);
+}
+
+/* begin public functions */
+
+void
+my_canvas_show_drag_points_of_all_arrows (MyCanvas * self)
+{
+    GList *l;
+    GocGroup *group;
+
+    group = self->group_arrows;
+
+    for (l = group->children; l != NULL; l = l->next) {
+        if (MY_IS_FLOW_ARROW (l->data)) {
+            g_print ("it is an arrow :)\n");
+            my_flow_arrow_show_drag_points (MY_FLOW_ARROW (l->data));
+        }
+    }
+}
+
+void
+my_canvas_add_system (MyCanvas * self)
+{
+    g_return_if_fail (MY_IS_CANVAS (self));
+
+    self->_priv->add_system_mode = TRUE;
+}
+
+
+void
+my_canvas_add_flow_arrow (MyCanvas * self)
+{
+    g_return_if_fail (MY_IS_CANVAS (self));
+
+    self->_priv->add_arrow_mode = TRUE;
+}
+
+gboolean
+my_canvas_button_press_cb (GocCanvas * canvas, GdkEventButton * event,
+                           gpointer data)
+{
+    if (event->button == 1) {
+        my_canvas_button_press_1_cb (canvas, event, data);
+        return TRUE;
+    }
+    else if (event->button == 3) {
+        return my_canvas_button_press_3_cb (canvas, event, data);
+    }
+
+    return FALSE;
+}
+
 gboolean
 my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
                              gpointer data)
@@ -62,25 +266,16 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
 
             }
             else {
-
                 g_object_set (arrow, "secondary-system", NULL, NULL);
             }
         }
 
         my_drag_point_end_dragging (MY_DRAG_POINT (self->_priv->active_item));
-
     }
 
     self->_priv->active_item = NULL;
 
     return TRUE;
-}
-
-gboolean
-my_canvas_drag_drag_point (MyCanvas * self, gdouble x, gdouble y)
-{
-
-    goc_item_set (self->_priv->active_item, "x", x, "y", y, NULL);
 }
 
 gboolean
@@ -136,218 +331,4 @@ my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
         gtk_widget_queue_draw (GTK_WIDGET (canvas));
     }
     return TRUE;
-}
-
-gboolean
-my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
-                             gpointer data)
-{
-    MyCanvas *self = MY_CANVAS (canvas);
-
-    gdouble offsetx, offsety;
-    gdouble x_cv, y_cv, dx, dy;
-
-    /* coordinates on canvas */
-    x_cv = event->x;
-    y_cv = event->y;
-
-    if (event->window != gtk_layout_get_bin_window (&canvas->base)) {
-        gint x, y;
-
-        gtk_widget_translate_coordinates (GTK_WIDGET (data),
-                                          GTK_WIDGET (canvas),
-                                          event->x, event->y, &x, &y);
-
-        /* coordinates on canvas */
-        x_cv = x;
-        y_cv = y;
-    }
-
-    dx = event->x;
-    dy = event->y;
-
-    self->_priv->active_item = goc_canvas_get_item_at (canvas, x_cv, y_cv);
-
-    /* if in ADD SYSTEM MODE */
-    if (self->_priv->add_system_mode && !GOC_IS_ITEM (self->_priv->active_item)) {
-        
-        goc_item_new (MY_CANVAS(canvas)->group_systems, MY_TYPE_SYSTEM, "x", x_cv, "y",
-                      y_cv, NULL);
-
-        self->_priv->add_system_mode = FALSE;
-    }
-    /* if in ADD ARROW MODE */
-    else if (self->_priv->add_arrow_mode
-             && MY_IS_SYSTEM (self->_priv->active_item)) {
-        MyFlowArrow *arrow;
-        MyDragPoint *point;
-
-        arrow =
-            (MyFlowArrow *) goc_item_new (MY_CANVAS (self)->group_arrows,
-                                          MY_TYPE_FLOW_ARROW, "linked-system",
-                                          self->_priv->active_item, "anchor",
-                                          MY_ANCHOR_EAST, "x1", x_cv, "y1",
-                                          y_cv, "x0", x_cv, "y0", y_cv, NULL);
-
-        my_flow_arrow_show_drag_points (arrow);
-
-        point = my_flow_arrow_get_drag_point (arrow);
-
-        goc_item_set (GOC_ITEM (point), "x", x_cv, "y", y_cv, NULL);
-
-        self->_priv->active_item = GOC_ITEM (point);
-    }
-    else {
-        self->_priv->add_arrow_mode = FALSE;
-    }
-
-    if (GOC_IS_CIRCLE (self->_priv->active_item)
-        || MY_IS_DRAG_POINT (self->_priv->active_item)) {
-
-        gdouble x, y;
-
-        g_object_get (self->_priv->active_item, "x", &x, "y", &y, NULL);
-
-        dx = event->x - x;
-        dy = event->y - y;
-    }
-
-    self->_priv->offsetx = (canvas->direction == GOC_DIRECTION_RTL) ?
-        canvas->scroll_x1 + (canvas->width -
-                             dx) /
-        canvas->pixels_per_unit : canvas->scroll_x1 +
-        dx / canvas->pixels_per_unit;
-
-    self->_priv->offsety = canvas->scroll_y1 + dy / canvas->pixels_per_unit;
-
-    if (MY_IS_DRAG_POINT (self->_priv->active_item)) {
-        my_drag_point_begin_dragging (MY_DRAG_POINT (self->_priv->active_item));
-    }
-
-    return FALSE;
-}
-
-gboolean
-my_canvas_button_press_3_cb (GocCanvas * canvas, GdkEventButton * event,
-                             gpointer data)
-{
-    GdkEventButton *event_button;
-
-    /*GET_UI_ELEMENT (GtkMenu, CanvasMenu); */
-
-    /*if (event->type == GDK_BUTTON_PRESS) { */
-    /*event_button = (GdkEventButton *) event; */
-    /*if (event_button->button == GDK_BUTTON_SECONDARY) { */
-    /*gtk_menu_popup (CanvasMenu, NULL, NULL, NULL, NULL, */
-    /*event_button->button, event_button->time); */
-    /*return TRUE; */
-    /*} */
-    /*} */
-    return FALSE;
-}
-
-gboolean
-my_canvas_button_press_cb (GocCanvas * canvas, GdkEventButton * event,
-                           gpointer data)
-{
-    if (event->button == 1) {
-        my_canvas_button_press_1_cb (canvas, event, data);
-        return TRUE;
-    }
-    else if (event->button == 3) {
-        return my_canvas_button_press_3_cb (canvas, event, data);
-    }
-
-    return FALSE;
-}
-
-static void
-my_canvas_class_init (MyCanvasClass * klass)
-{
-    GObjectClass *gobject_class;
-
-    gobject_class = G_OBJECT_CLASS (klass);
-
-    gobject_class->finalize = my_canvas_finalize;
-    gobject_class->dispose = my_canvas_dispose;
-
-    g_type_class_add_private (gobject_class, sizeof (MyCanvasPrivate));
-}
-
-static void
-my_canvas_init (MyCanvas * self)
-{
-    GocGroup *root;
-
-    root = goc_canvas_get_root (GOC_CANVAS (self));
-
-    self->_priv = MY_CANVAS_GET_PRIVATE (self);
-    self->_priv->active_item = NULL;
-    self->_priv->add_arrow_mode = FALSE;
-    self->_priv->add_system_mode = FALSE;
-
-    self->group_arrows = goc_group_new (root);
-    self->group_systems = goc_group_new (root);
-
-    g_signal_connect (G_OBJECT (self), "button-press-event",
-                      G_CALLBACK (my_canvas_button_press_cb), NULL);
-    g_signal_connect (self, "button-release-event",
-                      G_CALLBACK (my_canvas_button_release_cb), NULL);
-    g_signal_connect (self, "motion-notify-event",
-                      G_CALLBACK (my_canvas_motion_notify_cb), NULL);
-}
-
-static void
-my_canvas_dispose (GObject * object)
-{
-    G_OBJECT_CLASS (my_canvas_parent_class)->dispose (object);
-}
-
-static void
-my_canvas_finalize (GObject * object)
-{
-    G_OBJECT_CLASS (my_canvas_parent_class)->finalize (object);
-}
-
-void
-my_canvas_show_drag_points_of_all_arrows (MyCanvas * self)
-{
-    GList *l;
-    GocGroup *group;
-
-    group = self->group_arrows;
-
-    for (l = group->children; l != NULL; l = l->next) {
-        if (MY_IS_FLOW_ARROW (l->data)) {
-            g_print ("it is an arrow :)\n");
-            my_flow_arrow_show_drag_points (MY_FLOW_ARROW (l->data));
-        }
-    }
-}
-
-void
-my_canvas_add_system (MyCanvas * self)
-{
-    g_return_if_fail (MY_IS_CANVAS (self));
-
-    self->_priv->add_system_mode = TRUE;
-}
-
-
-void
-my_canvas_add_flow_arrow (MyCanvas * self)
-{
-    g_return_if_fail (MY_IS_CANVAS (self));
-
-    self->_priv->add_arrow_mode = TRUE;
-}
-
-void
-my_canvas_drag_item (MyCanvas * self, GocItem * item)
-{
-
-    g_return_if_fail (MY_IS_CANVAS (self));
-    g_return_if_fail (GOC_IS_ITEM (self));
-
-    self->_priv->active_item = item;
 }

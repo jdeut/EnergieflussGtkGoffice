@@ -160,6 +160,7 @@ my_drag_point_finalize (GObject * object)
     G_OBJECT_CLASS (my_drag_point_parent_class)->finalize (object);
 }
 
+/* begin of public functions */
 
 void
 my_drag_point_begin_dragging (MyDragPoint * self)

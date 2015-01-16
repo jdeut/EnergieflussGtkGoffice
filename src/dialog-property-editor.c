@@ -4,7 +4,6 @@ static void
 dialog_property_editor_response_cb (GtkWidget * dialog,
                                     gint response_id, gpointer * data)
 {
-
     if (response_id == GTK_RESPONSE_OK) {
         g_print ("ok\n");
     }
@@ -20,14 +19,14 @@ my_flow_arrow_destroy_clicked_cb (GtkButton * button, MyFlowArrow * flowarrow)
     MySystem *system;
     GtkDialog *dialog;
 
-    dialog = (GtkDialog *) gtk_widget_get_toplevel(GTK_WIDGET(button));
+    dialog = (GtkDialog *) gtk_widget_get_toplevel (GTK_WIDGET (button));
 
-    if(MY_IS_FLOW_ARROW(flowarrow)) {
-        goc_item_destroy(GOC_ITEM(flowarrow));
+    if (MY_IS_FLOW_ARROW (flowarrow)) {
+        goc_item_destroy (GOC_ITEM (flowarrow));
     }
 
-    if(GTK_IS_DIALOG(dialog)) {
-        gtk_widget_destroy(GTK_WIDGET(dialog));
+    if (GTK_IS_DIALOG (dialog)) {
+        gtk_widget_destroy (GTK_WIDGET (dialog));
     }
 }
 
