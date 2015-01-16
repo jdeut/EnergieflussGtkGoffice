@@ -405,8 +405,8 @@ my_system_change_sink_of_arrow (MySystem * self, MyFlowArrow * arrow,
         gtk_tree_model_get (GTK_TREE_MODEL (self->EnergyFlow), &iter,
                             COLUMN_ARROW, &iter_arrow, -1);
 
-        if(iter_arrow == arrow) {
-            g_print("laksfn\n");
+        if (iter_arrow == arrow) {
+            g_print ("laksfn\n");
 
             gtk_list_store_set (self->EnergyFlow, &iter,
                                 COLUMN_ENERGY_SINK, sink, -1);
@@ -487,6 +487,45 @@ my_system_init_energy_flow_store (MySystem * self)
                             MY_TYPE_SYSTEM, G_TYPE_BOOLEAN, G_TYPE_STRING);
 }
 
+static gboolean
+my_system_begin_drag (GtkWidget *button, GdkEventButton * event,
+                      MySystem *self)
+{
+    GocCanvas *canvas;
+
+    g_object_get (self, "canvas", &canvas, NULL);
+
+    my_canvas_button_press_cb (canvas, event, button);
+
+    return FALSE;
+}
+
+static gboolean
+my_system_is_dragged (GtkWidget *button,
+                      GdkEventMotion * event, MySystem *self)
+{
+    GocCanvas *canvas;
+
+    g_object_get (self, "canvas", &canvas, NULL);
+
+    my_canvas_motion_notify_cb (canvas, event, button);
+
+    return FALSE;
+}
+
+static gboolean
+my_system_end_drag (GtkWidget *button, GdkEvent * event, MySystem *self)
+{
+    GocCanvas *canvas;
+
+    g_object_get (self, "canvas", &canvas, NULL);
+
+    my_canvas_button_release_cb (canvas, event, button);
+
+    return FALSE;
+}
+
+
 static void
 my_system_init (MySystem * self)
 {
@@ -498,6 +537,16 @@ my_system_init (MySystem * self)
                   80.0, NULL);
 
     my_system_init_energy_flow_store (self);
+
+
+    g_signal_connect (button, "button-press-event",
+                      G_CALLBACK (my_system_begin_drag), self);
+
+    g_signal_connect (button, "button-release-event",
+                      G_CALLBACK (my_system_end_drag), self);
+
+    g_signal_connect (button, "motion-notify-event",
+                      G_CALLBACK (my_system_is_dragged), self);
 
     g_signal_connect (self, "notify::canvas",
                       G_CALLBACK (notify_canvas_changed_cb), NULL);

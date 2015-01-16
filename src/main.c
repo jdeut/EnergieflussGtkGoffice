@@ -14,18 +14,6 @@ populate_canvas (App * app)
         goc_item_new (group_systems, MY_TYPE_SYSTEM, "x", 100.0, "y", 200.0,
                       NULL);
 
-    g_object_get (item1, "widget", &button, NULL);
-
-    g_signal_connect (button, "button-press-event",
-                      G_CALLBACK (propagate_button_press_event_to_canvas_cb),
-                      app);
-    g_signal_connect (button, "button-release-event",
-                      G_CALLBACK (propagate_button_release_event_to_canvas_cb),
-                      app);
-    g_signal_connect (button, "motion-notify-event",
-                      G_CALLBACK (propagate_motion_notify_event_to_canvas_cb),
-                      app);
-
     my_system_add_energy_transfer_to_environment (MY_SYSTEM (item1), NULL,
                                                   ANCHOR_WEST, 10.0);
     my_system_add_energy_transfer_to_environment (MY_SYSTEM (item1), NULL,
@@ -39,33 +27,9 @@ populate_canvas (App * app)
         goc_item_new (group_systems, MY_TYPE_SYSTEM, "x", 100.0, "y", 100.0,
                       NULL);
 
-    g_object_get (item1, "widget", &button, NULL);
-
-    g_signal_connect (button, "button-press-event",
-                      G_CALLBACK (propagate_button_press_event_to_canvas_cb),
-                      app);
-    g_signal_connect (button, "button-release-event",
-                      G_CALLBACK (propagate_button_release_event_to_canvas_cb),
-                      app);
-    g_signal_connect (button, "motion-notify-event",
-                      G_CALLBACK (propagate_motion_notify_event_to_canvas_cb),
-                      app);
-
     item2 =
         goc_item_new (group_systems, MY_TYPE_SYSTEM, "x", 500.0, "y", 100.0,
                       NULL);
-
-    g_object_get (item2, "widget", &button, NULL);
-
-    g_signal_connect (button, "button-press-event",
-                      G_CALLBACK (propagate_button_press_event_to_canvas_cb),
-                      app);
-    g_signal_connect (button, "button-release-event",
-                      G_CALLBACK (propagate_button_release_event_to_canvas_cb),
-                      app);
-    g_signal_connect (button, "motion-notify-event",
-                      G_CALLBACK (propagate_motion_notify_event_to_canvas_cb),
-                      app);
 
     my_system_add_energy_transfer_to_system (MY_SYSTEM (item2),
                                              "<span size=\"xx-large\">W<sub>el</sub></span>",
