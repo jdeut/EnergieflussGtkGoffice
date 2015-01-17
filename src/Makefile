@@ -6,7 +6,7 @@ DOC_DIR=../docs/reference/$(DOC_MODULE)
 DOC_OBJ=$(shell find system/ -iname "*.o") dialog-property-editor.o
 
 
-CFILES=$(shell find . -iname "*.c")
+CFILES=$(shell find $(CURDIR) -iname "*.c")
 OBJ=$(patsubst %.c, %.o, $(CFILES))
 
 SYS:=$(shell uname) 
