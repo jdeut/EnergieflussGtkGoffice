@@ -1,4 +1,4 @@
-#include "app.h"
+#include "system/interface.h"
 
 static void
 dialog_property_editor_response_cb (GtkWidget * dialog,
