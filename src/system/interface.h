@@ -3,7 +3,6 @@
 
 #include <gtk/gtk.h>
 #include <goffice/goffice.h>
-#include "my-application.h"
 
 #define UI_DEFINITIONS_FILE "ui.glade"
 
@@ -19,6 +18,8 @@ typedef struct interface_
 } Interface;
 
 
+#include "my-application.h"
+
 void 
 interface_init (Interface *);
 
@@ -28,7 +29,6 @@ interface_get_ui_element (Interface *, const gchar *);
 void
 interface_create (MyApplication * app);
 
-#include "../callbacks.h"
 #include "../dialog-property-editor.h"
 #include "my-system.h"
 #include "my-flowarrow.h"

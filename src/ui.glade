@@ -25,7 +25,6 @@
         <property name="can_focus">False</property>
         <property name="label" translatable="yes">Add</property>
         <property name="use_underline">True</property>
-        <signal name="activate" handler="button_add_system_clicked_cb" swapped="no"/>
       </object>
     </child>
   </object>
@@ -74,7 +73,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <signal name="clicked" handler="button_add_system_clicked_cb" swapped="no"/>
+                <property name="action_name">win.add-system</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -88,7 +87,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <signal name="clicked" handler="button_add_arrow_clicked_cb" swapped="no"/>
+                <property name="action_name">win.add-arrow</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -102,7 +101,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <signal name="clicked" handler="show_drag_points_cb" swapped="no"/>
+                <property name="action_name">win.show-drag-points</property>
               </object>
               <packing>
                 <property name="expand">False</property>

@@ -126,4 +126,5 @@ interface_create (MyApplication * app)
     interface_populate_canvas (iface);
 
     my_application_set_window (app, applicationwindow);
+    my_application_set_interface (app, iface);
 }
