@@ -302,7 +302,7 @@ my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
 
     my_flow_arrow_draw_label (self, cr);
 
-    gtk_widget_queue_draw(GTK_WIDGET(item->canvas));
+    gtk_widget_queue_draw (GTK_WIDGET (item->canvas));
 }
 
 static void
@@ -362,7 +362,8 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
         g_param_spec_enum ("anchor",
                            "anchor",
                            "Determines on which side of the linked-system the arrow should snap",
-                           MY_TYPE_ANCHOR_TYPE, MY_ANCHOR_EAST, G_PARAM_READWRITE);
+                           MY_TYPE_ANCHOR_TYPE, MY_ANCHOR_EAST,
+                           G_PARAM_READWRITE);
 
     g_object_class_install_properties (gobject_class,
                                        N_PROPERTIES, obj_properties);
@@ -390,7 +391,7 @@ bind_s_to_t1_if_bound_to_t2 (GBinding ** binding,
             g_object_bind_property (source, s, target, t1,
                                     G_BINDING_BIDIRECTIONAL);
     }
-    else if (strcmp (g_binding_get_target_property (*binding), t2) == 0) {
+    else if (g_str_equal (g_binding_get_target_property (*binding), t2)) {
 
         g_object_unref (*binding);
 
@@ -449,7 +450,7 @@ notify_label_text_changed_cb (MyFlowArrow * self, GParamSpec * pspec,
         g_object_unref (self->_priv->label);
     }
 
-    goc_item_invalidate(GOC_ITEM(self));
+    goc_item_invalidate (GOC_ITEM (self));
 }
 
 static void
@@ -504,7 +505,7 @@ my_flow_arrow_change_anchor_while_dragging (MyFlowArrow * self,
 
 static void
 my_flow_arrow_canvas_initial_changed (MyFlowArrow * self, GParamSpec * pspec,
-                              gpointer data)
+                                      gpointer data)
 {
     MyCanvas *canvas;
     GocGroup *group_arrows;
@@ -538,7 +539,9 @@ my_flow_arrow_canvas_initial_changed (MyFlowArrow * self, GParamSpec * pspec,
                       G_CALLBACK (my_flow_arrow_change_anchor_while_dragging),
                       NULL);
 
-    g_signal_handlers_disconnect_by_func(self, my_flow_arrow_canvas_initial_changed, NULL);
+    g_signal_handlers_disconnect_by_func (self,
+                                          my_flow_arrow_canvas_initial_changed,
+                                          NULL);
 }
 
 static void
@@ -572,7 +575,7 @@ my_flow_arrow_dispose (GObject * object)
 static void
 my_flow_arrow_finalize (GObject * object)
 {
-    MyFlowArrow *self = MY_FLOW_ARROW(object);
+    MyFlowArrow *self = MY_FLOW_ARROW (object);
 
     if (GOC_IS_TEXT (self->_priv->label)) {
         goc_item_destroy (GOC_ITEM (self->_priv->label));
