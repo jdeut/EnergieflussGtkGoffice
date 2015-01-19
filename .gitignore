@@ -5,8 +5,11 @@
 *~
 
 docs
+app-gresource.c
+app-gresource.h
 
 # Executables
 **/main
 **/tags
 *.exe
+/tests/json-glib-serialize-my-flow-arrow

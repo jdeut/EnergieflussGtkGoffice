@@ -30,6 +30,7 @@ void
 interface_style_init (Interface * iface)
 {
     GError *err = NULL;
+    GFile *css_file;
     GtkCssProvider *style;
     GdkScreen *screen;
 
@@ -37,7 +38,8 @@ interface_style_init (Interface * iface)
 
     style = gtk_css_provider_new ();
 
-    gtk_css_provider_load_from_path (style, "./style.css", &err);
+    css_file = g_file_new_for_uri ("resource:///org/gtk/myapp/style.css");
+    gtk_css_provider_load_from_file (style, css_file, &err);
 
     if (err != NULL) {
         g_printerr ("Error while loading style file: %s\n", err->message);
@@ -61,7 +63,7 @@ interface_init (Interface * iface)
 
     builder = gtk_builder_new ();
 
-    gtk_builder_add_from_file (builder, UI_DEFINITIONS_FILE, &err);
+    gtk_builder_add_from_resource (builder, "/org/gtk/myapp/window.ui", &err);
 
     if (err != NULL) {
         g_printerr

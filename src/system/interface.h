@@ -4,8 +4,6 @@
 #include <gtk/gtk.h>
 #include <goffice/goffice.h>
 
-#define UI_DEFINITIONS_FILE "ui.glade"
-
 #define GET_UI_ELEMENT(TYPE, ELEMENT)   TYPE *ELEMENT = (TYPE *) \
                                                 interface_get_ui_element(iface, #ELEMENT);
 

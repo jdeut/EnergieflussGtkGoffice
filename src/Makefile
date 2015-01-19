@@ -1,12 +1,14 @@
 DEV=0
 
-
 DOC_MODULE=energie
 DOC_DIR=../docs/reference/$(DOC_MODULE)
 DOC_OBJ=$(shell find system/ -iname "*.o") dialog-property-editor.o
 
+GRESOURCE=app.gresource.xml
+GRESOURCE_TARGET_BASENAME=app-gresource
+GRESOURCE_FILES=$(GRESOURCE_TARGET_BASENAME).c $(GRESOURCE_TARGET_BASENAME).h
 
-CFILES=$(shell find $(CURDIR) -iname "*.c")
+CFILES=$(shell find $(CURDIR) -iname "*.c") 
 OBJ=$(patsubst %.c, %.o, $(CFILES))
 
 SYS:=$(shell uname) 
@@ -36,6 +38,12 @@ endif
 
 main: $(OBJ)
 	$(CC) -o $@ $^ $(LDLIBS)
+
+$(GRESOURCE_TARGET_BASENAME).c: $(GRESOURCE)
+	glib-compile-resources --c-name=my --target=$@ --generate-source $^
+
+$(GRESOURCE_TARGET_BASENAME).h: $(GRESOURCE)
+	glib-compile-resources --c-name=my --target=$@ --generate-header $^
 
 win32bundle: main
 ifneq (, $(findstring MSYS, $(SYS)))

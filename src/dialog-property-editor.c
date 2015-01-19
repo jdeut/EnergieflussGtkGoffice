@@ -38,7 +38,7 @@ dialog_property_editor (GObject * object, gchar * label, GtkWindow * window)
     GtkWidget *dialog, *listbox;
     GOEditor *editor;
 
-    builder = gtk_builder_new_from_file ("./dialog-property-editor.ui");
+    builder = gtk_builder_new_from_resource ("/org/gtk/myapp/dialog-property-editor.ui");
 
     dialog = (GtkWidget *) gtk_builder_get_object (builder, "dialog1");
     listbox = (GtkWidget *) gtk_builder_get_object (builder, "listbox1");
