@@ -56,11 +56,10 @@ ifneq (, $(findstring MSYS, $(SYS)))
 	  cp -r /mingw64/share/icons/Adwaita/* bundle/share/icons/Adwaita
 endif
 
-doc:
+doc: $(OBJ)
 	gtkdoc-scan --module=$(DOC_MODULE) --output-dir=.tmp --source-dir=system
 	CFLAGS="$(CFLAGS)" LDFLAGS="$(LDLIBS) $(DOC_OBJ)" gtkdoc-scangobj --module=$(DOC_MODULE) --output-dir=.tmp 
 	cd .tmp && gtkdoc-mkdb --module=$(DOC_MODULE) --output-format=xml 
-
 	mkdir -p $(DOC_DIR)
 	echo $$PWD
 	cd $(DOC_DIR) && gtkdoc-mkhtml $(DOC_MODULE) ../../../src/.tmp/$(DOC_MODULE)-docs.xml
