@@ -4,13 +4,17 @@ DOC_MODULE=energie
 DOC_DIR=../docs/reference/$(DOC_MODULE)
 DOC_OBJ=$(shell find system/ -iname "*.o") dialog-property-editor.o
 
-GRESOURCE=app.gresource.xml
+GRESOURCE_SOURCE_DIR=../data
+GRESOURCE=$(GRESOURCE_SOURCE_DIR)/app.gresource.xml
 GRESOURCE_TARGET_BASENAME=app-gresource
 GRESOURCE_FILES=$(GRESOURCE_TARGET_BASENAME).c $(GRESOURCE_TARGET_BASENAME).h
 
-CFILES=$(shell find $(CURDIR) -iname "*.c") 
-OBJ=$(patsubst %.c, %.o, $(CFILES))
+CFILES=$(shell find $(CURDIR)/system -iname "*.c") \
+	main.c \
+	dialog-property-editor.c \
+	$(GRESOURCE_TARGET_BASENAME).c
 
+OBJ=$(patsubst %.c, %.o, $(CFILES)) 
 SYS:=$(shell uname) 
 
 CC=gcc
@@ -26,8 +30,6 @@ else
   PKGS:=libgoffice-0.10 $(PKGS)
 endif
 
-FILES_FOR_BUNDLE=main.exe style.css ui.glade dialog-property-editor.ui
-
 # if system is win32 (msys2)
 ifneq (, $(findstring MSYS, $(SYS)))
   # the order matters since libgsf-win32-1 is a static library
@@ -39,17 +41,17 @@ endif
 main: $(OBJ)
 	$(CC) -o $@ $^ $(LDLIBS)
 
-$(GRESOURCE_TARGET_BASENAME).c: $(GRESOURCE)
-	glib-compile-resources --c-name=my --target=$@ --generate-source $^
+$(GRESOURCE_TARGET_BASENAME).c: $(GRESOURCE) $(GRESOURCE_TARGET_BASENAME).h
+	glib-compile-resources --sourcedir=$(GRESOURCE_SOURCE_DIR) --c-name=my --target=$@ --generate-source $(GRESOURCE)
 
 $(GRESOURCE_TARGET_BASENAME).h: $(GRESOURCE)
-	glib-compile-resources --c-name=my --target=$@ --generate-header $^
+	glib-compile-resources --sourcedir=$(GRESOURCE_SOURCE_DIR) --c-name=my --target=$@ --generate-header $^
 
 win32bundle: main
 ifneq (, $(findstring MSYS, $(SYS)))
 	  mkdir -p bundle
 	  cp `ldd main.exe | perl -ne 'if (/\s(\/mingw64\/\S*dll)/) { print $$1, " " }'` bundle
-	  cp $(FILES_FOR_BUNDLE) bundle
+	  cp main.exe bundle
 	  mkdir -p bundle/share/icons/Adwaita
 	  cp -r /mingw64/share/icons/Adwaita/* bundle/share/icons/Adwaita
 endif
@@ -66,4 +68,4 @@ doc:
 	rm -rf .tmp
 
 clean:
-	rm -f $(OBJ) main
+	rm -f $(OBJ) $(GRESOURCE_FILES) main 
