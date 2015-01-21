@@ -1,5 +1,8 @@
 #include "my-canvas.h"
 
+#include <json-glib/json-glib.h>
+#include <json-glib/json-gobject.h>
+
 /* 'private'/'protected' functions */
 static void my_canvas_class_init (MyCanvasClass * klass);
 static void my_canvas_init (MyCanvas * self);
@@ -208,6 +211,59 @@ my_canvas_add_system (MyCanvas * self)
     self->_priv->add_system_mode = TRUE;
 }
 
+gboolean
+my_canvas_generate_json_data_stream (MyCanvas * self, gchar ** str, gsize * len)
+{
+    JsonGenerator *gen = json_generator_new ();
+    JsonArray *array_arrows, *array_systems, *array_root;
+    JsonNode *node, *root, *arrows, *systems;
+    GocGroup *group_arrows, *group_systems;
+    GList *l;
+
+    group_arrows = self->group_arrows;
+    group_systems = self->group_systems;
+
+    root = json_node_new (JSON_NODE_ARRAY);
+    arrows = json_node_new (JSON_NODE_ARRAY);
+    systems = json_node_new (JSON_NODE_ARRAY);
+
+    array_root = json_array_new ();
+    array_arrows = json_array_new ();
+    array_systems = json_array_new ();
+
+    json_node_set_array (root, array_root);
+    json_node_set_array (arrows, array_arrows);
+    json_node_set_array (systems, array_systems);
+
+    json_array_add_element (array_root, arrows);
+    json_array_add_element (array_root, systems);
+
+    for (l = group_arrows->children; l != NULL; l = l->next) {
+        if (MY_IS_FLOW_ARROW (l->data)) {
+            node = json_gobject_serialize (G_OBJECT (l->data));
+            json_array_add_element (array_arrows, node);
+        }
+    }
+    for (l = group_systems->children; l != NULL; l = l->next) {
+        if (MY_IS_SYSTEM (l->data)) {
+            node = json_gobject_serialize (G_OBJECT (l->data));
+            json_array_add_element (array_systems, node);
+        }
+    }
+
+    json_generator_set_root (gen, root);
+    json_generator_set_pretty (gen, TRUE);
+
+    *str = json_generator_to_data (gen, len);
+
+    json_node_free (root);
+
+    json_array_unref (array_systems);
+    json_array_unref (array_arrows);
+    json_array_unref (array_root);
+
+    return TRUE;
+}
 
 void
 my_canvas_add_flow_arrow (MyCanvas * self)

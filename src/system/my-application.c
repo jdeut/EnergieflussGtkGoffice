@@ -1,5 +1,9 @@
 #include "my-application.h"
 
+/*#include <json-glib/json-glib.h>*/
+
+/*#include <json-glib/json-gobject.h>*/
+
 /* 'private'/'protected' functions */
 static void my_application_class_init (MyApplicationClass * klass);
 static void my_application_init (MyApplication * self);
@@ -26,7 +30,8 @@ static const GActionEntry my_application_app_entries[] = {
 static GActionEntry win_entries[] = {
     {"add-arrow", my_application_add_arrow, NULL, NULL, NULL},
     {"add-system", my_application_add_system, NULL, NULL, NULL},
-    {"show-drag-points", my_application_show_drag_points, NULL, NULL, NULL}
+    {"show-drag-points", my_application_show_drag_points, NULL, NULL, NULL},
+    {"save", my_application_save, NULL, NULL, NULL}
 };
 
 
@@ -63,7 +68,7 @@ activate (GApplication * app)
         g_action_map_add_action_entries (G_ACTION_MAP (self->_priv->window),
                                          win_entries,
                                          G_N_ELEMENTS (win_entries),
-                                         self->_priv->iface);
+                                         app);
 
         gtk_window_set_application (GTK_WINDOW (self->_priv->window),
                                     GTK_APPLICATION (self));
@@ -166,7 +171,7 @@ void
 my_application_add_arrow (GSimpleAction * simple, GVariant * parameter,
                           gpointer data)
 {
-    Interface *iface = (Interface *) data;
+    Interface *iface = (Interface *) MY_APPLICATION(data)->_priv->iface;
 
     guint contextid;
     gchar *msg = { "Click the system to which you want to add an energy flow" };
@@ -181,10 +186,100 @@ my_application_add_arrow (GSimpleAction * simple, GVariant * parameter,
 }
 
 void
+my_application_caution (MyApplication *self, const gchar *error)
+{
+    Interface *iface = self->_priv->iface;
+
+    GET_UI_ELEMENT(GtkWindow, applicationwindow);
+
+    GtkWidget *dialog = gtk_message_dialog_new (GTK_WINDOW (applicationwindow),
+                                                GTK_DIALOG_MODAL,
+                                                GTK_MESSAGE_ERROR,
+                                                GTK_BUTTONS_CLOSE,
+                                                error, NULL);
+
+    gtk_dialog_run (GTK_DIALOG (dialog));
+    gtk_widget_destroy (dialog);
+}
+
+void
+my_application_write_file (MyApplication *self, const gchar * path, const gchar * buffer, gssize len)
+{
+    GError *err = NULL;
+
+    g_file_set_contents (path, buffer, len, &err);
+
+    if (err) {
+        gchar *str;
+
+        str = g_strdup_printf("Failed to save in file '%s'", path);
+        my_application_caution (self, str);
+        g_free(str);
+        g_error_free (err);
+    }
+}
+
+void
+my_application_save (GSimpleAction * simple, GVariant * parameter,
+                     gpointer data)
+{
+    GtkFileFilter *filter;
+    GtkWidget *file_chooser;
+    MyApplication *app = (MyApplication *) data;
+    Interface *iface = app->_priv->iface;
+
+    gchar *str;
+    gchar *path;
+    gint len;
+
+    GET_UI_ELEMENT (GtkWidget, applicationwindow);
+
+    my_canvas_generate_json_data_stream (iface->canvas, &str, &len);
+
+    file_chooser =
+        gtk_file_chooser_dialog_new ("Save", GTK_WINDOW (applicationwindow),
+                                     GTK_FILE_CHOOSER_ACTION_SAVE, "_Cancel",
+                                     GTK_RESPONSE_CANCEL, "_Save",
+                                     GTK_RESPONSE_ACCEPT, NULL);
+
+
+    gtk_file_chooser_set_local_only(GTK_FILE_CHOOSER(file_chooser), TRUE);
+    gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(file_chooser), FALSE);
+
+    filter = gtk_file_filter_new ();
+
+    gtk_file_filter_set_name(filter, "JSON");
+    gtk_file_filter_add_pattern(filter, "*.json");
+
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(file_chooser), filter);
+    gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(file_chooser), filter);
+
+    filter = gtk_file_filter_new ();
+
+    gtk_file_filter_set_name(filter, "All files");
+    gtk_file_filter_add_pattern(filter, "*");
+
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(file_chooser), filter);
+
+    gtk_window_set_modal (GTK_WINDOW (file_chooser), TRUE);
+
+    gtk_file_chooser_set_do_overwrite_confirmation (GTK_FILE_CHOOSER
+                                                    (file_chooser), TRUE);
+
+    if (gtk_dialog_run (GTK_DIALOG (file_chooser)) == GTK_RESPONSE_ACCEPT) {
+        path = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (file_chooser));
+        my_application_write_file (app, path, str, len);
+    }
+    gtk_widget_destroy (file_chooser);
+
+    g_free(str);
+}
+
+void
 my_application_show_drag_points (GSimpleAction * simple, GVariant * parameter,
                                  gpointer data)
 {
-    Interface *iface = (Interface *) data;
+    Interface *iface = (Interface *) MY_APPLICATION(data)->_priv->iface;
 
     my_canvas_show_drag_points_of_all_arrows (iface->canvas);
 }
@@ -193,7 +288,7 @@ void
 my_application_add_system (GSimpleAction * simple, GVariant * parameter,
                            gpointer data)
 {
-    Interface *iface = (Interface *) data;
+    Interface *iface = (Interface *) MY_APPLICATION(data)->_priv->iface;
 
     my_canvas_add_system (iface->canvas);
 }

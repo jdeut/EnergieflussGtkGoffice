@@ -1,5 +1,7 @@
 #include "my-flowarrow.h"
 
+#include <json-glib/json-glib.h>
+
 enum
 {
     PROP_0,
@@ -83,7 +85,70 @@ my_anchor_type_get_type (void)
                                        MY_TYPE_FLOW_ARROW, \
                                        MyFlowArrowPrivate))
 
-G_DEFINE_TYPE (MyFlowArrow, my_flow_arrow, GOC_TYPE_LINE);
+static void my_flow_arrow_json_serializable_init (JsonSerializableIface *
+                                                  iface);
+
+G_DEFINE_TYPE_EXTENDED (MyFlowArrow, my_flow_arrow, GOC_TYPE_LINE, 0,
+                        G_IMPLEMENT_INTERFACE (JSON_TYPE_SERIALIZABLE,
+                                               my_flow_arrow_json_serializable_init))
+
+     static JsonNode *_serialize_property (JsonSerializable * serializable,
+                                           const gchar * name,
+                                           const GValue * value,
+                                           GParamSpec * pspec)
+{
+    JsonNode *json_node = NULL;
+
+    g_return_val_if_fail (MY_IS_FLOW_ARROW (serializable), FALSE);
+
+    if (g_str_equal (name, "style") 
+        || g_str_equal (name, "end-arrow")
+        || g_str_equal (name, "start-arrow")
+        || g_str_equal (name, "scale-line-width")
+        || g_str_equal (name, "canvas")
+        || g_str_equal (name, "parent")
+        || g_str_equal (name, "linked-system")
+        || g_str_equal (name, "secondary-system")
+        ) {
+        return json_node;
+    }
+    else {
+        /* Default serialization here (pixbufs excluded) */
+        JsonSerializableIface *iface = NULL;
+
+        iface = g_type_default_interface_peek (JSON_TYPE_SERIALIZABLE);
+        json_node = iface->serialize_property (serializable,
+                                               name, value, pspec);
+    }
+
+    return json_node;           /* NULL indicates default deserializer */
+}
+
+static gboolean
+_deserialize_property (JsonSerializable * serializable,
+                       const gchar * name,
+                       GValue * value, GParamSpec * pspec, JsonNode * node)
+{
+    gboolean result = FALSE;
+
+    g_return_val_if_fail (node != NULL, FALSE);
+
+    JsonSerializableIface *iface = NULL;
+
+    iface = g_type_default_interface_peek (JSON_TYPE_SERIALIZABLE);
+    result = iface->deserialize_property (serializable,
+                                          name, value, pspec, node);
+
+    return result;
+}
+
+
+static void
+my_flow_arrow_json_serializable_init (JsonSerializableIface * iface)
+{
+    iface->serialize_property = _serialize_property;
+    iface->deserialize_property = _deserialize_property;
+}
 
 static void
 my_flow_arrow_set_property (GObject * object,

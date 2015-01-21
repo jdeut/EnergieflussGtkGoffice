@@ -18,7 +18,7 @@ OBJ=$(patsubst %.c, %.o, $(CFILES))
 SYS:=$(shell uname) 
 
 CC=gcc
-PKGS=gtk+-3.0 gmodule-2.0 librsvg-2.0
+PKGS=gtk+-3.0 gmodule-2.0 librsvg-2.0 json-glib-1.0 
 PKGS_LINUX=$(PKGS) libgsf-1
 CFLAGS=-ggdb `pkg-config --cflags $(PKGS_LINUX)`
 LDLIBS=-ggdb -lm `pkg-config --libs $(PKGS_LINUX)` 

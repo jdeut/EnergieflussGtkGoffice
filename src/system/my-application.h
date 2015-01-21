@@ -50,6 +50,10 @@ my_application_add_system (GSimpleAction * simple, GVariant * parameter,
                            gpointer );
 
 void
+my_application_save (GSimpleAction * simple, GVariant * parameter,
+                                 gpointer data);
+
+void
 my_application_add_arrow (GSimpleAction * simple, GVariant * parameter,
                           gpointer );
 

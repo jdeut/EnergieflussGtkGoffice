@@ -1,5 +1,7 @@
 #include "my-system.h"
 
+#include <json-glib/json-glib.h>
+
 /******************************************************************************
  * GocOffscreenBox: code mostly copied from gtk+/tests/gtkoffscreenbox.[c,h]
  ******************************************************************************/
@@ -48,9 +50,65 @@ struct _MySystemPrivate
                                        MY_TYPE_SYSTEM, \
                                        MySystemPrivate))
 
-G_DEFINE_TYPE (MySystem, my_system, GOC_TYPE_WIDGET);
+static void my_system_json_serializable (JsonSerializableIface *
+                                                  iface);
+
+G_DEFINE_TYPE_EXTENDED (MySystem, my_system, GOC_TYPE_WIDGET, 0,
+                        G_IMPLEMENT_INTERFACE (JSON_TYPE_SERIALIZABLE,
+                                               my_system_json_serializable))
+
+     static JsonNode *_serialize_property (JsonSerializable * serializable,
+                                           const gchar * name,
+                                           const GValue * value,
+                                           GParamSpec * pspec)
+{
+    JsonNode *json_node = NULL;
+
+    g_return_val_if_fail (MY_IS_SYSTEM (serializable), FALSE);
+
+    if (g_str_equal (name, "widget")
+        || g_str_equal (name, "canvas")
+        || g_str_equal (name, "parent")
+        ) {
+        return json_node;
+    }
+    else {
+        /* Default serialization here (pixbufs excluded) */
+        JsonSerializableIface *iface = NULL;
+
+        iface = g_type_default_interface_peek (JSON_TYPE_SERIALIZABLE);
+        json_node = iface->serialize_property (serializable,
+                                               name, value, pspec);
+    }
+
+    return json_node;           /* NULL indicates default deserializer */
+}
+
+static gboolean
+_deserialize_property (JsonSerializable * serializable,
+                       const gchar * name,
+                       GValue * value, GParamSpec * pspec, JsonNode * node)
+{
+    gboolean result = FALSE;
+
+    g_return_val_if_fail (node != NULL, FALSE);
+
+    JsonSerializableIface *iface = NULL;
+
+    iface = g_type_default_interface_peek (JSON_TYPE_SERIALIZABLE);
+    result = iface->deserialize_property (serializable,
+                                          name, value, pspec, node);
+
+    return result;
+}
 
 
+static void
+my_system_json_serializable (JsonSerializableIface * iface)
+{
+    iface->serialize_property = _serialize_property;
+    iface->deserialize_property = _deserialize_property;
+}
 GQuark
 my_system_error_quark (void)
 {
@@ -328,8 +386,8 @@ my_system_init (MySystem * self)
 
     button = gtk_button_new_with_label ("MyNewSystem");
 
-    goc_item_set (GOC_ITEM (self), "widget", button, "width", 150.0, "height",
-                  80.0, NULL);
+    goc_item_set (GOC_ITEM (self), "widget", button, "width", 200.0, "height",
+                  150.0, NULL);
 
     g_signal_connect (button, "button-press-event",
                       G_CALLBACK (my_system_begin_drag), self);

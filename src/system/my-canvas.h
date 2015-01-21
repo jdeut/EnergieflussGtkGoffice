@@ -62,6 +62,9 @@ my_canvas_add_flow_arrow (MyCanvas * self);
 void
 my_canvas_add_system (MyCanvas * self);
 
+gboolean
+my_canvas_generate_json_data_stream (MyCanvas * self, gchar ** str, gsize * len);
+
 G_END_DECLS
 
 #endif /* __MY_CANVAS_H__ */
