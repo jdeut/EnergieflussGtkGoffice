@@ -4,6 +4,7 @@ DOC_MODULE=energie
 DOC_DIR=../docs/reference/$(DOC_MODULE)
 DOC_OBJ=$(shell find system/ -iname "*.o") dialog-property-editor.o
 
+GRESOURCE_DATA_FILES=$(shell find $(CURDIR)/../data -iname "*.ui" -or -iname "*.css")
 GRESOURCE_SOURCE_DIR=../data
 GRESOURCE=$(GRESOURCE_SOURCE_DIR)/app.gresource.xml
 GRESOURCE_TARGET_BASENAME=app-gresource
@@ -41,7 +42,7 @@ endif
 main: $(OBJ)
 	$(CC) -o $@ $^ $(LDLIBS)
 
-$(GRESOURCE_TARGET_BASENAME).c: $(GRESOURCE) $(GRESOURCE_TARGET_BASENAME).h
+$(GRESOURCE_TARGET_BASENAME).c: $(GRESOURCE) $(GRESOURCE_TARGET_BASENAME).h $(GRESOURCE_DATA_FILES)
 	glib-compile-resources --sourcedir=$(GRESOURCE_SOURCE_DIR) --c-name=my --target=$@ --generate-source $(GRESOURCE)
 
 $(GRESOURCE_TARGET_BASENAME).h: $(GRESOURCE)

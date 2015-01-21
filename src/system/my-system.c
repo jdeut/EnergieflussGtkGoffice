@@ -384,7 +384,7 @@ my_system_init (MySystem * self)
 {
     GtkWidget *button;
 
-    button = gtk_button_new_with_label ("MyNewSystem");
+    button = (GtkWidget *) my_system_widget_new ();
 
     goc_item_set (GOC_ITEM (self), "widget", button, "width", 200.0, "height",
                   150.0, NULL);
