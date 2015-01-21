@@ -386,8 +386,8 @@ my_system_init (MySystem * self)
 
     button = (GtkWidget *) my_system_widget_new ();
 
-    goc_item_set (GOC_ITEM (self), "widget", button, "width", 200.0, "height",
-                  150.0, NULL);
+    goc_item_set (GOC_ITEM (self), "widget", button, "width", 300.0, "height",
+                  250.0, NULL);
 
     g_signal_connect (button, "button-press-event",
                       G_CALLBACK (my_system_begin_drag), self);

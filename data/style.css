@@ -4,11 +4,11 @@ GtkLayout {
 
 MySystemWidget {
     border-style: solid;
-    border-width: 2px;
+    border-width: 3px;
     border-radius: 20px;
     background-image: -gtk-gradient (linear,
     left top, right bottom,
-    from(#9d9a99), to(#d6d5d4));
+    from(#ffffff), to(#ffffff));
     box-shadow: 2px 2px 2px grey inset;
     margin: 1em 1.5em;
 }
