@@ -230,7 +230,7 @@ my_application_save (GSimpleAction * simple, GVariant * parameter,
 
     gchar *str;
     gchar *path;
-    gint len;
+    gsize len;
 
     GET_UI_ELEMENT (GtkWidget, applicationwindow);
 
