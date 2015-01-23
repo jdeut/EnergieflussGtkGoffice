@@ -3,12 +3,29 @@ GtkLayout {
 }
 
 MySystemWidget {
+    transition: 100ms ease-out;
     border-style: solid;
     border-width: 3px;
     border-radius: 20px;
-    background-image: -gtk-gradient (linear,
-    left top, right bottom,
-    from(#ffffff), to(#ffffff));
-    box-shadow: 2px 2px 2px grey inset;
-    margin: 1em 1.5em;
+    border-color: #444;
+    background-color: #eaeaea;
+}
+
+MySystemWidget:active {
+    transition: 100ms ease-in;
+    border-color: #aa4;
+    border-width: 5px;
+}
+
+MySystemWidget GtkLabel.SystemTitle {
+    font-size: 140%;
+    font-variant: small-caps;
+    font-weight: 500;
+    color: #000;
+}
+
+MySystemWidget GtkImage {
+    border-width: 1px;
+    border-style: solid;
+    border-color: black;
 }
