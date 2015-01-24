@@ -58,8 +58,9 @@
     <property name="default_width">800</property>
     <property name="default_height">600</property>
     <child type="titlebar">
-      <object class="GtkHeaderBar">
+      <object class="GtkHeaderBar" id="headerbar">
         <property name="show_close_button">True</property>
+        <property name="decoration-layout">menu:maximize,minimize,close</property>
         <property name="title" translatable="yes">Energiebilanz</property>
         <child>
           <object class="GtkBox" id="undo_redo_box">
