@@ -57,6 +57,22 @@
     <property name="can_focus">False</property>
     <property name="default_width">800</property>
     <property name="default_height">600</property>
+    <child type="titlebar">
+      <object class="GtkHeaderBar">
+        <property name="show_close_button">True</property>
+        <property name="title" translatable="yes">Energiebilanz</property>
+        <child>
+          <object class="GtkBox" id="undo_redo_box">
+              <property name="visible">True</property>
+              <property name="can_focus">False</property>
+              <!--<style>-->
+                <!--<class name="linked"/>-->
+              <!--</style>-->
+              <!-- place for childs -->
+          </object>
+        </child>
+      </object>
+    </child>
     <child>
       <object class="GtkGrid" id="grid1">
         <property name="visible">True</property>
@@ -73,8 +89,8 @@
             <property name="margin_right">10</property>
             <property name="margin_start">10</property>
             <property name="margin_end">10</property>
-            <property name="margin_top">6</property>
-            <property name="margin_bottom">6</property>
+            <property name="margin_top">5</property>
+            <property name="margin_bottom">5</property>
             <property name="orientation">vertical</property>
             <property name="spacing">2</property>
           </object>
@@ -88,7 +104,6 @@
           <object class="GtkScrolledWindow" id="scrolledwindow1">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="margin_top">10</property>
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
             <property name="shadow_type">in</property>
@@ -108,7 +123,6 @@
             <property name="can_focus">False</property>
             <property name="margin_left">10</property>
             <property name="margin_right">10</property>
-            <property name="margin_top">10</property>
             <property name="orientation">vertical</property>
             <property name="spacing">5</property>
             <child>
