@@ -41,6 +41,15 @@ GType my_timeline_model_get_type (void);
 /* fill in public functions */
 MyTimelineModel *my_timeline_model_new (void);
 
+gboolean
+my_timeline_model_add_object (MyTimelineModel * self, gpointer object);
+
+GPtrArray *
+my_timeline_model_get_arrows_of_current_index  (MyTimelineModel * self);
+
+void
+my_timeline_model_append_to_timeline (MyTimelineModel * self);
+
 G_END_DECLS
 
 #endif /* __MY_TIMELINE_MODEL_H__ */

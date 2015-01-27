@@ -3,6 +3,7 @@
 
 #include <glib-object.h>
 #include <goffice/canvas/goc-canvas.h>
+
 #include "my-flowarrow.h"
 
 
@@ -37,9 +38,16 @@ struct _MyCanvasClass
 
 };
 
+#include "my-timelinemodel.h"
+
 GType my_canvas_get_type (void);
 
 /* fill in public functions */
+void
+my_canvas_set_add_arrow_mode (MyCanvas * self);
+
+void
+my_canvas_set_add_system_mode (MyCanvas * self);
 
 void
 my_canvas_show_drag_points_of_all_arrows (MyCanvas * self);
@@ -55,12 +63,6 @@ my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
 gboolean
 my_canvas_button_press_cb (GocCanvas * canvas, GdkEventButton * event,
                            gpointer data);
-
-void
-my_canvas_add_flow_arrow (MyCanvas * self);
-
-void
-my_canvas_add_system (MyCanvas * self);
 
 gboolean
 my_canvas_generate_json_data_stream (MyCanvas * self, gchar ** str, gsize * len);

@@ -251,6 +251,19 @@
                 <property name="position">3</property>
               </packing>
             </child>
+            <child>
+              <object class="GtkScale" id="scale">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="value_pos">right</property>
+                <property name="digits">0</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">4</property>
+              </packing>
+            </child>
           </object>
           <packing>
             <property name="left_attach">1</property>

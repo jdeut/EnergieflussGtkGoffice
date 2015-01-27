@@ -569,6 +569,28 @@ my_flow_arrow_change_anchor_while_dragging (MyFlowArrow * self,
 }
 
 static void
+my_flow_arrow_canvas_changed (MyFlowArrow * self, GParamSpec * pspec,
+                                      gpointer data) {
+
+    MyCanvas *canvas;
+    GocGroup *group_arrows;
+
+    g_object_get (self, "canvas", &canvas, NULL);
+
+    if(!MY_IS_CANVAS(canvas)) {
+        return;
+    }
+
+    group_arrows = canvas->group_arrows;
+
+    g_print("canvas changed\n");
+
+    if(MY_IS_DRAG_POINT(self->_priv->drag_point)) {
+        goc_group_add_child(group_arrows, GOC_ITEM(self->_priv->drag_point));
+    }
+}
+
+static void
 my_flow_arrow_canvas_initial_changed (MyFlowArrow * self, GParamSpec * pspec,
                                       gpointer data)
 {
@@ -607,6 +629,9 @@ my_flow_arrow_canvas_initial_changed (MyFlowArrow * self, GParamSpec * pspec,
     g_signal_handlers_disconnect_by_func (self,
                                           my_flow_arrow_canvas_initial_changed,
                                           NULL);
+
+    g_signal_connect (self, "notify::canvas",
+                      G_CALLBACK (my_flow_arrow_canvas_changed), NULL);
 }
 
 static void
@@ -696,7 +721,9 @@ my_flow_arrow_show_drag_points (MyFlowArrow * self)
 {
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
-    goc_item_show (GOC_ITEM (self->_priv->drag_point));
+    if (MY_IS_DRAG_POINT (self->_priv->drag_point)) {
+        goc_item_show (GOC_ITEM (self->_priv->drag_point));
+    }
 }
 
 void

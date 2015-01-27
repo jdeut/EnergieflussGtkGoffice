@@ -17,6 +17,7 @@ typedef struct interface_
 
 
 #include "my-application.h"
+#include "my-timelinemodel.h"
 
 void 
 interface_init (Interface *);

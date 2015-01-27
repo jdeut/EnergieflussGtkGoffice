@@ -3,6 +3,16 @@
 #include <json-glib/json-glib.h>
 #include <json-glib/json-gobject.h>
 
+enum
+{
+    PROP_0,
+    /* property entries */
+    PROP_TIMELINE,
+    N_PROPERTIES
+};
+
+static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
+
 /* 'private'/'protected' functions */
 static void my_canvas_class_init (MyCanvasClass * klass);
 static void my_canvas_init (MyCanvas * self);
@@ -16,14 +26,60 @@ struct _MyCanvasPrivate
     gdouble offsetx, offsety;
     guint add_arrow_mode;
     guint add_system_mode;
+    MyTimelineModel *timeline;
 };
 
-#define MY_CANVAS_GET_PRIVATE(o)      (G_TYPE_INSTANCE_GET_PRIVATE((o), \
-                                       MY_TYPE_CANVAS, \
-                                       MyCanvasPrivate))
+/* prototypes of private methods */
 
-G_DEFINE_TYPE (MyCanvas, my_canvas, GOC_TYPE_CANVAS);
+void
+my_canvas_group_add_item (MyCanvas * self, GocGroup * group, GocItem * item);
 
+
+G_DEFINE_TYPE_WITH_PRIVATE (MyCanvas, my_canvas, GOC_TYPE_CANVAS);
+
+
+static void
+my_canvas_set_property (GObject * object,
+                        guint property_id,
+                        const GValue * value, GParamSpec * pspec)
+{
+    MyCanvas *self = MY_CANVAS (object);
+
+    MyCanvasPrivate *priv = my_canvas_get_instance_private (MY_CANVAS (self));
+
+    switch (property_id) {
+
+        case PROP_TIMELINE:
+            priv->timeline = g_value_get_object (value);
+            break;
+
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+            break;
+    }
+}
+
+static void
+my_canvas_get_property (GObject * object,
+                        guint property_id, GValue * value, GParamSpec * pspec)
+{
+
+    MyCanvas *self = MY_CANVAS (object);
+
+    MyCanvasPrivate *priv = my_canvas_get_instance_private (MY_CANVAS (self));
+
+    switch (property_id) {
+
+        case PROP_TIMELINE:
+            g_value_set_object (value, priv->timeline);
+            break;
+
+        default:
+            /* We don't have any other property... */
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+            break;
+    }
+}
 
 GQuark
 my_canvas_error_quark (void)
@@ -71,31 +127,43 @@ my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
     /* if in ADD SYSTEM MODE */
     if (self->_priv->add_system_mode && !GOC_IS_ITEM (self->_priv->active_item)) {
 
-        goc_item_new (MY_CANVAS (canvas)->group_systems, MY_TYPE_SYSTEM, "x",
-                      x_cv, "y", y_cv, NULL);
+        MySystem *system;
+
+        system = g_object_new (MY_TYPE_SYSTEM, "x", x_cv, "y", y_cv, NULL);
+
+        my_timeline_model_add_object (self->_priv->timeline, system);
 
         self->_priv->add_system_mode = FALSE;
     }
     /* if in ADD ARROW MODE */
     else if (self->_priv->add_arrow_mode
              && MY_IS_SYSTEM (self->_priv->active_item)) {
+
         MyFlowArrow *arrow;
         MyDragPoint *point;
 
         arrow =
-            (MyFlowArrow *) goc_item_new (MY_CANVAS (self)->group_arrows,
-                                          MY_TYPE_FLOW_ARROW, "linked-system",
-                                          self->_priv->active_item, "anchor",
-                                          MY_ANCHOR_EAST, "x1", x_cv, "y1",
-                                          y_cv, "x0", x_cv, "y0", y_cv, NULL);
+            g_object_new (MY_TYPE_FLOW_ARROW, "linked-system",
+                          self->_priv->active_item, "anchor", MY_ANCHOR_EAST,
+                          "x1", x_cv, "y1", y_cv, "x0", x_cv, "y0", y_cv, NULL);
 
-        my_flow_arrow_show_drag_points (arrow);
+        if (!my_timeline_model_add_object (self->_priv->timeline, arrow)) {
 
-        point = my_flow_arrow_get_drag_point (arrow);
+            self->_priv->add_arrow_mode = FALSE;
 
-        goc_item_set (GOC_ITEM (point), "x", x_cv, "y", y_cv, NULL);
+            g_object_unref (arrow);
 
-        self->_priv->active_item = GOC_ITEM (point);
+        }
+        else {
+
+            my_flow_arrow_show_drag_points (arrow);
+
+            point = my_flow_arrow_get_drag_point (arrow);
+
+            goc_item_set (GOC_ITEM (point), "x", x_cv, "y", y_cv, NULL);
+
+            self->_priv->active_item = GOC_ITEM (point);
+        }
     }
     else {
         self->_priv->add_arrow_mode = FALSE;
@@ -145,8 +213,17 @@ my_canvas_class_init (MyCanvasClass * klass)
 
     gobject_class->finalize = my_canvas_finalize;
     gobject_class->dispose = my_canvas_dispose;
+    gobject_class->set_property = my_canvas_set_property;
+    gobject_class->get_property = my_canvas_get_property;
 
-    g_type_class_add_private (gobject_class, sizeof (MyCanvasPrivate));
+    obj_properties[PROP_TIMELINE] =
+        g_param_spec_object ("timeline",
+                             "timeline",
+                             "Timeline",
+                             MY_TYPE_TIMELINE_MODEL, G_PARAM_READWRITE);
+
+    g_object_class_install_properties (gobject_class,
+                                       N_PROPERTIES, obj_properties);
 }
 
 static void
@@ -156,7 +233,7 @@ my_canvas_init (MyCanvas * self)
 
     root = goc_canvas_get_root (GOC_CANVAS (self));
 
-    self->_priv = MY_CANVAS_GET_PRIVATE (self);
+    self->_priv = my_canvas_get_instance_private (self);
 
     self->_priv->active_item = NULL;
     self->_priv->add_arrow_mode = FALSE;
@@ -197,18 +274,9 @@ my_canvas_show_drag_points_of_all_arrows (MyCanvas * self)
 
     for (l = group->children; l != NULL; l = l->next) {
         if (MY_IS_FLOW_ARROW (l->data)) {
-            g_print ("it is an arrow :)\n");
             my_flow_arrow_show_drag_points (MY_FLOW_ARROW (l->data));
         }
     }
-}
-
-void
-my_canvas_add_system (MyCanvas * self)
-{
-    g_return_if_fail (MY_IS_CANVAS (self));
-
-    self->_priv->add_system_mode = TRUE;
 }
 
 gboolean
@@ -263,14 +331,6 @@ my_canvas_generate_json_data_stream (MyCanvas * self, gchar ** str, gsize * len)
     json_array_unref (array_root);
 
     return TRUE;
-}
-
-void
-my_canvas_add_flow_arrow (MyCanvas * self)
-{
-    g_return_if_fail (MY_IS_CANVAS (self));
-
-    self->_priv->add_arrow_mode = TRUE;
 }
 
 gboolean
@@ -387,4 +447,160 @@ my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
         gtk_widget_queue_draw (GTK_WIDGET (canvas));
     }
     return TRUE;
+}
+
+void
+my_canvas_foreach_populate_group_from_array (GocItem * item, GocGroup * group)
+{
+    g_return_if_fail (GOC_IS_GROUP (group));
+    g_return_if_fail (GOC_IS_ITEM (item));
+
+    my_canvas_group_add_item (NULL, group, item);
+}
+
+/* transition */
+void
+my_canvas_model_current_index_changed (MyCanvas * self, MyTimelineModel * model)
+{
+    GPtrArray *array;
+    GocGroup *root;
+    GList *l;
+
+    g_return_if_fail (MY_IS_CANVAS (self));
+    g_return_if_fail (MY_IS_TIMELINE_MODEL (model));
+
+    root = goc_canvas_get_root (GOC_CANVAS (self));
+
+    if (GOC_IS_GROUP (self->group_arrows)) {
+
+        l = self->group_arrows->children;
+
+        while(l != NULL) {
+
+            if (MY_IS_FLOW_ARROW (l->data)) {
+                g_print ("Arrow -> RefCount: %u\n",
+                         G_OBJECT (l->data)->ref_count);
+            }
+            else {
+                g_print ("Other -> RefCount: %u\n",
+                         G_OBJECT (l->data)->ref_count);
+            }
+
+            goc_group_remove_child (self->group_arrows, GOC_ITEM (l->data));
+
+            /* since list changes upon goc_group_remove_child l must be refreshed */
+            l = self->group_arrows->children;
+        }
+
+        goc_item_destroy (GOC_ITEM (self->group_arrows));
+        self->group_arrows = goc_group_new (root);
+        goc_item_lower_to_bottom (GOC_ITEM (self->group_arrows));
+    }
+
+    array =
+        my_timeline_model_get_arrows_of_current_index (self->_priv->timeline);
+
+    if (array != NULL) {
+
+        g_print ("array->len: %u\n", array->len);
+
+        g_ptr_array_foreach (array, (GFunc)
+                             my_canvas_foreach_populate_group_from_array,
+                             self->group_arrows);
+    }
+}
+
+void
+my_canvas_group_add_item (MyCanvas * self, GocGroup * group, GocItem * item)
+{
+    g_return_if_fail (GOC_IS_GROUP (group));
+    g_return_if_fail (GOC_IS_ITEM (item));
+
+    goc_group_add_child (group, item);
+    goc_item_invalidate (item);
+}
+
+void
+my_canvas_set_add_system_mode (MyCanvas * self)
+{
+    g_return_if_fail (MY_IS_CANVAS (self));
+
+    self->_priv->add_system_mode = TRUE;
+}
+
+void
+my_canvas_set_add_arrow_mode (MyCanvas * self)
+{
+    g_return_if_fail (MY_IS_CANVAS (self));
+
+    self->_priv->add_arrow_mode = TRUE;
+}
+
+void
+my_canvas_model_arrow_added_at_current_index (MyCanvas * self,
+                                              MyFlowArrow * arrow,
+                                              MyTimelineModel * model)
+{
+    g_return_if_fail (MY_IS_CANVAS (self));
+    g_return_if_fail (MY_IS_TIMELINE_MODEL (model));
+    g_return_if_fail (MY_IS_FLOW_ARROW (arrow));
+
+    my_canvas_group_add_item (self, self->group_arrows, GOC_ITEM (arrow));
+}
+
+void
+my_canvas_model_system_added (MyCanvas * self, MySystem * system,
+                              MyTimelineModel * model)
+{
+    g_return_if_fail (MY_IS_CANVAS (self));
+    g_return_if_fail (MY_IS_TIMELINE_MODEL (model));
+    g_return_if_fail (MY_IS_SYSTEM (system));
+
+    my_canvas_group_add_item (self, self->group_systems, GOC_ITEM (system));
+}
+
+void
+my_canvas_model_systems_changed (MyCanvas * self, MyTimelineModel * model)
+{
+    g_return_if_fail (MY_IS_CANVAS (self));
+    g_return_if_fail (MY_IS_TIMELINE_MODEL (model));
+}
+
+void
+my_canvas_model_changed (MyCanvas * self, MyTimelineModel * model)
+{
+
+    g_return_if_fail (MY_IS_CANVAS (self));
+    g_return_if_fail (MY_IS_TIMELINE_MODEL (model));
+
+    g_print ("model changed\n");
+}
+
+void
+my_canvas_set_timeline (MyCanvas * self, MyTimelineModel * model)
+{
+
+    g_return_if_fail (MY_IS_CANVAS (self));
+    g_return_if_fail (MY_IS_TIMELINE_MODEL (model));
+
+    g_object_set (self, "timeline", model, NULL);
+
+    g_signal_connect_swapped (model, "changed",
+                              G_CALLBACK (my_canvas_model_changed), self);
+
+    g_signal_connect_swapped (model, "current-index-changed",
+                              G_CALLBACK
+                              (my_canvas_model_current_index_changed), self);
+
+    g_signal_connect_swapped (model, "systems-changed",
+                              G_CALLBACK
+                              (my_canvas_model_systems_changed), self);
+
+    g_signal_connect_swapped (model, "system-added",
+                              G_CALLBACK (my_canvas_model_system_added), self);
+
+    g_signal_connect_swapped (model, "arrow-added-at-current-index",
+                              G_CALLBACK
+                              (my_canvas_model_arrow_added_at_current_index),
+                              self);
 }

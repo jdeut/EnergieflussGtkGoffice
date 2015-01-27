@@ -81,29 +81,51 @@ interface_init (Interface * iface)
 
 void
 interface_populate_canvas (Interface * iface)
-{
-    GocGroup *group_systems, *group_arrows;
+{   
     GocItem *system1, *system2, *arrow;
+    MyTimelineModel *timeline;
+    GtkAdjustment *adjust;
 
-    group_systems = iface->canvas->group_systems;
-    group_arrows = iface->canvas->group_arrows;
+    timeline = my_timeline_model_new();
+
+    my_timeline_model_append_to_timeline(timeline);
+    my_timeline_model_append_to_timeline(timeline);
+    my_timeline_model_append_to_timeline(timeline);
+
+    GET_UI_ELEMENT(GtkScale, scale);
+
+    if(GTK_IS_SCALE(scale)) {
+        g_object_bind_property(timeline, "adjustment", scale, "adjustment", G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
+    }
+
+    my_canvas_set_timeline(iface->canvas, timeline);
 
     system1 =
-        goc_item_new (group_systems, MY_TYPE_SYSTEM, "x", 100.0, "y", 200.0,
-                      NULL);
+        g_object_new (MY_TYPE_SYSTEM, "x", 100.0, "y", 200.0, NULL);
 
-    arrow =
-        goc_item_new (group_arrows, MY_TYPE_FLOW_ARROW, "energy-quantity", 10.0,
-                      "linked-system", system1, "secondary-system", NULL,
-                      "anchor", MY_ANCHOR_EAST, NULL);
+    my_timeline_model_add_object(timeline, system1);
+    /*GocGroup *group_systems, *group_arrows;*/
+    /*GocItem *system1, *system2, *arrow;*/
 
-    system2 =
-        goc_item_new (group_systems, MY_TYPE_SYSTEM, "x", 300.0, "y", 400.0,
-                      NULL);
-    arrow =
-        goc_item_new (group_arrows, MY_TYPE_FLOW_ARROW, "energy-quantity", 10.0,
-                      "linked-system", system1, "secondary-system", system2,
-                      "anchor", MY_ANCHOR_EAST, NULL);
+    /*group_systems = iface->canvas->group_systems;*/
+    /*group_arrows = iface->canvas->group_arrows;*/
+
+    /*system1 =*/
+        /*goc_item_new (group_systems, MY_TYPE_SYSTEM, "x", 100.0, "y", 200.0,*/
+                      /*NULL);*/
+
+    /*arrow =*/
+        /*goc_item_new (group_arrows, MY_TYPE_FLOW_ARROW, "energy-quantity", 10.0,*/
+                      /*"linked-system", system1, "secondary-system", NULL,*/
+                      /*"anchor", MY_ANCHOR_EAST, NULL);*/
+
+    /*system2 =*/
+        /*goc_item_new (group_systems, MY_TYPE_SYSTEM, "x", 300.0, "y", 400.0,*/
+                      /*NULL);*/
+    /*arrow =*/
+        /*goc_item_new (group_arrows, MY_TYPE_FLOW_ARROW, "energy-quantity", 10.0,*/
+                      /*"linked-system", system1, "secondary-system", system2,*/
+                      /*"anchor", MY_ANCHOR_EAST, NULL);*/
 }
 
 void

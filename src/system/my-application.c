@@ -182,7 +182,7 @@ my_application_add_arrow (GSimpleAction * simple, GVariant * parameter,
 
     gtk_statusbar_push (statusbar1, contextid, msg);
 
-    my_canvas_add_flow_arrow (iface->canvas);
+    my_canvas_set_add_arrow_mode (iface->canvas);
 }
 
 void
@@ -290,7 +290,7 @@ my_application_add_system (GSimpleAction * simple, GVariant * parameter,
 {
     Interface *iface = (Interface *) MY_APPLICATION(data)->_priv->iface;
 
-    my_canvas_add_system (iface->canvas);
+    my_canvas_set_add_system_mode (iface->canvas);
 }
 
 void
