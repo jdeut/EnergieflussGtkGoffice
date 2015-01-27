@@ -28,7 +28,11 @@ MySystemWidget GtkLabel.SystemTitle {
     color: #000;
 }
 
-MySystemWidget GtkImage {
+MySystemWidget GtkButton.Prefs {
+    padding: 5px;
+}
+
+MySystemWidget GtkImage.SystemReal {
     border-width: 1px;
     border-style: solid;
     border-color: black;

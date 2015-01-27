@@ -4,6 +4,13 @@
   <requires lib="gtk+" version="3.12"/>
   <!-- interface-local-resource-path /home/johannes/Bildung/Programming/c/Gtk/goffice-fi-01/data -->
   <!-- interface-css-provider-path style.css -->
+  <object class="GtkImage" id="pref">
+    <property name="width_request">8</property>
+    <property name="height_request">3</property>
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">preferences-system-symbolic</property>
+  </object>
   <template class="MySystemWidget" parent="GtkEventBox">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
@@ -30,6 +37,26 @@
           <packing>
             <property name="left_attach">1</property>
             <property name="top_attach">0</property>
+            <property name="width">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="edit">
+            <property name="width_request">1</property>
+            <property name="height_request">3</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="receives_default">False</property>
+            <property name="halign">start</property>
+            <property name="valign">start</property>
+            <property name="image">pref</property>
+            <style>
+              <class name="Prefs"/>
+            </style>
+          </object>
+          <packing>
+            <property name="left_attach">2</property>
+            <property name="top_attach">2</property>
           </packing>
         </child>
         <child>
@@ -46,6 +73,9 @@
                 <property name="halign">center</property>
                 <property name="valign">center</property>
                 <property name="resource">/org/gtk/myapp/lagerfeuer.png</property>
+                <style>
+                  <class name="SystemReal"/>
+                </style>
               </object>
               <packing>
                 <property name="name">page1</property>
@@ -72,24 +102,44 @@
           <packing>
             <property name="left_attach">1</property>
             <property name="top_attach">1</property>
-            <property name="width">1</property>
-            <property name="height">1</property>
+            <property name="width">2</property>
           </packing>
         </child>
         <child>
-          <object class="GtkStackSwitcher" id="switcher">
+          <object class="GtkBox" id="box1">
             <property name="visible">True</property>
-            <property name="stack">stack</property>
-            <property name="halign">center</property>
-            <property name="vexpand">True</property>
+            <property name="can_focus">False</property>
+            <property name="halign">end</property>
             <property name="valign">start</property>
+            <property name="margin_right">5</property>
+            <property name="orientation">vertical</property>
+            <child>
+              <object class="GtkStackSwitcher" id="switcher">
+                <property name="visible">True</property>
+                <property name="stack">stack</property>
+                <property name="halign">center</property>
+                <property name="vexpand">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
           </object>
           <packing>
             <property name="left_attach">1</property>
             <property name="top_attach">2</property>
-            <property name="width">1</property>
-            <property name="height">1</property>
           </packing>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
         </child>
       </object>
     </child>
