@@ -1,7 +1,7 @@
 #include "my-timelinemodel.h"
 
 #define TIMELINE_MODEL_CURRENT_INDEX        (((gint)gtk_adjustment_get_value (priv->adjust)) - 1)
-#define TIMELINE_MODEL_INDEX_IS_TRANSFER    TIMELINE_MODEL_CURRENT_INDEX % 2 == 1 
+#define TIMELINE_MODEL_INDEX_IS_TRANSFER    TIMELINE_MODEL_CURRENT_INDEX % 2 == 1
 
 /* Signals */
 enum
@@ -216,7 +216,7 @@ my_timeline_index_changed (MyTimelineModel * self, GtkAdjustment * adjust)
     g_return_if_fail (GTK_IS_ADJUSTMENT (adjust));
 
 
-    g_print("value: %u\n", TIMELINE_MODEL_CURRENT_INDEX);
+    g_print ("value: %u\n", TIMELINE_MODEL_CURRENT_INDEX);
 
     g_signal_emit (G_OBJECT (self), signals[SIG_CURRENT_INDEX_CHANGED], 0);
 }
@@ -306,13 +306,50 @@ my_timeline_model_get_arrows_of_current_index (MyTimelineModel * self)
 
         index = TIMELINE_MODEL_CURRENT_INDEX;
 
-        if(! (index > priv->timeline->len)) {
+        if (!(index > priv->timeline->len)) {
 
-            return g_ptr_array_index(priv->timeline, index);
+            return g_ptr_array_index (priv->timeline, index);
         }
-    } 
-    
+    }
+
     return NULL;
+}
+
+gboolean
+my_timeline_model_remove_object (MyTimelineModel * self, gpointer object)
+{
+    MyTimelineModelPrivate *priv =
+        my_timeline_model_get_instance_private (self);
+
+    g_return_if_fail (MY_IS_TIMELINE_MODEL (self));
+
+    if (MY_IS_SYSTEM (object)) {
+    }
+    else if (MY_IS_FLOW_ARROW (object)) {
+
+        if (TIMELINE_MODEL_INDEX_IS_TRANSFER) {
+
+            GPtrArray *transition;
+
+            transition =
+                g_ptr_array_index (priv->timeline,
+                                   TIMELINE_MODEL_CURRENT_INDEX);
+
+            g_ptr_array_remove (transition, object);
+
+            /*g_signal_emit (G_OBJECT (self),*/
+                           /*signals[SIG_ARROW_REMOVED_AT_CURRENT_INDEX], 0,*/
+                           /*object);*/
+        }
+        else {
+            g_print ("can't remove arrow in a state\n");
+            return FALSE;
+        }
+    }
+
+    g_signal_emit (G_OBJECT (self), signals[SIG_CHANGED], 0);
+
+    return TRUE;
 }
 
 gboolean
@@ -335,7 +372,9 @@ my_timeline_model_add_object (MyTimelineModel * self, gpointer object)
 
             GPtrArray *transition;
 
-            transition = g_ptr_array_index (priv->timeline, TIMELINE_MODEL_CURRENT_INDEX);
+            transition =
+                g_ptr_array_index (priv->timeline,
+                                   TIMELINE_MODEL_CURRENT_INDEX);
 
             g_ptr_array_add (transition, object);
 

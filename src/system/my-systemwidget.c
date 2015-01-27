@@ -20,7 +20,6 @@ struct _MySystemWidgetPrivate
 G_DEFINE_TYPE_WITH_PRIVATE (MySystemWidget, my_system_widget,
                             GTK_TYPE_EVENT_BOX);
 
-
 GQuark
 my_system_widget_error_quark (void)
 {

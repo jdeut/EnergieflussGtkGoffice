@@ -16,7 +16,6 @@ dialog_property_editor_response_cb (GtkWidget * dialog,
 void
 my_flow_arrow_destroy_clicked_cb (GtkButton * button, MyFlowArrow * flowarrow)
 {
-    MySystem *system;
     GtkDialog *dialog;
 
     dialog = (GtkDialog *) gtk_widget_get_toplevel (GTK_WIDGET (button));
@@ -33,7 +32,6 @@ my_flow_arrow_destroy_clicked_cb (GtkButton * button, MyFlowArrow * flowarrow)
 void
 dialog_property_editor (GObject * object, gchar * label, GtkWindow * window)
 {
-
     GtkBuilder *builder;
     GtkWidget *dialog, *listbox;
     GOEditor *editor;

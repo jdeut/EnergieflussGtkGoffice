@@ -50,6 +50,9 @@ my_timeline_model_get_arrows_of_current_index  (MyTimelineModel * self);
 void
 my_timeline_model_append_to_timeline (MyTimelineModel * self);
 
+gboolean
+my_timeline_model_remove_object (MyTimelineModel * self, gpointer object);
+
 G_END_DECLS
 
 #endif /* __MY_TIMELINE_MODEL_H__ */
