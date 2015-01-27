@@ -33,33 +33,15 @@ struct _MyApplicationClass
 
 GType my_application_get_type (void);
 
-#include "interface.h"
+#include "my-window.h"
 
 /* fill in public functions */
 MyApplication *
 my_application_new (void);
 
-void 
-my_application_set_window (MyApplication * self, GtkWidget * window);
-
 void
 my_application_quit (GSimpleAction * simple, GVariant * parameter,
                      gpointer data);
-void
-my_application_add_system (GSimpleAction * simple, GVariant * parameter,
-                           gpointer );
-
-void
-my_application_save (GSimpleAction * simple, GVariant * parameter,
-                                 gpointer data);
-
-void
-my_application_add_arrow (GSimpleAction * simple, GVariant * parameter,
-                          gpointer );
-
-void
-my_application_show_drag_points (GSimpleAction * simple, GVariant * parameter,
-                                 gpointer );
 
 G_END_DECLS
 #endif /* __MY_APPLICATION_H__ */

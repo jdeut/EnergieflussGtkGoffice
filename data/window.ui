@@ -73,10 +73,9 @@
     <property name="can_focus">False</property>
     <property name="icon_name">media-skip-forward-symbolic-rtl</property>
   </object>
-  <object class="GtkApplicationWindow" id="applicationwindow">
-    <property name="can_focus">False</property>
-    <property name="default_width">800</property>
-    <property name="default_height">600</property>
+  <template class="MyWindow" parent="GtkApplicationWindow">
+    <property name="default-width">800</property>
+    <property name="default-height">600</property>
     <child type="titlebar">
       <object class="GtkHeaderBar" id="headerbar">
         <property name="show_close_button">True</property>
@@ -97,10 +96,6 @@
                   <property name="tooltip_text">Save content to file</property>
                 </object>
               </child>
-              <!--<style>-->
-                <!--<class name="linked"/>-->
-              <!--</style>-->
-              <!-- place for childs -->
           </object>
         </child>
       </object>
@@ -375,5 +370,5 @@
         </child>
       </object>
     </child>
-  </object>
+  </template>
 </interface>

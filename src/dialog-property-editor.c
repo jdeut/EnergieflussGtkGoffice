@@ -1,4 +1,7 @@
-#include "system/interface.h"
+#include <gtk/gtk.h>
+
+#include "system/my-flowarrow.h"
+
 
 static void
 dialog_property_editor_response_cb (GtkWidget * dialog,
