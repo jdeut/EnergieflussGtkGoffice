@@ -38,6 +38,8 @@ struct _MySystemWidgetClass
 
 };
 
+#include "my-systemwidget-properties.h"
+
 GType my_system_widget_get_type (void);
 
 /* fill in public functions */

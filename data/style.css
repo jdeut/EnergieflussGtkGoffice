@@ -28,7 +28,7 @@ MySystemWidget GtkLabel.SystemTitle {
     color: #000;
 }
 
-MySystemWidget GtkButton.Prefs {
+MySystemWidget GtkButton.EditProperties {
     padding: 5px;
 }
 

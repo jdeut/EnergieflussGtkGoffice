@@ -41,7 +41,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkButton" id="edit">
+          <object class="GtkButton" id="button_properties">
             <property name="width_request">1</property>
             <property name="height_request">3</property>
             <property name="visible">True</property>
@@ -51,7 +51,7 @@
             <property name="valign">start</property>
             <property name="image">pref</property>
             <style>
-              <class name="Prefs"/>
+              <class name="EditProperties"/>
             </style>
           </object>
           <packing>

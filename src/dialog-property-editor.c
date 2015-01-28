@@ -2,6 +2,7 @@
 
 #include "system/my-flowarrow.h"
 
+static GtkWidget *preferences_dialog = NULL;
 
 static void
 dialog_property_editor_response_cb (GtkWidget * dialog,
@@ -38,6 +39,11 @@ dialog_property_editor (GObject * object, gchar * label, GtkWindow * window)
     GtkBuilder *builder;
     GtkWidget *dialog, *listbox;
     GOEditor *editor;
+
+    if (preferences_dialog != NULL) {
+        gtk_window_present (GTK_WINDOW (preferences_dialog));
+        return;
+    }
 
     builder = gtk_builder_new_from_resource ("/org/gtk/myapp/dialog-property-editor.ui");
 
@@ -116,4 +122,11 @@ dialog_property_editor (GObject * object, gchar * label, GtkWindow * window)
     }
 
     gtk_widget_show (dialog);
+
+    preferences_dialog = dialog;
+
+    g_object_add_weak_pointer (G_OBJECT (dialog),
+                               (gpointer *) & preferences_dialog);
+
+    g_object_unref(builder);
 }

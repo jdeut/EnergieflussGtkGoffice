@@ -21,6 +21,7 @@ struct _MySystemWidgetPrivate
     /* private members go here */
     GtkImage *image;
     GtkWidget *label1;
+    GtkWidget *button_properties;
 
     GdkPixbuf *pixbuf;
 
@@ -126,6 +127,8 @@ my_system_widget_class_init (MySystemWidgetClass * klass)
                                                   image);
     gtk_widget_class_bind_template_child_private (widget_class, MySystemWidget,
                                                   label1);
+    gtk_widget_class_bind_template_child_private (widget_class, MySystemWidget,
+                                                  button_properties);
 }
 
 gboolean
@@ -162,6 +165,19 @@ my_system_widget_model_changed (MySystemWidget * self,
     g_print ("model changed of system\n");
 }
 
+void
+my_system_widget_button_properties_clicked (MySystemWidget * self,
+                                            gpointer data)
+{
+    GtkWidget *toplevel;
+
+    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
+
+    g_return_if_fail (MY_IS_WINDOW (toplevel));
+
+    my_system_widget_properties_dialog_show (GTK_WINDOW (toplevel), self);
+}
+
 static void
 my_system_widget_init (MySystemWidget * self)
 {
@@ -179,6 +195,11 @@ my_system_widget_init (MySystemWidget * self)
                       G_CALLBACK (my_system_leave_event), NULL);
     g_signal_connect (self, "notify::model",
                       G_CALLBACK (my_system_widget_model_changed), NULL);
+
+    g_signal_connect_swapped (priv->button_properties, "clicked",
+                              G_CALLBACK
+                              (my_system_widget_button_properties_clicked),
+                              self);
 }
 
 static void
