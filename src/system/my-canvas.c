@@ -498,7 +498,7 @@ my_canvas_model_current_index_changed (MyCanvas * self, MyTimelineModel * model)
     }
 
     array =
-        my_timeline_model_get_arrows_of_current_index (self->_priv->timeline);
+        my_timeline_model_get_arrows_of_current_pos (self->_priv->timeline);
 
     if (array != NULL) {
 

@@ -8,8 +8,11 @@ my_timeline_model_time_pos_added (MyTimelineModel * self, guint pos,
                                   gpointer data);
 
 void
-my_timeline_model_add_empty_system_data_model_to_every_element (GPtrArray * arr,
-                                                                gpointer data);
+tl_systems_data_fill_new_n_at_pos (MyTimelineModel * self, guint pos,
+                                   gpointer data);
+
+void
+tl_systems_data_new_models_for_appended_element (GPtrArray * tl_systems_data);
 
 
 guint g_counter = 0;
@@ -74,7 +77,6 @@ my_timeline_model_set_index (MyTimelineModel * self, guint index)
     }
     priv->index = TIMELINE_MODEL_CURRENT_INDEX;
 }
-
 
 static void
 my_timeline_model_set_property (GObject * object,
@@ -239,36 +241,9 @@ my_timeline_model_init (MyTimelineModel * self)
                               G_CALLBACK (my_timeline_index_changed), self);
 
     g_signal_connect (self, "time-pos-added",
-                      G_CALLBACK (my_timeline_model_time_pos_added), self);
+                      G_CALLBACK (tl_systems_data_fill_new_n_at_pos), NULL);
 
     my_timeline_model_append_to_timeline (self);
-}
-
-void
-my_timeline_model_fill_new_at_pos (gpointer * data, GPtrArray * arr)
-{
-
-    MySystemModel *model;
-
-    model = my_system_model_new ();
-
-    g_object_set (model, "id", g_counter, NULL);
-
-    g_counter++;
-
-    g_ptr_array_add (arr, model);
-}
-
-static void
-my_timeline_model_time_pos_added (MyTimelineModel * self, guint pos,
-                                  gpointer data)
-{
-    MyTimelineModelPrivate *priv =
-        my_timeline_model_get_instance_private (MY_TIMELINE_MODEL (self));
-
-    g_ptr_array_foreach (priv->systems, (GFunc)
-                         my_timeline_model_fill_new_at_pos,
-                         g_ptr_array_index (priv->tl_systems_data, pos));
 }
 
 static void
@@ -319,7 +294,7 @@ my_timeline_get_systems (MyTimelineModel * self)
 }
 
 GPtrArray *
-my_timeline_model_get_systems_data_of_current_index (MyTimelineModel * self)
+my_timeline_model_get_systems_data_of_current_pos (MyTimelineModel * self)
 {
     GPtrArray *arr;
     MyTimelineModelPrivate *priv =
@@ -334,7 +309,7 @@ my_timeline_model_get_systems_data_of_current_index (MyTimelineModel * self)
 }
 
 GPtrArray *
-my_timeline_model_get_arrows_of_current_index (MyTimelineModel * self)
+my_timeline_model_get_arrows_of_current_pos (MyTimelineModel * self)
 {
     MyTimelineModelPrivate *priv =
         my_timeline_model_get_instance_private (self);
@@ -413,9 +388,7 @@ my_timeline_model_add_object (MyTimelineModel * self, gpointer object)
 
 
         /* add new system-data-model of the system for every instance of time */
-        g_ptr_array_foreach (priv->tl_systems_data, (GFunc)
-                             my_timeline_model_add_empty_system_data_model_to_every_element,
-                             self);
+        tl_systems_data_new_models_for_appended_element (priv->tl_systems_data);
 
 
         g_signal_emit (G_OBJECT (self), signals[SIG_SYSTEMS_CHANGED], 0);
@@ -451,55 +424,57 @@ my_timeline_model_add_object (MyTimelineModel * self, gpointer object)
 /* dimension of time */
 
 void
-my_timeline_model_add_empty_system_data_model_to_every_element (GPtrArray * arr,
-                                                                gpointer data)
+tl_systems_data_fill_new_n_at_pos (MyTimelineModel * self, guint pos,
+                                   gpointer data)
 {
-    MyTimelineModel *self = MY_TIMELINE_MODEL (data);
+    guint i;
+    GPtrArray *systems_data_n;
+
+    MyTimelineModelPrivate *priv =
+        my_timeline_model_get_instance_private (MY_TIMELINE_MODEL (self));
+
+    systems_data_n = g_ptr_array_index (priv->tl_systems_data, pos);
+
+    for (i = 0; i < priv->systems->len; i++) {
+
+        MySystemModel *model;
+
+        model = g_object_new (MY_TYPE_SYSTEM_MODEL, "id", g_counter, NULL);
+
+        g_ptr_array_add (systems_data_n, model);
+
+        g_counter++;
+    }
+}
+
+void
+tl_systems_data_new_models_for_appended_element (GPtrArray * tl_systems_data)
+{
+    guint i;
     MySystemModel *model;
-    MyTimelineModelPrivate *priv =
-        my_timeline_model_get_instance_private (self);
+    GPtrArray *systems_data_n;
 
-    model = my_system_model_new ();
+    for (i = 0; i < tl_systems_data->len; i++) {
 
-    g_object_set (model, "id", g_counter, NULL);
+        /* get i'th element of systems_data */
+        systems_data_n = g_ptr_array_index (tl_systems_data, i);
 
-    g_counter++;
+        model = g_object_new (MY_TYPE_SYSTEM_MODEL, "id", g_counter, NULL);
 
-    g_ptr_array_add (arr, model);
+        g_ptr_array_add (systems_data_n, model);
+
+        g_counter++;
+    }
 }
 
 static void
-tl_systems_data_add_at_current_pos (MyTimelineModel * self)
+g_ptr_array_insert_empty_array_at_pos (GPtrArray * array, gint pos)
 {
-    MyTimelineModelPrivate *priv =
-        my_timeline_model_get_instance_private (self);
-
     GPtrArray *new_element;
 
     new_element = g_ptr_array_new ();
-    g_ptr_array_insert (priv->tl_systems_data, TIMELINE_MODEL_CURRENT_INDEX,
-                        new_element);
 
-    new_element = g_ptr_array_new ();
-    g_ptr_array_insert (priv->tl_systems_data, TIMELINE_MODEL_CURRENT_INDEX,
-                        new_element);
-}
-
-static void
-tl_arrows_add_at_current_pos (MyTimelineModel * self) {
-
-    MyTimelineModelPrivate *priv =
-        my_timeline_model_get_instance_private (self);
-
-    GPtrArray *new_element;
-
-    new_element = g_ptr_array_new ();
-    g_ptr_array_insert (priv->tl_arrows, TIMELINE_MODEL_CURRENT_INDEX,
-                        new_element);
-
-    new_element = g_ptr_array_new ();
-    g_ptr_array_insert (priv->tl_arrows, TIMELINE_MODEL_CURRENT_INDEX,
-                        new_element);
+    g_ptr_array_insert (array, pos, new_element);
 }
 
 void
@@ -510,18 +485,18 @@ my_timeline_model_add_at_current_pos (MyTimelineModel * self)
     MyTimelineModelPrivate *priv =
         my_timeline_model_get_instance_private (self);
 
-    tl_systems_data_add_at_current_pos(self);
-    tl_arrows_add_at_current_pos(self);
+    for (i = TIMELINE_MODEL_CURRENT_INDEX + 1;
+         i < TIMELINE_MODEL_CURRENT_INDEX + 3; i++) {
 
-    g_signal_emit (G_OBJECT (self), signals[SIG_TIME_POS_ADDED], 0,
-                   TIMELINE_MODEL_CURRENT_INDEX);
+        g_ptr_array_insert_empty_array_at_pos (priv->tl_systems_data, i);
+        g_ptr_array_insert_empty_array_at_pos (priv->tl_arrows, i);
 
-    g_signal_emit (G_OBJECT (self), signals[SIG_TIME_POS_ADDED], 0,
-                   TIMELINE_MODEL_CURRENT_INDEX+1);
+        g_signal_emit (G_OBJECT (self), signals[SIG_TIME_POS_ADDED], 0, i);
+    }
 
-    i = gtk_adjustment_get_upper(priv->adjust);
+    i = gtk_adjustment_get_upper (priv->adjust);
 
-    gtk_adjustment_set_upper (priv->adjust, i+2);
+    gtk_adjustment_set_upper (priv->adjust, i + 2);
 }
 
 void
@@ -530,13 +505,8 @@ my_timeline_model_append_to_timeline (MyTimelineModel * self)
     MyTimelineModelPrivate *priv =
         my_timeline_model_get_instance_private (self);
 
-    GPtrArray *new_element;
-
-    new_element = g_ptr_array_new ();
-    g_ptr_array_add (priv->tl_systems_data, new_element);
-
-    new_element = g_ptr_array_new ();
-    g_ptr_array_add (priv->tl_arrows, new_element);
+    g_ptr_array_insert_empty_array_at_pos(priv->tl_systems_data, -1);
+    g_ptr_array_insert_empty_array_at_pos(priv->tl_arrows, -1);
 
     g_signal_emit (G_OBJECT (self), signals[SIG_TIME_POS_ADDED], 0,
                    priv->tl_systems_data->len - 1);

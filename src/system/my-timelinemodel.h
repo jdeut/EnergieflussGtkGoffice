@@ -47,7 +47,7 @@ gboolean
 my_timeline_model_add_object (MyTimelineModel * self, gpointer object);
 
 GPtrArray *
-my_timeline_model_get_arrows_of_current_index  (MyTimelineModel * self);
+my_timeline_model_get_arrows_of_current_pos (MyTimelineModel * self);
 
 void
 my_timeline_model_append_to_timeline (MyTimelineModel * self);
@@ -59,7 +59,7 @@ void
 my_timeline_model_add_at_current_pos (MyTimelineModel * self);
 
 GPtrArray *
-my_timeline_model_get_systems_data_of_current_index (MyTimelineModel * self);
+my_timeline_model_get_systems_data_of_current_pos  (MyTimelineModel * self);
 
 G_END_DECLS
 

@@ -128,7 +128,6 @@ my_system_widget_class_init (MySystemWidgetClass * klass)
                                                   label1);
 }
 
-
 gboolean
 my_system_enter_event (MySystemWidget * self,
                        GdkEvent * event, gpointer user_data)
@@ -196,14 +195,6 @@ my_system_widget_finalize (GObject * object)
 }
 
 void
-my_system_widget_size_allocate_cb (GtkWidget * widget,
-                                   GdkRectangle * allocation, gpointer data)
-{
-    /*g_print ("ok\n"); */
-}
-
-
-void
 my_system_widget_timeline_current_index_changed (MySystemWidget * self, MyTimelineModel * timeline)
 {
     MySystemWidgetPrivate *priv;
@@ -212,7 +203,7 @@ my_system_widget_timeline_current_index_changed (MySystemWidget * self, MyTimeli
 
     priv = my_system_widget_get_instance_private (self);
 
-    data = my_timeline_model_get_systems_data_of_current_index (timeline);
+    data = my_timeline_model_get_systems_data_of_current_pos (timeline);
 
     if(priv->id <= data->len) {
         model = g_ptr_array_index(data, priv->id);
@@ -249,9 +240,6 @@ my_system_widget_new (void)
     self = g_object_new (MY_TYPE_SYSTEM_WIDGET, NULL);
 
     priv = my_system_widget_get_instance_private (self);
-
-    g_signal_connect (self, "size-allocate",
-                      G_CALLBACK (my_system_widget_size_allocate_cb), NULL);
 
     priv->pixbuf =
         gdk_pixbuf_new_from_resource_at_scale ("/org/gtk/myapp/lagerfeuer.png",
