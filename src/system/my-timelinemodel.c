@@ -20,13 +20,12 @@ guint g_counter = 0;
 /* Signals */
 enum
 {
-    SIG_CHANGED,
     SIG_SYSTEMS_CHANGED,
     SIG_SYSTEM_ADDED,
     SIG_SYSTEM_REMOVED,
     SIG_TIME_POS_ADDED,
-    SIG_ARROW_ADDED_AT_CURRENT_INDEX,
-    SIG_CURRENT_INDEX_CHANGED,
+    SIG_ARROW_ADDED_AT_CURRENT_POS,
+    SIG_CURRENT_POS_CHANGED,
     N_SIGNALS
 };
 
@@ -133,14 +132,6 @@ my_timeline_model_class_init (MyTimelineModelClass * klass)
     gobject_class->set_property = my_timeline_model_set_property;
     gobject_class->get_property = my_timeline_model_get_property;
 
-    signals[SIG_CHANGED] =
-        g_signal_new ("changed",
-                      G_OBJECT_CLASS_TYPE (gobject_class),
-                      G_SIGNAL_RUN_FIRST,
-                      0,
-                      NULL, NULL,
-                      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
-
     signals[SIG_TIME_POS_ADDED] =
         g_signal_new ("time-pos-added",
                       G_OBJECT_CLASS_TYPE (gobject_class),
@@ -159,8 +150,8 @@ my_timeline_model_class_init (MyTimelineModelClass * klass)
                       g_cclosure_marshal_VOID__VOID,
                       G_TYPE_NONE, 1, MY_TYPE_SYSTEM);
 
-    signals[SIG_ARROW_ADDED_AT_CURRENT_INDEX] =
-        g_signal_new ("arrow-added-at-current-index",
+    signals[SIG_ARROW_ADDED_AT_CURRENT_POS] =
+        g_signal_new ("arrow-added-at-current-pos",
                       G_OBJECT_CLASS_TYPE (gobject_class),
                       G_SIGNAL_RUN_FIRST,
                       0,
@@ -184,8 +175,8 @@ my_timeline_model_class_init (MyTimelineModelClass * klass)
                       NULL, NULL,
                       g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
-    signals[SIG_CURRENT_INDEX_CHANGED] =
-        g_signal_new ("current-index-changed",
+    signals[SIG_CURRENT_POS_CHANGED] =
+        g_signal_new ("current-pos-changed",
                       G_OBJECT_CLASS_TYPE (gobject_class),
                       G_SIGNAL_RUN_FIRST,
                       0,
@@ -211,7 +202,7 @@ my_timeline_index_changed (MyTimelineModel * self, GtkAdjustment * adjust)
     g_return_if_fail (MY_IS_TIMELINE_MODEL (self));
     g_return_if_fail (GTK_IS_ADJUSTMENT (adjust));
 
-    g_signal_emit (G_OBJECT (self), signals[SIG_CURRENT_INDEX_CHANGED], 0);
+    g_signal_emit (G_OBJECT (self), signals[SIG_CURRENT_POS_CHANGED], 0);
 }
 
 static void
@@ -363,8 +354,6 @@ my_timeline_model_remove_object (MyTimelineModel * self, gpointer object)
         }
     }
 
-    g_signal_emit (G_OBJECT (self), signals[SIG_CHANGED], 0);
-
     return TRUE;
 }
 
@@ -407,7 +396,7 @@ my_timeline_model_add_object (MyTimelineModel * self, gpointer object)
             g_ptr_array_add (transition, object);
 
             g_signal_emit (G_OBJECT (self),
-                           signals[SIG_ARROW_ADDED_AT_CURRENT_INDEX], 0,
+                           signals[SIG_ARROW_ADDED_AT_CURRENT_POS], 0,
                            object);
         }
         else {
@@ -415,8 +404,6 @@ my_timeline_model_add_object (MyTimelineModel * self, gpointer object)
             return FALSE;
         }
     }
-
-    g_signal_emit (G_OBJECT (self), signals[SIG_CHANGED], 0);
 
     return TRUE;
 }

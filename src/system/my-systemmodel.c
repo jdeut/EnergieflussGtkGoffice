@@ -94,9 +94,6 @@ my_system_model_class_init (MySystemModelClass * klass)
 
     g_object_class_install_properties (gobject_class,
                                        N_PROPERTIES, obj_properties);
-
-    g_type_class_add_private (gobject_class,
-                              sizeof (MySystemModelPrivate));
 }
 
 static void

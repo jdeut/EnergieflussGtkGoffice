@@ -154,11 +154,11 @@ my_system_widget_model_changed (MySystemWidget * self,
 
     guint id;
 
-    g_object_get(priv->model, "id", &id, NULL);
+    g_object_get (priv->model, "id", &id, NULL);
 
-    gchar *str = g_strdup_printf("id: %u", id);
+    gchar *str = g_strdup_printf ("id: %u", id);
 
-    gtk_label_set_text(GTK_LABEL(priv->label1), str);
+    gtk_label_set_text (GTK_LABEL (priv->label1), str);
     g_print ("model changed of system\n");
 }
 
@@ -195,7 +195,8 @@ my_system_widget_finalize (GObject * object)
 }
 
 void
-my_system_widget_timeline_current_index_changed (MySystemWidget * self, MyTimelineModel * timeline)
+my_system_widget_timeline_current_index_changed (MySystemWidget * self,
+                                                 MyTimelineModel * timeline)
 {
     MySystemWidgetPrivate *priv;
     MySystemModel *model;
@@ -205,13 +206,13 @@ my_system_widget_timeline_current_index_changed (MySystemWidget * self, MyTimeli
 
     data = my_timeline_model_get_systems_data_of_current_pos (timeline);
 
-    if(priv->id <= data->len) {
-        model = g_ptr_array_index(data, priv->id);
+    if (priv->id <= data->len) {
+        model = g_ptr_array_index (data, priv->id);
     }
 
-    g_return_if_fail(MY_IS_SYSTEM_MODEL(model));
+    g_return_if_fail (MY_IS_SYSTEM_MODEL (model));
 
-    g_object_set(self, "model", model, NULL);
+    g_object_set (self, "model", model, NULL);
 }
 
 void
@@ -219,16 +220,19 @@ my_system_widget_realized (MySystemWidget * self, gpointer data)
 {
     MyTimelineModel *timeline;
     GtkWidget *toplevel;
-    
-    toplevel = gtk_widget_get_toplevel (GTK_WIDGET(self));
 
-    g_return_if_fail(MY_IS_WINDOW(toplevel));
+    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
 
-    timeline = my_window_get_timeline (MY_WINDOW(toplevel));
+    g_return_if_fail (MY_IS_WINDOW (toplevel));
 
-    g_return_if_fail(MY_IS_TIMELINE_MODEL(timeline));
+    timeline = my_window_get_timeline (MY_WINDOW (toplevel));
 
-    g_signal_connect_swapped(timeline, "current-index-changed", G_CALLBACK(my_system_widget_timeline_current_index_changed), self);
+    g_return_if_fail (MY_IS_TIMELINE_MODEL (timeline));
+
+    g_signal_connect_swapped (timeline, "current-pos-changed",
+                              G_CALLBACK
+                              (my_system_widget_timeline_current_index_changed),
+                              self);
 }
 
 MySystemWidget *

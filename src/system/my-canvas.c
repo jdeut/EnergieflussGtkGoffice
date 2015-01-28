@@ -567,16 +567,6 @@ my_canvas_model_systems_changed (MyCanvas * self, MyTimelineModel * model)
 }
 
 void
-my_canvas_model_changed (MyCanvas * self, MyTimelineModel * model)
-{
-
-    g_return_if_fail (MY_IS_CANVAS (self));
-    g_return_if_fail (MY_IS_TIMELINE_MODEL (model));
-
-    g_print ("model changed\n");
-}
-
-void
 my_canvas_set_timeline (MyCanvas * self, MyTimelineModel * model)
 {
 
@@ -585,10 +575,7 @@ my_canvas_set_timeline (MyCanvas * self, MyTimelineModel * model)
 
     g_object_set (self, "timeline", model, NULL);
 
-    g_signal_connect_swapped (model, "changed",
-                              G_CALLBACK (my_canvas_model_changed), self);
-
-    g_signal_connect_swapped (model, "current-index-changed",
+    g_signal_connect_swapped (model, "current-pos-changed",
                               G_CALLBACK
                               (my_canvas_model_current_index_changed), self);
 
@@ -599,7 +586,7 @@ my_canvas_set_timeline (MyCanvas * self, MyTimelineModel * model)
     g_signal_connect_swapped (model, "system-added",
                               G_CALLBACK (my_canvas_model_system_added), self);
 
-    g_signal_connect_swapped (model, "arrow-added-at-current-index",
+    g_signal_connect_swapped (model, "arrow-added-at-current-pos",
                               G_CALLBACK
                               (my_canvas_model_arrow_added_at_current_index),
                               self);
