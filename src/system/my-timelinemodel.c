@@ -20,9 +20,6 @@ static guint signals[N_SIGNALS] = { 0, };
 enum
 {
     PROP_0,
-    /* property entries */
-    PROP_INDEX,
-    PROP_INDEX_MAX,
     PROP_ADJUST,
     N_PROPERTIES
 };
@@ -59,10 +56,10 @@ my_timeline_model_set_index (MyTimelineModel * self, guint index)
     MyTimelineModelPrivate *priv =
         my_timeline_model_get_instance_private (self);
 
-    if (index > priv->timeline->len) {
+    if (gtk_adjustment_get_upper(priv->adjust) > priv->timeline->len) {
         g_print ("index > array length\n");
     }
-    priv->index = index;
+    priv->index = TIMELINE_MODEL_CURRENT_INDEX;
 }
 
 
@@ -74,10 +71,6 @@ my_timeline_model_set_property (GObject * object,
     MyTimelineModel *self = MY_TIMELINE_MODEL (object);
 
     switch (property_id) {
-
-        case PROP_INDEX:
-            my_timeline_model_set_index (self, g_value_get_uint (value));
-            break;
 
         case PROP_ADJUST:
             self->_priv->adjust = g_value_get_object (value);
@@ -101,14 +94,6 @@ my_timeline_model_get_property (GObject * object,
         my_timeline_model_get_instance_private (MY_TIMELINE_MODEL (self));
 
     switch (property_id) {
-
-        case PROP_INDEX:
-            g_value_set_uint (value, priv->index);
-            break;
-
-        case PROP_INDEX_MAX:
-            g_value_set_uint (value, priv->timeline->len);
-            break;
 
         case PROP_ADJUST:
             g_value_set_object (value, priv->adjust);
@@ -182,19 +167,6 @@ my_timeline_model_class_init (MyTimelineModelClass * klass)
                       0,
                       NULL, NULL,
                       g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
-
-    obj_properties[PROP_INDEX] =
-        g_param_spec_uint ("index",
-                           "index",
-                           "Defines the current state/transfer",
-                           1, G_MAXUINT, 1,
-                           G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
-
-    obj_properties[PROP_INDEX_MAX] =
-        g_param_spec_uint ("index-max",
-                           "index-max",
-                           "length of timeline array",
-                           1, G_MAXUINT, 1, G_PARAM_READABLE);
 
     obj_properties[PROP_ADJUST] =
         g_param_spec_object ("adjustment",
