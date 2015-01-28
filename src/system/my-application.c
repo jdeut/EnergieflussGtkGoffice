@@ -29,47 +29,40 @@ my_application_error_quark (void)
 }
 
 static void
-startup (GApplication * app)
+my_application_startup (GApplication * app)
 {
     G_APPLICATION_CLASS (my_application_parent_class)->startup (app);
+
+    g_action_map_add_action_entries (G_ACTION_MAP (app),
+                                     my_application_app_entries,
+                                     G_N_ELEMENTS
+                                     (my_application_app_entries), app);
 }
 
 static void
-activate (GApplication * app)
+my_application_activate (GApplication * app)
 {
     MyApplicationPrivate *priv;
     MyApplication *self = MY_APPLICATION (app);
 
+    G_APPLICATION_CLASS (my_application_parent_class)->activate (app);
+
     priv = my_application_get_instance_private (self);
 
-    /* Create the interface. */
-    if (priv->window == NULL) {
-        gchar *size_str;
+    priv->window = (GtkWidget *) my_window_new(GTK_APPLICATION(app));
 
-        /* Showtime! */
-        /*interface_create (self);*/
+    /*gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(priv->window));*/
 
-        priv->window = (GtkWidget *) my_window_new();
+    gtk_window_set_role (GTK_WINDOW (priv->window), "MyGtkTraining");
 
-        g_action_map_add_action_entries (G_ACTION_MAP (app),
-                                         my_application_app_entries,
-                                         G_N_ELEMENTS
-                                         (my_application_app_entries), app);
-
-        gtk_window_set_application (GTK_WINDOW (priv->window),
-                                    GTK_APPLICATION (self));
-
-        gtk_window_set_role (GTK_WINDOW (priv->window), "MyGtkTraining");
-
-        gtk_widget_show_all (priv->window);
-    }
+    gtk_widget_show_all (priv->window);
 
     /* Bring it to the foreground */
     gtk_window_present (GTK_WINDOW (priv->window));
 }
 
 static void
-constructed (GObject * object)
+my_application_constructed (GObject * object)
 {
     g_set_application_name ("Energie");
     gtk_window_set_default_icon_name ("hitori");
@@ -88,16 +81,15 @@ my_application_class_init (MyApplicationClass * klass)
 
     gobject_class->finalize = my_application_finalize;
     gobject_class->dispose = my_application_dispose;
-    gobject_class->constructed = constructed;
+    /*gobject_class->constructed = constructed;*/
 
-    gapplication_class->startup = startup;
-    gapplication_class->activate = activate;
+    gapplication_class->startup = my_application_startup;
+    gapplication_class->activate = my_application_activate;
 }
 
 static void
 my_application_init (MyApplication * self)
 {
-
     /* to init any of the private data, do e.g: */
 }
 
