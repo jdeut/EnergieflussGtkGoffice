@@ -53,6 +53,9 @@ my_timeline_model_append_to_timeline (MyTimelineModel * self);
 gboolean
 my_timeline_model_remove_object (MyTimelineModel * self, gpointer object);
 
+void
+my_timeline_model_add_at_current_pos (MyTimelineModel * self);
+
 G_END_DECLS
 
 #endif /* __MY_TIMELINE_MODEL_H__ */

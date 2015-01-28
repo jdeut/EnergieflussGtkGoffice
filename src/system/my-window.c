@@ -24,7 +24,8 @@ static GActionEntry win_entries[] = {
     {"add-arrow", my_window_add_arrow, NULL, NULL, NULL},
     {"add-system", my_window_add_system, NULL, NULL, NULL},
     {"show-drag-points", my_window_show_drag_points, NULL, NULL, NULL},
-    {"save", my_window_save, NULL, NULL, NULL}
+    {"save", my_window_save, NULL, NULL, NULL},
+    {"timeline-add", my_window_timeline_add, NULL, NULL, NULL}
 };
 
 GQuark
@@ -78,6 +79,8 @@ my_window_populate (MyWindow * self)
 
     timeline = my_timeline_model_new ();
 
+    priv->timeline = timeline;
+
     my_timeline_model_append_to_timeline (timeline);
     my_timeline_model_append_to_timeline (timeline);
     my_timeline_model_append_to_timeline (timeline);
@@ -108,7 +111,7 @@ my_window_class_init (MyWindowClass * klass)
 
     /* if following line is uncommented and the virtual methode is not chained the
      * program hangs */
-    /* gobject_class->constructed = my_window_constructed;*/
+    /* gobject_class->constructed = my_window_constructed; */
 
     gtk_widget_class_set_template_from_resource (GTK_WIDGET_CLASS (klass),
                                                  "/org/gtk/myapp/window.ui");
@@ -145,7 +148,7 @@ my_window_finalize (GObject * object)
 }
 
 MyWindow *
-my_window_new (GtkApplication *app)
+my_window_new (GtkApplication * app)
 {
     MyWindow *self;
 
@@ -272,6 +275,17 @@ my_window_show_drag_points (GSimpleAction * simple, GVariant * parameter,
     priv = my_window_get_instance_private (data);
 
     my_canvas_show_drag_points_of_all_arrows (priv->canvas);
+}
+
+void
+my_window_timeline_add (GSimpleAction * simple, GVariant * parameter,
+                        gpointer data)
+{
+    MyWindowPrivate *priv;
+
+    priv = my_window_get_instance_private (data);
+  
+    my_timeline_model_add_at_current_pos (priv->timeline);
 }
 
 void

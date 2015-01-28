@@ -56,7 +56,7 @@ my_timeline_model_set_index (MyTimelineModel * self, guint index)
     MyTimelineModelPrivate *priv =
         my_timeline_model_get_instance_private (self);
 
-    if (gtk_adjustment_get_upper(priv->adjust) > priv->timeline->len) {
+    if (gtk_adjustment_get_upper (priv->adjust) > priv->timeline->len) {
         g_print ("index > array length\n");
     }
     priv->index = TIMELINE_MODEL_CURRENT_INDEX;
@@ -309,9 +309,9 @@ my_timeline_model_remove_object (MyTimelineModel * self, gpointer object)
 
             g_ptr_array_remove (transition, object);
 
-            /*g_signal_emit (G_OBJECT (self),*/
-                           /*signals[SIG_ARROW_REMOVED_AT_CURRENT_INDEX], 0,*/
-                           /*object);*/
+            /*g_signal_emit (G_OBJECT (self), */
+            /*signals[SIG_ARROW_REMOVED_AT_CURRENT_INDEX], 0, */
+            /*object); */
         }
         else {
             g_print ("can't remove arrow in a state\n");
@@ -366,9 +366,26 @@ my_timeline_model_add_object (MyTimelineModel * self, gpointer object)
 }
 
 void
+my_timeline_model_add_at_current_pos (MyTimelineModel * self)
+{
+    MyTimelineModelPrivate *priv =
+        my_timeline_model_get_instance_private (self);
+
+    GPtrArray *new_element;
+
+    new_element = g_ptr_array_new ();
+
+    g_ptr_array_insert (priv->timeline, TIMELINE_MODEL_CURRENT_INDEX, new_element);
+
+    new_element = g_ptr_array_new ();
+    g_ptr_array_insert (priv->timeline, TIMELINE_MODEL_CURRENT_INDEX, new_element);
+
+    gtk_adjustment_set_upper (priv->adjust, priv->timeline->len);
+}
+
+void
 my_timeline_model_append_to_timeline (MyTimelineModel * self)
 {
-
     MyTimelineModelPrivate *priv =
         my_timeline_model_get_instance_private (self);
 

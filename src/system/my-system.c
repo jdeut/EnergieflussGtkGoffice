@@ -35,27 +35,34 @@ struct _GocOffscreenBoxClass
  * GocOffscreenBox: End
  ******************************************************************************/
 
+enum
+{
+    PROP_0,
+    PROP_ID,
+    N_PROPERTIES
+};
+
+static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
+
 /* 'private'/'protected' functions */
 static void my_system_class_init (MySystemClass * klass);
 static void my_system_init (MySystem * self);
 static void my_system_finalize (GObject *);
 static void my_system_dispose (GObject *);
 
-struct _MySystemPrivate
+typedef struct
 {
     /* private members go here */
-};
+    guint id;
+} MySystemPrivate;
 
-#define MY_SYSTEM_GET_PRIVATE(o)      (G_TYPE_INSTANCE_GET_PRIVATE((o), \
-                                       MY_TYPE_SYSTEM, \
-                                       MySystemPrivate))
 
-static void my_system_json_serializable (JsonSerializableIface *
-                                                  iface);
+static void my_system_json_serializable (JsonSerializableIface * iface);
 
-G_DEFINE_TYPE_EXTENDED (MySystem, my_system, GOC_TYPE_WIDGET, 0,
-                        G_IMPLEMENT_INTERFACE (JSON_TYPE_SERIALIZABLE,
-                                               my_system_json_serializable))
+G_DEFINE_TYPE_WITH_CODE (MySystem, my_system, GOC_TYPE_WIDGET,
+                         G_ADD_PRIVATE (MySystem)
+                         G_IMPLEMENT_INTERFACE (JSON_TYPE_SERIALIZABLE,
+                                                my_system_json_serializable))
 
      static JsonNode *_serialize_property (JsonSerializable * serializable,
                                            const gchar * name,
@@ -102,13 +109,55 @@ _deserialize_property (JsonSerializable * serializable,
     return result;
 }
 
-
 static void
 my_system_json_serializable (JsonSerializableIface * iface)
 {
     iface->serialize_property = _serialize_property;
     iface->deserialize_property = _deserialize_property;
 }
+
+static void
+my_system_set_property (GObject * object,
+                        guint property_id,
+                        const GValue * value, GParamSpec * pspec)
+{
+    MySystem *self = MY_SYSTEM (object);
+    MySystemPrivate *priv = my_system_get_instance_private (self);
+
+    switch (property_id) {
+
+        case PROP_ID:
+            priv->id = g_value_get_uint (value);
+            break;
+
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+            break;
+    }
+}
+
+static void
+my_system_get_property (GObject * object,
+                        guint property_id, GValue * value, GParamSpec * pspec)
+{
+    MySystem *self = MY_SYSTEM (object);
+
+    MySystemPrivate *priv = my_system_get_instance_private (self);
+
+
+    switch (property_id) {
+
+        case PROP_ID:
+            g_value_set_uint (value, priv->id);
+            break;
+
+        default:
+            /* We don't have any other property... */
+            G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+            break;
+    }
+}
+
 GQuark
 my_system_error_quark (void)
 {
@@ -332,10 +381,21 @@ my_system_class_init (MySystemClass * klass)
     gobject_class = G_OBJECT_CLASS (klass);
     gi_class = (GocItemClass *) klass;
 
-    /*g_type_class_add_private (gobject_class, sizeof (MySystemPrivate)); */
+    gobject_class->set_property = my_system_set_property;
+    gobject_class->get_property = my_system_get_property;
 
     gobject_class->finalize = my_system_finalize;
     gobject_class->dispose = my_system_dispose;
+
+    obj_properties[PROP_ID] =
+        g_param_spec_uint ("id",
+                           "id",
+                           "unique identifier of system",
+                           0, G_MAXUINT, 0,
+                           G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
+
+    g_object_class_install_properties (gobject_class,
+                                       N_PROPERTIES, obj_properties);
 
     gi_class->draw = my_system_draw_energy_flow;
 }

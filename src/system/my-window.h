@@ -55,6 +55,10 @@ my_window_show_drag_points (GSimpleAction * simple, GVariant * parameter,
 void
 my_window_add_system (GSimpleAction * simple, GVariant * parameter,
                       gpointer data);
+
+void
+my_window_timeline_add (GSimpleAction * simple, GVariant * parameter,
+                        gpointer data);
 G_END_DECLS
 
 #endif /* __MY_WINDOW_H__ */
