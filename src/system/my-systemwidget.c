@@ -153,16 +153,28 @@ void
 my_system_widget_model_changed (MySystemWidget * self,
                                 GParamSpec * pspec, gpointer user_data)
 {
+    GdkPixbuf *pixbuf;
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
 
     guint id;
 
-    g_object_get (priv->model, "id", &id, NULL);
+    g_object_get (priv->model, "id", &id, "pixbuf", &pixbuf, NULL);
 
     gchar *str = g_strdup_printf ("id: %u", id);
 
     gtk_label_set_text (GTK_LABEL (priv->label1), str);
     g_print ("model changed of system\n");
+
+    if (pixbuf != NULL) {
+        gtk_image_set_from_pixbuf (priv->image, pixbuf);
+    }
+    else {
+        priv->pixbuf =
+            gdk_pixbuf_new_from_resource_at_scale
+            ("/org/gtk/myapp/lagerfeuer.png", 200, -1, TRUE, NULL);
+
+        gtk_image_set_from_pixbuf (priv->image, priv->pixbuf);
+    }
 }
 
 void
@@ -270,10 +282,10 @@ my_system_widget_new (void)
         gdk_pixbuf_new_from_resource_at_scale ("/org/gtk/myapp/lagerfeuer.png",
                                                200, -1, TRUE, NULL);
 
+    gtk_image_set_from_pixbuf (priv->image, priv->pixbuf);
+
     g_signal_connect (self, "realize", G_CALLBACK (my_system_widget_realized),
                       NULL);
-
-    gtk_image_set_from_pixbuf (priv->image, priv->pixbuf);
 
     return self;
 }

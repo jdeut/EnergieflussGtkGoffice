@@ -2,7 +2,7 @@
 #define __MY_SYSTEM_MODEL_H__
 
 #include <glib-object.h>
-
+#include <gdk-pixbuf/gdk-pixbuf.h>
 
 G_BEGIN_DECLS
 

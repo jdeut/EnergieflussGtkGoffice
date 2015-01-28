@@ -2,17 +2,37 @@
 
 static GtkWidget *preferences_dialog = NULL;
 
-static MySystemWidget *system_widget;
+static MySystemModel *system_model;
+
+void
+file_chooser_file_set (GtkFileChooserButton * button, gpointer data)
+{
+    gchar *fn;
+
+    fn = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (button));
+
+    g_return_if_fail(fn != NULL);
+
+    g_print("%s\n", fn);
+
+    g_object_set (system_model, "picture-path", fn, NULL);
+}
 
 static void
 my_system_widget_properties_dialog_setup (GtkBuilder * builder,
                                           GtkWindow * window)
 {
+    GtkWidget *file_chooser;
     GtkWidget *dialog;
 
-    /* UI callbacks */
+    GtkFileFilter *filter;
+
     dialog =
-        GTK_WIDGET (gtk_builder_get_object (builder, "file_management_dialog"));
+        GTK_WIDGET (gtk_builder_get_object
+                    (builder, "system_widget_properties_editor_dialog"));
+
+    file_chooser =
+        GTK_WIDGET (gtk_builder_get_object (builder, "filechooserbutton_pic"));
 
     g_signal_connect (dialog, "response",
                       G_CALLBACK (gtk_widget_destroy), NULL);
@@ -27,6 +47,24 @@ my_system_widget_properties_dialog_setup (GtkBuilder * builder,
     g_object_add_weak_pointer (G_OBJECT (dialog),
                                (gpointer *) & preferences_dialog);
 
+    filter = gtk_file_filter_new ();
+
+    gtk_file_filter_set_name (filter, "jpg");
+    gtk_file_filter_add_mime_type (filter, "image/*");
+
+    gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (file_chooser), filter);
+    gtk_file_chooser_set_filter (GTK_FILE_CHOOSER (file_chooser), filter);
+
+    filter = gtk_file_filter_new ();
+
+    gtk_file_filter_set_name (filter, "All files");
+    gtk_file_filter_add_pattern (filter, "*");
+
+    gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (file_chooser), filter);
+
+    g_signal_connect (file_chooser, "file-set",
+                      G_CALLBACK (file_chooser_file_set), NULL);
+
     gtk_window_set_transient_for (GTK_WINDOW (dialog), window);
 
     gtk_widget_show (dialog);
@@ -34,7 +72,7 @@ my_system_widget_properties_dialog_setup (GtkBuilder * builder,
 
 void
 my_system_widget_properties_dialog_show (GtkWindow * window,
-                                         MySystemWidget * widget)
+                                         MySystemWidget * system_widget)
 {
     GtkBuilder *builder;
 
@@ -48,6 +86,10 @@ my_system_widget_properties_dialog_show (GtkWindow * window,
     gtk_builder_add_from_resource (builder,
                                    "/org/gtk/myapp/my-system-widget-properties.ui",
                                    NULL);
+
+    g_object_get (system_widget, "model", &system_model, NULL);
+
+    g_return_if_fail (MY_IS_SYSTEM_MODEL (system_model));
 
     my_system_widget_properties_dialog_setup (builder, window);
 
