@@ -33,11 +33,6 @@ my_window_error_quark (void)
     return g_quark_from_static_string ("my-window-error-quark");
 }
 
-static void
-my_window_constructed (GObject * object)
-{
-}
-
 void
 my_window_style_init (MyWindow * self)
 {
@@ -110,7 +105,10 @@ my_window_class_init (MyWindowClass * klass)
 
     gobject_class->finalize = my_window_finalize;
     gobject_class->dispose = my_window_dispose;
-    gobject_class->constructed = my_window_constructed;
+
+    /* if following line is uncommented and the virtual methode is not chained the
+     * program hangs */
+    /* gobject_class->constructed = my_window_constructed;*/
 
     gtk_widget_class_set_template_from_resource (GTK_WIDGET_CLASS (klass),
                                                  "/org/gtk/myapp/window.ui");
@@ -126,18 +124,11 @@ my_window_class_init (MyWindowClass * klass)
 static void
 my_window_init (MyWindow * self)
 {
-    MyWindowPrivate *priv;
-
-    priv = my_window_get_instance_private (self);
-
     gtk_widget_init_template (GTK_WIDGET (self));
 
     g_action_map_add_action_entries (G_ACTION_MAP (self),
                                      win_entries,
                                      G_N_ELEMENTS (win_entries), self);
-
-    my_window_style_init (self);
-    my_window_populate (self);
 }
 
 static void
@@ -154,11 +145,14 @@ my_window_finalize (GObject * object)
 }
 
 MyWindow *
-my_window_new (void)
+my_window_new (GtkApplication *app)
 {
     MyWindow *self;
 
-    self = g_object_new (MY_TYPE_WINDOW, NULL);
+    self = g_object_new (MY_TYPE_WINDOW, "application", app, NULL);
+
+    my_window_populate (self);
+    my_window_style_init (self);
 
     return self;
 }

@@ -6,6 +6,7 @@
 #include <gtk/gtk.h>
 
 #include "my-canvas.h"
+#include "my-application.h"
 
 G_BEGIN_DECLS
 
@@ -40,7 +41,7 @@ struct _MyWindowClass
 GType my_window_get_type (void);
 
 /* fill in public functions */
-MyWindow *my_window_new (void);
+MyWindow *my_window_new (GtkApplication *app);
 
 void
 my_window_save (GSimpleAction * simple, GVariant * parameter, gpointer data);
