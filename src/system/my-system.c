@@ -446,6 +446,8 @@ my_system_init (MySystem * self)
 
     button = (GtkWidget *) my_system_widget_new ();
 
+    g_object_bind_property(self, "id", button, "id", G_BINDING_DEFAULT | G_BINDING_SYNC_CREATE);
+
     goc_item_set (GOC_ITEM (self), "widget", button, "width", 300.0, "height",
                   250.0, NULL);
 

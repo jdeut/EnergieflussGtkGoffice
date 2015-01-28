@@ -59,6 +59,10 @@ my_window_add_system (GSimpleAction * simple, GVariant * parameter,
 void
 my_window_timeline_add (GSimpleAction * simple, GVariant * parameter,
                         gpointer data);
+
+MyTimelineModel *
+my_window_get_timeline (MyWindow * self);
+
 G_END_DECLS
 
 #endif /* __MY_WINDOW_H__ */

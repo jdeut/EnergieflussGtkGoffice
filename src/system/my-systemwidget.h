@@ -4,6 +4,9 @@
 #include <glib-object.h>
 #include <gtk/gtk.h>
 
+#include "my-systemmodel.h"
+#include "my-timelinemodel.h"
+#include "my-window.h"
 
 G_BEGIN_DECLS
 

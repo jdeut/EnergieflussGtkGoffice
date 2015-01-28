@@ -284,8 +284,20 @@ my_window_timeline_add (GSimpleAction * simple, GVariant * parameter,
     MyWindowPrivate *priv;
 
     priv = my_window_get_instance_private (data);
-  
+
     my_timeline_model_add_at_current_pos (priv->timeline);
+}
+
+MyTimelineModel *
+my_window_get_timeline (MyWindow * self)
+{
+    MyWindowPrivate *priv;
+
+    g_return_if_fail (MY_IS_WINDOW (self));
+
+    priv = my_window_get_instance_private (self);
+
+    return priv->timeline;
 }
 
 void

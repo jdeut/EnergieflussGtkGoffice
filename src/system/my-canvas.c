@@ -477,14 +477,14 @@ my_canvas_model_current_index_changed (MyCanvas * self, MyTimelineModel * model)
 
         while(l != NULL) {
 
-            if (MY_IS_FLOW_ARROW (l->data)) {
-                g_print ("Arrow -> RefCount: %u\n",
-                         G_OBJECT (l->data)->ref_count);
-            }
-            else {
-                g_print ("Other -> RefCount: %u\n",
-                         G_OBJECT (l->data)->ref_count);
-            }
+            /*if (MY_IS_FLOW_ARROW (l->data)) {*/
+                /*g_print ("Arrow -> RefCount: %u\n",*/
+                         /*G_OBJECT (l->data)->ref_count);*/
+            /*}*/
+            /*else {*/
+                /*g_print ("Other -> RefCount: %u\n",*/
+                         /*G_OBJECT (l->data)->ref_count);*/
+            /*}*/
 
             goc_group_remove_child (self->group_arrows, GOC_ITEM (l->data));
 

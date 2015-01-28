@@ -3,8 +3,6 @@
 
 #include <glib-object.h>
 
-#include "my-system.h"
-
 
 G_BEGIN_DECLS
 
@@ -36,6 +34,10 @@ struct _MyTimelineModelClass
 
 };
 
+#include "my-system.h"
+#include "my-systemmodel.h"
+#include "my-systemwidget.h"
+
 GType my_timeline_model_get_type (void);
 
 /* fill in public functions */
@@ -55,6 +57,9 @@ my_timeline_model_remove_object (MyTimelineModel * self, gpointer object);
 
 void
 my_timeline_model_add_at_current_pos (MyTimelineModel * self);
+
+GPtrArray *
+my_timeline_model_get_systems_data_of_current_index (MyTimelineModel * self);
 
 G_END_DECLS
 
