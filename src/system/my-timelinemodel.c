@@ -446,7 +446,7 @@ tl_systems_data_fill_new_n_at_pos (MyTimelineModel * self,
 
         MySystemModel *model;
 
-        model = g_object_new (MY_TYPE_SYSTEM_MODEL, "id", g_counter, NULL);
+        model = g_object_new (MY_TYPE_SYSTEM_MODEL, NULL);
         g_ptr_array_add (systems_data_n, model);
         g_counter++;
     }
@@ -463,9 +463,8 @@ tl_systems_data_new_models_for_appended_element (GPtrArray * tl_systems_data)
 
         /* get i'th element of systems_data */
         systems_data_n = g_ptr_array_index (tl_systems_data, i);
-        model = g_object_new (MY_TYPE_SYSTEM_MODEL, "id", g_counter, NULL);
+        model = g_object_new (MY_TYPE_SYSTEM_MODEL, NULL);
         g_ptr_array_add (systems_data_n, model);
-        g_counter++;
     }
 }
 

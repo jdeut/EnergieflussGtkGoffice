@@ -6,7 +6,8 @@ static void my_system_widget_init (MySystemWidget * self);
 static void my_system_widget_finalize (GObject *);
 static void my_system_widget_dispose (GObject *);
 void my_system_widget_set_model (MySystemWidget *, MySystemModel *);
-void my_system_widget_new_model_added (MySystemWidget * self, GParamSpec * pspec, gpointer user_data);
+void my_system_widget_new_model_added (MySystemWidget * self,
+                                       GParamSpec * pspec, gpointer user_data);
 void model_handler_picture_path_changed (MySystemWidget * self, gpointer);
 void my_system_widget_realized (MySystemWidget * self, gpointer data);
 
@@ -162,14 +163,49 @@ my_system_leave_event (MySystemWidget * self,
     return FALSE;
 }
 
+static void
+my_system_widget_pixbuf_set_proper_size (MySystemWidget * self)
+{
+    MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
+
+    GtkAllocation alloc;
+    gint p_w, p_h, dest_w, dest_h;
+
+    GdkPixbuf *new;
+
+    gtk_widget_get_allocation (GTK_WIDGET (self), &alloc);
+
+    alloc.width = ((gfloat) 0.7*alloc.width);
+    alloc.height = ((gfloat) 0.6*alloc.height);
+
+    p_w = gdk_pixbuf_get_width (priv->pixbuf);
+    p_h = gdk_pixbuf_get_height (priv->pixbuf);
+
+    if( ((gfloat) alloc.width / alloc.height) >= ((gfloat) p_w / p_h)) {
+        dest_h = alloc.height;
+        dest_w = p_w * alloc.height / p_h;
+    } else {
+        dest_h = p_h * alloc.width / p_w;
+        dest_w = alloc.width;
+    }
+
+    new = gdk_pixbuf_scale_simple (priv->pixbuf, dest_w, dest_h, GDK_INTERP_BILINEAR);
+
+    g_return_if_fail(GDK_IS_PIXBUF(new));
+
+    g_object_unref(priv->pixbuf);
+
+    priv->pixbuf = new;
+}
+
 void
 model_handler_picture_path_changed (MySystemWidget * self, gpointer data)
 {
-    GError *err = NULL;
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
-    gchar *picture_path;
 
-    GdkPixbuf *pixbuf_new;
+    gchar *picture_path;
+    GError *err = NULL;
+    GdkPixbuf *pixbuf_new, *pixbuf_tmp;
 
     g_return_if_fail (MY_IS_SYSTEM_MODEL (priv->model));
     g_return_if_fail (MY_IS_SYSTEM_WIDGET (self));
@@ -179,8 +215,8 @@ model_handler_picture_path_changed (MySystemWidget * self, gpointer data)
     if (picture_path == NULL)
         return;
 
-    pixbuf_new =
-        gdk_pixbuf_new_from_file_at_scale (picture_path, 200, -1, TRUE, &err);
+
+    pixbuf_new = gdk_pixbuf_new_from_file (picture_path, &err);
 
     if (err) {
 
@@ -200,13 +236,17 @@ model_handler_picture_path_changed (MySystemWidget * self, gpointer data)
         return;
     }
 
-    g_object_set (priv->model, "pixbuf", pixbuf_new, NULL);
-
-    gtk_image_set_from_pixbuf (priv->image, pixbuf_new);
-
-    g_object_unref (priv->pixbuf);
+    pixbuf_tmp = priv->pixbuf;
 
     priv->pixbuf = pixbuf_new;
+
+    g_object_unref (pixbuf_tmp);
+
+    my_system_widget_pixbuf_set_proper_size (self);
+
+    g_object_set (priv->model, "pixbuf", priv->pixbuf, NULL);
+
+    gtk_image_set_from_pixbuf (priv->image, priv->pixbuf);
 }
 
 void
@@ -270,16 +310,11 @@ my_system_widget_new_model_added (MySystemWidget * self,
 {
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
 
-    guint id;
-
-    g_object_get (priv->model, "id", &id, NULL);
-
     my_system_widget_set_pixbuf_from_model (self);
 
-    gchar *str = g_strdup_printf ("id: %u", id);
+    gchar *str = g_strdup_printf ("System %u", priv->id+1);
 
     gtk_label_set_text (GTK_LABEL (priv->label1), str);
-
 }
 
 void
