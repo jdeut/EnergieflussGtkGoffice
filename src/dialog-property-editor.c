@@ -129,4 +129,5 @@ dialog_property_editor (GObject * object, gchar * label, GtkWindow * window)
                                (gpointer *) & preferences_dialog);
 
     g_object_unref(builder);
+
 }

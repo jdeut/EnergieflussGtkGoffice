@@ -5,6 +5,10 @@ static void my_system_widget_class_init (MySystemWidgetClass * klass);
 static void my_system_widget_init (MySystemWidget * self);
 static void my_system_widget_finalize (GObject *);
 static void my_system_widget_dispose (GObject *);
+void my_system_widget_set_model (MySystemWidget *, MySystemModel *);
+void my_system_widget_new_model_added (MySystemWidget * self, GParamSpec * pspec, gpointer user_data);
+void model_handler_picture_path_changed (MySystemWidget * self, gpointer);
+void my_system_widget_realized (MySystemWidget * self, gpointer data);
 
 enum
 {
@@ -12,6 +16,13 @@ enum
     PROP_MODEL,
     PROP_ID,
     N_PROPERTIES
+};
+
+enum
+{
+    MODEL_CHANGED,
+    MODEL_PICTURE_PATH_CHANGED,
+    N_MODEL_HANDLER
 };
 
 static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
@@ -24,8 +35,10 @@ struct _MySystemWidgetPrivate
     GtkWidget *button_properties;
 
     GdkPixbuf *pixbuf;
-
     MySystemModel *model;
+
+    gulong handler_model[N_MODEL_HANDLER];
+
     guint id;
 };
 
@@ -50,7 +63,7 @@ my_system_widget_set_property (GObject * object,
     switch (property_id) {
 
         case PROP_MODEL:
-            priv->model = g_value_get_object (value);
+            my_system_widget_set_model (self, g_value_get_object (value));
             break;
 
         case PROP_ID:
@@ -150,31 +163,123 @@ my_system_leave_event (MySystemWidget * self,
 }
 
 void
-my_system_widget_model_changed (MySystemWidget * self,
-                                GParamSpec * pspec, gpointer user_data)
+model_handler_picture_path_changed (MySystemWidget * self, gpointer data)
 {
-    GdkPixbuf *pixbuf;
+    GError *err = NULL;
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
+    gchar *picture_path;
 
-    guint id;
+    GdkPixbuf *pixbuf_new;
 
-    g_object_get (priv->model, "id", &id, "pixbuf", &pixbuf, NULL);
+    g_return_if_fail (MY_IS_SYSTEM_MODEL (priv->model));
+    g_return_if_fail (MY_IS_SYSTEM_WIDGET (self));
 
-    gchar *str = g_strdup_printf ("id: %u", id);
+    g_object_get (priv->model, "picture-path", &picture_path, NULL);
 
-    gtk_label_set_text (GTK_LABEL (priv->label1), str);
-    g_print ("model changed of system\n");
+    if (picture_path == NULL)
+        return;
+
+    pixbuf_new =
+        gdk_pixbuf_new_from_file_at_scale (picture_path, 200, -1, TRUE, &err);
+
+    if (err) {
+
+        GtkWidget *toplevel;
+        gchar *str;
+
+        toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
+
+        str =
+            g_strdup_printf ("Failed to load file '%s' into pixbuf",
+                             picture_path);
+
+        my_window_caution (toplevel, str);
+        g_free (str);
+        g_error_free (err);
+
+        return;
+    }
+
+    g_object_set (priv->model, "pixbuf", pixbuf_new, NULL);
+
+    gtk_image_set_from_pixbuf (priv->image, pixbuf_new);
+
+    g_object_unref (priv->pixbuf);
+
+    priv->pixbuf = pixbuf_new;
+}
+
+void
+model_handler_changed (MySystemWidget * self, MySystemModel * model)
+{
+    my_system_widget_new_model_added (self, (GParamSpec *) NULL,
+                                      (gpointer) NULL);
+}
+
+void
+my_system_widget_set_model (MySystemWidget * self, MySystemModel * model)
+{
+    MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
+    gulong i = 0;
+
+    g_return_if_fail (MY_IS_SYSTEM_MODEL (model));
+    g_return_if_fail (MY_IS_SYSTEM_MODEL (priv->model) || priv->model == NULL);
+
+    for (i = 0; i < N_MODEL_HANDLER; i++) {
+        if (priv->handler_model[i] != 0) {
+            g_signal_handler_disconnect (priv->model, priv->handler_model[i]);
+        }
+    }
+
+    priv->handler_model[MODEL_PICTURE_PATH_CHANGED] =
+        g_signal_connect_swapped (model, "notify::picture-path",
+                                  G_CALLBACK
+                                  (model_handler_picture_path_changed), self);
+
+    priv->handler_model[MODEL_CHANGED] =
+        g_signal_connect_swapped (model, "model-changed",
+                                  G_CALLBACK (model_handler_changed), self);
+
+    priv->model = model;
+}
+
+void
+my_system_widget_set_pixbuf_from_model (MySystemWidget * self)
+{
+
+    MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
+    GdkPixbuf *pixbuf;
+
+    g_object_get (priv->model, "pixbuf", &pixbuf, NULL);
 
     if (pixbuf != NULL) {
-        gtk_image_set_from_pixbuf (priv->image, pixbuf);
+        priv->pixbuf = pixbuf;
     }
     else {
         priv->pixbuf =
             gdk_pixbuf_new_from_resource_at_scale
             ("/org/gtk/myapp/lagerfeuer.png", 200, -1, TRUE, NULL);
-
-        gtk_image_set_from_pixbuf (priv->image, priv->pixbuf);
     }
+
+    gtk_image_set_from_pixbuf (priv->image, priv->pixbuf);
+}
+
+void
+my_system_widget_new_model_added (MySystemWidget * self,
+                                  GParamSpec * pspec, gpointer user_data)
+{
+    MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
+
+    guint id;
+
+    g_object_get (priv->model, "id", &id, NULL);
+
+    my_system_widget_set_pixbuf_from_model (self);
+
+    gchar *str = g_strdup_printf ("id: %u", id);
+
+    gtk_label_set_text (GTK_LABEL (priv->label1), str);
+
 }
 
 void
@@ -195,9 +300,15 @@ my_system_widget_init (MySystemWidget * self)
 {
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
 
+    gulong i;
+
     /* to init any of the private data, do e.g: */
 
     priv->model = NULL;
+
+    for (i = 0; i < N_MODEL_HANDLER; i++) {
+        priv->handler_model[i] = 0;
+    }
 
     gtk_widget_init_template (GTK_WIDGET (self));
 
@@ -206,12 +317,16 @@ my_system_widget_init (MySystemWidget * self)
     g_signal_connect (self, "leave-notify-event",
                       G_CALLBACK (my_system_leave_event), NULL);
     g_signal_connect (self, "notify::model",
-                      G_CALLBACK (my_system_widget_model_changed), NULL);
+                      G_CALLBACK (my_system_widget_new_model_added), NULL);
 
     g_signal_connect_swapped (priv->button_properties, "clicked",
                               G_CALLBACK
                               (my_system_widget_button_properties_clicked),
                               self);
+
+    g_signal_connect (self, "realize", G_CALLBACK (my_system_widget_realized),
+                      NULL);
+
 }
 
 static void
@@ -272,20 +387,8 @@ MySystemWidget *
 my_system_widget_new (void)
 {
     MySystemWidget *self;
-    MySystemWidgetPrivate *priv;
 
     self = g_object_new (MY_TYPE_SYSTEM_WIDGET, NULL);
-
-    priv = my_system_widget_get_instance_private (self);
-
-    priv->pixbuf =
-        gdk_pixbuf_new_from_resource_at_scale ("/org/gtk/myapp/lagerfeuer.png",
-                                               200, -1, TRUE, NULL);
-
-    gtk_image_set_from_pixbuf (priv->image, priv->pixbuf);
-
-    g_signal_connect (self, "realize", G_CALLBACK (my_system_widget_realized),
-                      NULL);
 
     return self;
 }

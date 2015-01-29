@@ -13,8 +13,6 @@ file_chooser_file_set (GtkFileChooserButton * button, gpointer data)
 
     g_return_if_fail(fn != NULL);
 
-    g_print("%s\n", fn);
-
     g_object_set (system_model, "picture-path", fn, NULL);
 }
 

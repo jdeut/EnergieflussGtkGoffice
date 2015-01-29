@@ -221,7 +221,7 @@
               <object class="GtkLabel" id="label1">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Views</property>
+                <property name="label" translatable="yes">Ansicht</property>
               </object>
               <packing>
                 <property name="tab_fill">False</property>
@@ -430,7 +430,7 @@
               <object class="GtkLabel" id="label2">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Behavior</property>
+                <property name="label" translatable="yes">Speicherformen</property>
               </object>
               <packing>
                 <property name="position">1</property>

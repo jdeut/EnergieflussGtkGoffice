@@ -8,6 +8,14 @@ static void my_system_model_dispose (GObject * );
 
 enum
 {
+    SIG_MODEL_CHANGED,
+    N_SIGNALS
+};
+
+static guint signals[N_SIGNALS] = { 0, };
+
+enum
+{
     PROP_0,
     PROP_ID,
     PROP_PICTURE_PATH,
@@ -106,6 +114,14 @@ my_system_model_class_init (MySystemModelClass * klass)
     gobject_class->set_property = my_system_model_set_property;
     gobject_class->get_property = my_system_model_get_property;
 
+    signals[SIG_MODEL_CHANGED] =
+        g_signal_new ("model-changed",
+                      G_OBJECT_CLASS_TYPE (gobject_class),
+                      G_SIGNAL_RUN_FIRST,
+                      0,
+                      NULL, NULL,
+                      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+
     obj_properties[PROP_ID] =
         g_param_spec_uint ("id",
                            "id",
@@ -131,31 +147,38 @@ my_system_model_class_init (MySystemModelClass * klass)
                                        N_PROPERTIES, obj_properties);
 }
 
-void
-my_system_model_picture_path_changed (MySystemModel * self,
-                                GParamSpec * pspec, gpointer user_data)
-{
-    GError *err = NULL;
-    MySystemModelPrivate *priv;
+/*void*/
+/*my_system_model_picture_path_changed (MySystemModel * self,*/
+                                /*GParamSpec * pspec, gpointer user_data)*/
+/*{*/
+    /*GError *err = NULL;*/
+    /*MySystemModelPrivate *priv;*/
 
-    priv = my_system_model_get_instance_private(self);
+    /*priv = my_system_model_get_instance_private(self);*/
 
-    g_print("%s\n", priv->picture_path);
+    /*if(priv->picture_path != NULL) {*/
 
-    priv->pixbuf =
-        gdk_pixbuf_new_from_file_at_scale (priv->picture_path,
-                                               200, -1, TRUE, &err);
+        /*priv->pixbuf =*/
+            /*gdk_pixbuf_new_from_file_at_scale (priv->picture_path,*/
+                                                   /*200, -1, TRUE, &err);*/
 
-    if (err) {
-        gchar *str;
+        /*if (err) {*/
+            /*gchar *str;*/
 
-        str = g_strdup_printf ("Failed to load file '%s' into pixbuf", priv->picture_path);
+            /*str = g_strdup_printf ("Failed to load file '%s' into pixbuf", priv->picture_path);*/
 
-        g_print("%s\n", str);
-        g_free (str);
-        g_error_free (err);
-    }
-}
+            /*g_print("%s\n", str);*/
+            /*g_free (str);*/
+            /*g_error_free (err);*/
+
+            /*priv->pixbuf = NULL;*/
+        /*}*/
+
+        /*if(priv->pixbuf != NULL) {*/
+            /*g_signal_emit (G_OBJECT (self), signals[SIG_MODEL_CHANGED], 0);*/
+        /*}*/
+    /*}*/
+/*}*/
 
 static void
 my_system_model_init (MySystemModel * self)
@@ -167,9 +190,6 @@ my_system_model_init (MySystemModel * self)
     /* to init any of the private data, do e.g: */
 
     priv->pixbuf == NULL;
-
-    g_signal_connect (self, "notify::picture-path",
-                      G_CALLBACK (my_system_model_picture_path_changed), NULL);
 }
 
 static void
