@@ -61,6 +61,15 @@ my_timeline_model_add_at_current_pos (MyTimelineModel * self);
 GPtrArray *
 my_timeline_model_get_systems_data_of_current_pos  (MyTimelineModel * self);
 
+guint
+my_timeline_model_get_current_pos (MyTimelineModel * self);
+
+gboolean
+my_timeline_model_current_pos_is_state (MyTimelineModel * self);
+
+MySystem *
+my_timeline_get_system_with_id (MyTimelineModel * self, guint id);
+
 G_END_DECLS
 
 #endif /* __MY_TIMELINE_MODEL_H__ */

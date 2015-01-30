@@ -3,6 +3,7 @@
 static GtkWidget *preferences_dialog = NULL;
 
 static MySystemModel *system_model;
+static MySystem *my_system;
 
 void
 file_chooser_file_set (GtkFileChooserButton * button, gpointer data)
@@ -22,8 +23,13 @@ my_system_widget_properties_dialog_setup (GtkBuilder * builder,
 {
     GtkWidget *file_chooser;
     GtkWidget *dialog;
+    GtkWidget *system_label;
 
     GtkFileFilter *filter;
+
+    system_label =
+        GTK_WIDGET (gtk_builder_get_object
+                    (builder, "system_label"));
 
     dialog =
         GTK_WIDGET (gtk_builder_get_object
@@ -31,6 +37,10 @@ my_system_widget_properties_dialog_setup (GtkBuilder * builder,
 
     file_chooser =
         GTK_WIDGET (gtk_builder_get_object (builder, "filechooserbutton_pic"));
+
+    g_object_bind_property (my_system, "label", system_label, "text",
+                            G_BINDING_BIDIRECTIONAL |
+                            G_BINDING_SYNC_CREATE);
 
     g_signal_connect (dialog, "response",
                       G_CALLBACK (gtk_widget_destroy), NULL);
@@ -73,11 +83,18 @@ my_system_widget_properties_dialog_show (GtkWindow * window,
                                          MySystemWidget * system_widget)
 {
     GtkBuilder *builder;
+    MyTimelineModel *timeline;
+    GtkWidget *toplevel;
+    guint id;
 
     if (preferences_dialog != NULL) {
         gtk_window_present (GTK_WINDOW (preferences_dialog));
         return;
     }
+
+    g_return_if_fail (MY_IS_WINDOW (window));
+
+    timeline = my_window_get_timeline (MY_WINDOW(window));
 
     builder = gtk_builder_new ();
 
@@ -85,7 +102,9 @@ my_system_widget_properties_dialog_show (GtkWindow * window,
                                    "/org/gtk/myapp/my-system-widget-properties.ui",
                                    NULL);
 
-    g_object_get (system_widget, "model", &system_model, NULL);
+    g_object_get (system_widget, "model", &system_model, "id", &id, NULL);
+
+    my_system = my_timeline_get_system_with_id (timeline, id);
 
     g_return_if_fail (MY_IS_SYSTEM_MODEL (system_model));
 

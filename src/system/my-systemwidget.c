@@ -311,10 +311,6 @@ my_system_widget_new_model_added (MySystemWidget * self,
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
 
     my_system_widget_set_pixbuf_from_model (self);
-
-    gchar *str = g_strdup_printf ("System %u", priv->id+1);
-
-    gtk_label_set_text (GTK_LABEL (priv->label1), str);
 }
 
 void
@@ -403,6 +399,9 @@ my_system_widget_realized (MySystemWidget * self, gpointer data)
 {
     MyTimelineModel *timeline;
     GtkWidget *toplevel;
+    MySystem *system;
+
+    MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
 
     toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
 
@@ -411,6 +410,12 @@ my_system_widget_realized (MySystemWidget * self, gpointer data)
     timeline = my_window_get_timeline (MY_WINDOW (toplevel));
 
     g_return_if_fail (MY_IS_TIMELINE_MODEL (timeline));
+
+    system = my_timeline_get_system_with_id(timeline, priv->id);
+
+    g_object_bind_property (system, "label", priv->label1, "label",
+                            G_BINDING_BIDIRECTIONAL |
+                            G_BINDING_SYNC_CREATE);
 
     g_signal_connect_swapped (timeline, "current-pos-changed",
                               G_CALLBACK

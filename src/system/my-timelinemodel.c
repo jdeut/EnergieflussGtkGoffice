@@ -284,6 +284,23 @@ my_timeline_get_systems (MyTimelineModel * self)
     return priv->systems;
 }
 
+MySystem *
+my_timeline_get_system_with_id (MyTimelineModel * self, guint id)
+{
+    MyTimelineModelPrivate *priv =
+        my_timeline_model_get_instance_private (self);
+
+    MySystem *system;
+
+    g_return_if_fail (MY_IS_TIMELINE_MODEL (self));
+
+    system = g_ptr_array_index(priv->systems, id);
+
+    g_return_val_if_fail(MY_IS_SYSTEM(system), NULL);
+
+    return system;
+}
+
 GPtrArray *
 my_timeline_model_get_systems_data_of_current_pos (MyTimelineModel * self)
 {
@@ -505,4 +522,32 @@ my_timeline_model_append_to_timeline (MyTimelineModel * self)
     g_signal_emit (G_OBJECT (self), signals[SIG_TIME_POS_ADDED],
                    0, priv->tl_systems_data->len - 1);
     gtk_adjustment_set_upper (priv->adjust, priv->tl_systems_data->len);
+}
+
+gboolean
+my_timeline_model_current_pos_is_state (MyTimelineModel * self)
+{
+    MyTimelineModelPrivate *priv =
+        my_timeline_model_get_instance_private (self);
+
+    g_return_if_fail (MY_IS_TIMELINE_MODEL (self));
+
+    if (TIMELINE_MODEL_CURRENT_INDEX % 2 == 1) {
+        return FALSE;
+    }
+    else {
+        return TRUE;
+    }
+}
+
+guint
+my_timeline_model_get_current_pos (MyTimelineModel * self)
+{
+    MyTimelineModelPrivate *priv =
+        my_timeline_model_get_instance_private (self);
+
+    g_return_if_fail (MY_IS_TIMELINE_MODEL (self));
+    g_return_if_fail (GTK_IS_ADJUSTMENT (priv->adjust));
+
+    return gtk_adjustment_get_value (priv->adjust);
 }
