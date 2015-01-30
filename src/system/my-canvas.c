@@ -143,9 +143,9 @@ my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
         MyDragPoint *point;
 
         arrow =
-            g_object_new (MY_TYPE_FLOW_ARROW, "linked-system",
-                          self->_priv->active_item, "anchor", MY_ANCHOR_EAST,
-                          "x1", x_cv, "y1", y_cv, "x0", x_cv, "y0", y_cv, NULL);
+            g_object_new (MY_TYPE_FLOW_ARROW, "primary-system",
+                          self->_priv->active_item, "x1", x_cv, "y1", y_cv,
+                          "x0", x_cv, "y0", y_cv, NULL);
 
         if (!my_timeline_model_add_object (self->_priv->timeline, arrow)) {
 
@@ -371,7 +371,7 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
 
         if (MY_IS_FLOW_ARROW (arrow)) {
 
-            g_object_get (arrow, "linked-system", &linked_system, NULL);
+            g_object_get (arrow, "primary-system", &linked_system, NULL);
 
             /* only do it if drag point is over a system but not over the system the corresponding arrow is linked with */
 
@@ -475,16 +475,16 @@ my_canvas_model_current_index_changed (MyCanvas * self, MyTimelineModel * model)
 
         l = self->group_arrows->children;
 
-        while(l != NULL) {
+        while (l != NULL) {
 
-            /*if (MY_IS_FLOW_ARROW (l->data)) {*/
-                /*g_print ("Arrow -> RefCount: %u\n",*/
-                         /*G_OBJECT (l->data)->ref_count);*/
-            /*}*/
-            /*else {*/
-                /*g_print ("Other -> RefCount: %u\n",*/
-                         /*G_OBJECT (l->data)->ref_count);*/
-            /*}*/
+            /*if (MY_IS_FLOW_ARROW (l->data)) { */
+            /*g_print ("Arrow -> RefCount: %u\n", */
+            /*G_OBJECT (l->data)->ref_count); */
+            /*} */
+            /*else { */
+            /*g_print ("Other -> RefCount: %u\n", */
+            /*G_OBJECT (l->data)->ref_count); */
+            /*} */
 
             goc_group_remove_child (self->group_arrows, GOC_ITEM (l->data));
 
@@ -497,8 +497,7 @@ my_canvas_model_current_index_changed (MyCanvas * self, MyTimelineModel * model)
         goc_item_lower_to_bottom (GOC_ITEM (self->group_arrows));
     }
 
-    array =
-        my_timeline_model_get_arrows_of_current_pos (self->_priv->timeline);
+    array = my_timeline_model_get_arrows_of_current_pos (self->_priv->timeline);
 
     if (array != NULL) {
 

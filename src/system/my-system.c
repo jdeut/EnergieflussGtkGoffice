@@ -235,16 +235,18 @@ my_system_get_coordinate_of_anchor (MySystem * system, MyAnchorType anchor,
     alloc_get_coordinate_of_anchor (alloc, anchor, x, y);
 }
 
-void
+MyAnchorType
 my_system_connection_dynamic_set_coordinate_of_arrow (GtkAllocation from,
                                                       GtkAllocation to,
                                                       gdouble * x, gdouble * y)
 {
-    MyAnchorType anchor_to;
+    MyAnchorType anchor;
 
-    anchor_to = calculate_anchor (from, to);
+    anchor = calculate_anchor (from, to);
 
-    alloc_get_coordinate_of_anchor (to, anchor_to, x, y);
+    alloc_get_coordinate_of_anchor (to, anchor, x, y);
+
+    return anchor;
 }
 
 void
@@ -259,6 +261,7 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
     self = MY_SYSTEM (item);
 
     MySystemClass *class = MY_SYSTEM_GET_CLASS (self);
+
     GocItemClass *parent_class = g_type_class_peek_parent (class);
 
     /* chaining up */
@@ -268,10 +271,7 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
 
     group_arrows = canvas->group_arrows;
 
-    if (!GOC_IS_GROUP (group_arrows)) {
-        g_print ("can't get arrow group...\n");
-        return;
-    }
+    g_return_if_fail (GOC_IS_GROUP (group_arrows));
 
     gtk_widget_get_allocation (GOC_WIDGET (self)->ofbox, &alloc_primary);
 
@@ -287,7 +287,7 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
             continue;
         }
 
-        g_object_get (l->data, "linked-system", &primary_system, NULL);
+        g_object_get (l->data, "primary-system", &primary_system, NULL);
 
         /* fetch next arrow if current arrow doesn't belong to system */
         if (primary_system != self) {
@@ -296,7 +296,7 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
 
         g_object_get (l->data,
                       "energy-quantity", &energy_quantity,
-                      "anchor", &anchor_source,
+                      "primary-anchor", &anchor_source,
                       "secondary-system", &secondary_system, NULL);
 
         /* draw arrow */
@@ -306,6 +306,8 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
         /* if arrow depicts transfer to other system */
         if (MY_IS_SYSTEM (secondary_system)) {
 
+            MyAnchorType anchor_s, anchor_p;
+
             GtkAllocation alloc_secondary;
 
             gtk_widget_get_allocation (GOC_WIDGET (secondary_system)->ofbox,
@@ -313,21 +315,30 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
 
             if (energy_quantity < 0.0) {
 
-                my_system_connection_dynamic_set_coordinate_of_arrow
+                anchor_p = my_system_connection_dynamic_set_coordinate_of_arrow
                     (alloc_secondary, alloc_primary, &x0, &y0);
 
-                my_system_connection_dynamic_set_coordinate_of_arrow
+                anchor_s = my_system_connection_dynamic_set_coordinate_of_arrow
                     (alloc_primary, alloc_secondary, &x1, &y1);
 
             }
             else {
 
-                my_system_connection_dynamic_set_coordinate_of_arrow
-                    (alloc_primary, alloc_secondary, &x0, &y0);
-
-                my_system_connection_dynamic_set_coordinate_of_arrow
+                anchor_p = my_system_connection_dynamic_set_coordinate_of_arrow
                     (alloc_secondary, alloc_primary, &x1, &y1);
+
+                anchor_s = my_system_connection_dynamic_set_coordinate_of_arrow
+                    (alloc_primary, alloc_secondary, &x0, &y0);
             }
+
+            g_object_set (l->data, "primary-anchor", anchor_p,
+                          "secondary-anchor", anchor_s, NULL);
+
+            /*GEnumValue *value; */
+            /*GEnumClass * class = G_ENUM_CLASS(g_type_class_peek(MY_TYPE_ANCHOR_TYPE)); */
+            /*value = g_enum_get_value (class, anchor_s); */
+            /*g_print("value: %s\n", value->value_name); */
+
         }
         /* if arrow depicts transfer to environment */
         else if (energy_quantity < 0.0) {
@@ -377,8 +388,62 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
         }
 
         if (!my_flow_arrow_is_dragged (MY_FLOW_ARROW (l->data))) {
-            goc_item_set (GOC_ITEM (l->data), "x0", x0, "y0", y0, "x1", x1,
+
+            g_object_set (l->data, "x0", x0, "y0", y0, "x1", x1,
                           "y1", y1, NULL);
+
+        }
+    }
+
+    guint n[N_MY_ANCHORS], m[N_MY_ANCHORS];
+    guint i;
+
+    gint pa = 0;
+
+    MySystem *system;
+
+    for (i = 0; i < N_MY_ANCHORS; i++) {
+        n[i] = 0;
+        m[i] = 0;
+    }
+
+    /* distribute arrows if anchors are the same */
+    for (l = group_arrows->children; l != NULL; l = l->next) {
+
+        if (MY_IS_FLOW_ARROW (l->data)) {
+            g_object_get (l->data, "primary-anchor", &pa, "primary-system", &system, NULL);
+
+            if(system == MY_SYSTEM(item)) {
+                n[pa]++;
+            }
+        }
+    }
+
+    gdouble x0, x1, y0, y1;
+
+    for (l = group_arrows->children; l != NULL; l = l->next) {
+
+        if (MY_IS_FLOW_ARROW (l->data)) {
+
+            g_object_get (l->data, "primary-anchor", &pa, "primary-system", &system, "x0", &x0, "y0", &y0,
+                          "x1", &x1, "y1", &y1, NULL);
+
+            if(system == MY_SYSTEM(item)) {
+
+                if (pa == MY_ANCHOR_EAST || pa == MY_ANCHOR_WEST) {
+
+                    y0 += ((gdouble) m[pa]/n[pa] * 160) ;
+                    y1 += ((gdouble) m[pa]/n[pa] * 160) ;
+                }
+
+                if (!my_flow_arrow_is_dragged (MY_FLOW_ARROW (l->data))) {
+
+                    goc_item_set (GOC_ITEM (l->data), "x0", x0, "y0", y0, "x1", x1,
+                                  "y1", y1, NULL);
+                }
+
+                m[pa]++;
+            }
         }
     }
 }

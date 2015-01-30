@@ -8,9 +8,10 @@ enum
     /* property entries */
     PROP_LABEL_TEXT,
     PROP_ENERGY_QUANTITY,
-    PROP_LINKED_SYSTEM,
+    PROP_PRIMARY_SYSTEM,
     PROP_SECONDARY_SYSTEM,
-    PROP_ANCHOR,
+    PROP_PRIMARY_ANCHOR,
+    PROP_SECONDARY_ANCHOR,
     N_PROPERTIES
 };
 
@@ -24,21 +25,20 @@ static void my_flow_arrow_dispose (GObject *);
 
 struct _MyFlowArrowPrivate
 {
-    gchar *label_text;
     gboolean is_dragged;
     GOArrow *arrow;
     GocItem *label;
-    MyAnchorType anchor;
     MyDragPoint *drag_point;
+
     GBinding *bind_drag_point_of_self_x;
     GBinding *bind_drag_point_of_self_y;
-    MySystem *linked_system, *secondary_system;
+
+    MySystem *primary_system, *secondary_system;
+    gint primary_anchor, secondary_anchor;
     gdouble energy_quantity;
+    gchar *label_text;
     /* private members go here */
 };
-
-#define MY_TYPE_ANCHOR_TYPE my_anchor_type_get_type ()
-GType my_anchor_type_get_type (void);
 
 GType
 my_anchor_type_get_type (void)
@@ -47,33 +47,13 @@ my_anchor_type_get_type (void)
 
     if (etype == 0) {
         static GEnumValue const values[] = {
-            {MY_ANCHOR_CENTER, "MY_ANCHOR_CENTER", "center"},
-            {MY_ANCHOR_NORTH_WEST, "MY_ANCHOR_NORTH_WEST", "north-west"},
-            {MY_ANCHOR_NORTH_EAST, "MY_ANCHOR_NORTH_EAST", "north-east"},
+            {MY_ANCHOR_NORTH, "MY_ANCHOR_NORTH", "north"},
             {MY_ANCHOR_SOUTH, "MY_ANCHOR_SOUTH", "south"},
-            {MY_ANCHOR_SOUTH_WEST, "MY_ANCHOR_SOUTH_WEST", "south-west"},
-            {MY_ANCHOR_SOUTH_EAST, "MY_ANCHOR_SOUTH_EAST", "south-east"},
             {MY_ANCHOR_WEST, "MY_ANCHOR_WEST", "west"},
             {MY_ANCHOR_EAST, "MY_ANCHOR_EAST", "east"},
-            {MY_ANCHOR_BASELINE_CENTER, "MY_ANCHOR_BASELINE_CENTER",
-             "baseline-centered"},
-            {MY_ANCHOR_BASELINE_WEST, "MY_ANCHOR_BASELINE_WEST",
-             "baseline-west"},
-            {MY_ANCHOR_BASELINE_EAST, "MY_ANCHOR_BASELINE_EAST",
-             "baseline-east"},
-            {MY_ANCHOR_N, "MY_ANCHOR_N", "n"},
-            {MY_ANCHOR_NW, "MY_ANCHOR_NW", "nw"},
-            {MY_ANCHOR_NE, "MY_ANCHOR_NE", "ne"},
-            {MY_ANCHOR_S, "MY_ANCHOR_S", "s"},
-            {MY_ANCHOR_SW, "MY_ANCHOR_SW", "sw"},
-            {MY_ANCHOR_SE, "MY_ANCHOR_SE", "se"},
-            {MY_ANCHOR_W, "MY_ANCHOR_W", "w"},
-            {MY_ANCHOR_E, "MY_ANCHOR_E", "e"},
-            {MY_ANCHOR_B, "MY_ANCHOR_B", "b"},
-            {MY_ANCHOR_BW, "MY_ANCHOR_BW", "bw"},
-            {MY_ANCHOR_BE, "MY_ANCHOR_BE", "be"},
             {0, NULL, NULL}
         };
+
         etype =
             g_enum_register_static (g_intern_static_string ("MyAnchorType"),
                                     values);
@@ -101,13 +81,13 @@ G_DEFINE_TYPE_EXTENDED (MyFlowArrow, my_flow_arrow, GOC_TYPE_LINE, 0,
 
     g_return_val_if_fail (MY_IS_FLOW_ARROW (serializable), FALSE);
 
-    if (g_str_equal (name, "style") 
+    if (g_str_equal (name, "style")
         || g_str_equal (name, "end-arrow")
         || g_str_equal (name, "start-arrow")
         || g_str_equal (name, "scale-line-width")
         || g_str_equal (name, "canvas")
         || g_str_equal (name, "parent")
-        || g_str_equal (name, "linked-system")
+        || g_str_equal (name, "primary-system")
         || g_str_equal (name, "secondary-system")
         ) {
         return json_node;
@@ -164,10 +144,10 @@ my_flow_arrow_set_property (GObject * object,
             self->_priv->label_text = g_value_dup_string (value);
             break;
 
-        case PROP_LINKED_SYSTEM:{
-                MySystem *linked_system =
+        case PROP_PRIMARY_SYSTEM: {
+                MySystem *primary_system =
                     MY_SYSTEM (g_value_get_object (value));
-                my_flow_arrow_set_linked_system (self, linked_system);
+                my_flow_arrow_set_linked_system (self, primary_system);
                 return;
             }
 
@@ -179,8 +159,14 @@ my_flow_arrow_set_property (GObject * object,
             self->_priv->energy_quantity = g_value_get_double (value);
             break;
 
-        case PROP_ANCHOR:
-            self->_priv->anchor = (MyAnchorType) g_value_get_enum (value);
+        case PROP_PRIMARY_ANCHOR:
+            self->_priv->primary_anchor =
+                (MyAnchorType) g_value_get_enum (value);
+            break;
+
+        case PROP_SECONDARY_ANCHOR:
+            self->_priv->secondary_anchor =
+                (MyAnchorType) g_value_get_enum (value);
             break;
 
         default:
@@ -202,8 +188,8 @@ my_flow_arrow_get_property (GObject * object,
             g_value_set_string (value, self->_priv->label_text);
             break;
 
-        case PROP_LINKED_SYSTEM:
-            g_value_set_object (value, self->_priv->linked_system);
+        case PROP_PRIMARY_SYSTEM:
+            g_value_set_object (value, self->_priv->primary_system);
             break;
 
         case PROP_SECONDARY_SYSTEM:
@@ -214,8 +200,12 @@ my_flow_arrow_get_property (GObject * object,
             g_value_set_double (value, self->_priv->energy_quantity);
             break;
 
-        case PROP_ANCHOR:
-            g_value_set_enum (value, self->_priv->anchor);
+        case PROP_PRIMARY_ANCHOR:
+            g_value_set_enum (value, self->_priv->primary_anchor);
+            break;
+
+        case PROP_SECONDARY_ANCHOR:
+            g_value_set_enum (value, self->_priv->secondary_anchor);
             break;
 
         default:
@@ -338,9 +328,9 @@ my_flow_arrow_draw_label (MyFlowArrow * self, cairo_t * cr)
                 angle += 2 * M_PI;
             }
 
-            goc_item_set (self->_priv->label, "rotation", angle, "anchor",
-                          GO_ANCHOR_SOUTH, "x", x0 + (x1 - x0) / 2, "y",
-                          y0 + (y1 - y0) / 2, NULL);
+            goc_item_set (self->_priv->label, "rotation", angle,
+                          "primary-anchor", GO_ANCHOR_SOUTH, "x",
+                          x0 + (x1 - x0) / 2, "y", y0 + (y1 - y0) / 2, NULL);
 
             cairo_matrix_init_identity (&matrix);
             cairo_matrix_translate (&matrix,
@@ -411,9 +401,9 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
                              -G_MAXDOUBLE, G_MAXDOUBLE, -10,
                              G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
-    obj_properties[PROP_LINKED_SYSTEM] =
-        g_param_spec_object ("linked-system",
-                             "linked system",
+    obj_properties[PROP_PRIMARY_SYSTEM] =
+        g_param_spec_object ("primary-system",
+                             "primary system",
                              "A pointer to the system from where the energy transport is seen",
                              MY_TYPE_SYSTEM, G_PARAM_READWRITE);
 
@@ -423,10 +413,17 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
                              "A pointer to the secondary system where the arrow is connected to",
                              MY_TYPE_SYSTEM, G_PARAM_READWRITE);
 
-    obj_properties[PROP_ANCHOR] =
-        g_param_spec_enum ("anchor",
-                           "anchor",
-                           "Determines on which side of the linked-system the arrow should snap",
+    obj_properties[PROP_PRIMARY_ANCHOR] =
+        g_param_spec_enum ("primary-anchor",
+                           "primary anchor",
+                           "Determines on which side of the primary-system the arrow should snap",
+                           MY_TYPE_ANCHOR_TYPE, MY_ANCHOR_EAST,
+                           G_PARAM_READWRITE);
+
+    obj_properties[PROP_SECONDARY_ANCHOR] =
+        g_param_spec_enum ("secondary-anchor",
+                           "secondary-anchor",
+                           "Determines on which side of the primary-system the arrow should snap",
                            MY_TYPE_ANCHOR_TYPE, MY_ANCHOR_EAST,
                            G_PARAM_READWRITE);
 
@@ -537,18 +534,18 @@ my_flow_arrow_change_anchor_while_dragging (MyFlowArrow * self,
         from.x = x;
         from.y = y;
 
-        if (MY_IS_SYSTEM (self->_priv->linked_system)) {
+        if (MY_IS_SYSTEM (self->_priv->primary_system)) {
 
             gtk_widget_get_allocation (GOC_WIDGET
-                                       (self->_priv->linked_system)->ofbox,
+                                       (self->_priv->primary_system)->ofbox,
                                        &to);
 
             anchor = calculate_anchor (from, to);
 
-            my_system_get_coordinate_of_anchor (self->_priv->linked_system,
+            my_system_get_coordinate_of_anchor (self->_priv->primary_system,
                                                 anchor, &x, &y);
 
-            g_object_set (self, "anchor", anchor, NULL);
+            g_object_set (self, "primary-anchor", anchor, NULL);
 
             g_signal_handlers_block_by_func (self,
                                              my_flow_arrow_change_anchor_while_dragging,
@@ -570,23 +567,24 @@ my_flow_arrow_change_anchor_while_dragging (MyFlowArrow * self,
 
 static void
 my_flow_arrow_canvas_changed (MyFlowArrow * self, GParamSpec * pspec,
-                                      gpointer data) {
+                              gpointer data)
+{
 
     MyCanvas *canvas;
     GocGroup *group_arrows;
 
     g_object_get (self, "canvas", &canvas, NULL);
 
-    if(!MY_IS_CANVAS(canvas)) {
+    if (!MY_IS_CANVAS (canvas)) {
         return;
     }
 
     group_arrows = canvas->group_arrows;
 
-    g_print("canvas changed\n");
+    g_print ("canvas changed\n");
 
-    if(MY_IS_DRAG_POINT(self->_priv->drag_point)) {
-        goc_group_add_child(group_arrows, GOC_ITEM(self->_priv->drag_point));
+    if (MY_IS_DRAG_POINT (self->_priv->drag_point)) {
+        goc_group_add_child (group_arrows, GOC_ITEM (self->_priv->drag_point));
     }
 }
 
@@ -741,7 +739,7 @@ my_flow_arrow_get_linked_system (MyFlowArrow * self)
 {
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
-    return self->_priv->linked_system;
+    return self->_priv->primary_system;
 }
 
 void
@@ -750,5 +748,5 @@ my_flow_arrow_set_linked_system (MyFlowArrow * self, MySystem * system)
     g_return_if_fail (MY_IS_SYSTEM (system));
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
-    self->_priv->linked_system = system;
+    self->_priv->primary_system = system;
 }
