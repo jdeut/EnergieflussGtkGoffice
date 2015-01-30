@@ -17,7 +17,6 @@ static guint signals[N_SIGNALS] = { 0, };
 enum
 {
     PROP_0,
-    PROP_ID,
     PROP_PICTURE_PATH,
     PROP_PIXBUF,
     N_PROPERTIES
@@ -54,10 +53,6 @@ my_system_model_set_property (GObject * object,
 
     switch (property_id) {
 
-        case PROP_ID:
-            priv->id = g_value_get_uint (value);
-            break;
-
         case PROP_PICTURE_PATH:
             priv->picture_path = g_value_dup_string (value);
             break;
@@ -82,10 +77,6 @@ my_system_model_get_property (GObject * object,
     MySystemModelPrivate *priv = my_system_model_get_instance_private (self);
 
     switch (property_id) {
-
-        case PROP_ID:
-            g_value_set_uint (value, priv->id);
-            break;
 
         case PROP_PICTURE_PATH:
             g_value_set_string (value, priv->picture_path);
@@ -122,16 +113,9 @@ my_system_model_class_init (MySystemModelClass * klass)
                       NULL, NULL,
                       g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
-    obj_properties[PROP_ID] =
-        g_param_spec_uint ("id",
-                           "id",
-                           "unique identifier of system",
-                           0, G_MAXUINT, 0,
-                           G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
-
     obj_properties[PROP_PICTURE_PATH] =
         g_param_spec_string ("picture-path",
-                           "id",
+                           "picture-path",
                            "file path of picture",
                            NULL,
                            G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
