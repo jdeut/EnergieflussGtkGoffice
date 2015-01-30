@@ -236,9 +236,9 @@ my_system_get_coordinate_of_anchor (MySystem * system, MyAnchorType anchor,
 }
 
 void
-my_system_connection_set_coordinate_of_arrow_tip (GtkAllocation from,
-                                                  GtkAllocation to, gdouble * x,
-                                                  gdouble * y)
+my_system_connection_dynamic_set_coordinate_of_arrow (GtkAllocation from,
+                                                      GtkAllocation to,
+                                                      gdouble * x, gdouble * y)
 {
     MyAnchorType anchor_to;
 
@@ -312,19 +312,20 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
                                        &alloc_secondary);
 
             if (energy_quantity < 0.0) {
-                x0 = alloc_primary.x + alloc_primary.width / 2;
-                y0 = alloc_primary.y + alloc_primary.height / 2;
 
-                my_system_connection_set_coordinate_of_arrow_tip (alloc_primary,
-                                                                  alloc_secondary,
-                                                                  &x1, &y1);
+                my_system_connection_dynamic_set_coordinate_of_arrow
+                    (alloc_secondary, alloc_primary, &x0, &y0);
+
+                my_system_connection_dynamic_set_coordinate_of_arrow
+                    (alloc_primary, alloc_secondary, &x1, &y1);
 
             }
             else {
-                x0 = alloc_secondary.x + alloc_secondary.width / 2;
-                y0 = alloc_secondary.y + alloc_secondary.height / 2;
 
-                my_system_connection_set_coordinate_of_arrow_tip
+                my_system_connection_dynamic_set_coordinate_of_arrow
+                    (alloc_primary, alloc_secondary, &x0, &y0);
+
+                my_system_connection_dynamic_set_coordinate_of_arrow
                     (alloc_secondary, alloc_primary, &x1, &y1);
             }
         }
@@ -467,7 +468,7 @@ my_system_init (MySystem * self)
     g_object_bind_property (self, "id", button, "id",
                             G_BINDING_DEFAULT | G_BINDING_SYNC_CREATE);
 
-    priv->label = g_strdup_printf("System %u", priv->id);
+    priv->label = g_strdup_printf ("System %u", priv->id);
 
     goc_item_set (GOC_ITEM (self), "widget", button, "width", 300.0, "height",
                   250.0, NULL);
