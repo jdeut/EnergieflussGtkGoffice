@@ -654,16 +654,12 @@ my_flow_arrow_init (MyFlowArrow * self)
 {
     GOStyle *style;
 
-    /*group_arrows = canvas->group_arrows; */
-
     self->_priv = MY_FLOW_ARROW_GET_PRIVATE (self);
-
-    /* to init any of the private data, do e.g: */
 
     self->_priv->is_dragged = FALSE;
     self->_priv->arrow = g_new0 (GOArrow, 1);
 
-    go_arrow_init_kite (self->_priv->arrow, 20, 20, 4);
+    go_arrow_init_kite (self->_priv->arrow, 40, 40, 6);
 
     g_object_set (self, "end-arrow", self->_priv->arrow, NULL);
 
