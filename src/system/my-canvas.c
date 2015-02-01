@@ -368,10 +368,12 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
                                event->button.y, &item);
 
         g_object_get (self->_priv->active_item, "linked-item", &arrow, NULL);
+        g_object_unref(arrow);
 
         if (MY_IS_FLOW_ARROW (arrow)) {
 
             g_object_get (arrow, "primary-system", &primary_system, NULL);
+            g_object_unref(primary_system);
 
             /* only do it if drag point is over a system but not over the system the corresponding arrow is linked with */
 
