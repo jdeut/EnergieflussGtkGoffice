@@ -12,12 +12,14 @@ enum
     PROP_SECONDARY_SYSTEM,
     PROP_PRIMARY_ANCHOR,
     PROP_SECONDARY_ANCHOR,
+    PROP_TRANSFER_TYPE,
     N_PROPERTIES
 };
 
 static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
 
-enum {
+enum
+{
     CANVAS_INITIAL_CHANGED,
     N_HANDLER
 };
@@ -27,6 +29,7 @@ static void my_flow_arrow_class_init (MyFlowArrowClass * klass);
 static void my_flow_arrow_init (MyFlowArrow * self);
 static void my_flow_arrow_finalize (GObject *);
 static void my_flow_arrow_dispose (GObject *);
+void my_flow_arrow_set_transfer_type (MyFlowArrow * self, guint transfer_type);
 
 struct _MyFlowArrowPrivate
 {
@@ -42,6 +45,7 @@ struct _MyFlowArrowPrivate
     gint primary_anchor, secondary_anchor;
     gdouble energy_quantity;
     gchar *label_text;
+    guint transfer_type;
 
     gulong handler[N_HANDLER];
     /* private members go here */
@@ -176,6 +180,10 @@ my_flow_arrow_set_property (GObject * object,
                 (MyAnchorType) g_value_get_enum (value);
             break;
 
+        case PROP_TRANSFER_TYPE:
+            my_flow_arrow_set_transfer_type (self, g_value_get_uint (value));
+            break;
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
@@ -215,12 +223,43 @@ my_flow_arrow_get_property (GObject * object,
             g_value_set_enum (value, self->_priv->secondary_anchor);
             break;
 
+        case PROP_TRANSFER_TYPE:
+            g_value_set_uint (value, self->_priv->transfer_type);
+            break;
+
         default:
             /* We don't have any other property... */
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
     }
 }
+
+void
+my_flow_arrow_set_transfer_type (MyFlowArrow * self, guint transfer_type)
+{
+
+    GOStyle *style;
+
+    g_return_if_fail (MY_IS_FLOW_ARROW (self));
+
+    g_object_get(self, "style", &style, NULL);
+
+    if (transfer_type == MY_TRANSFER_WORK) {
+        style->line.color = GO_COLOR_FROM_RGBA (100, 200, 0, 255);
+    }
+    else if (transfer_type == MY_TRANSFER_MASS) {
+        style->line.color = GO_COLOR_FROM_RGBA (0, 0, 0, 255);
+    }
+    else if (transfer_type == MY_TRANSFER_HEAT) {
+        style->line.color = GO_COLOR_FROM_RGBA (255, 0, 0, 255);
+    }
+    else if (transfer_type == MY_TRANSFER_RADIATION) {
+        style->line.color = GO_COLOR_FROM_RGBA (220, 220, 0, 255);
+    }
+    else {
+    }
+}
+
 
 static gboolean
 my_flow_arrow_button_pressed (GocItem * item, int button, double x, double y)
@@ -411,7 +450,8 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
     obj_properties[PROP_PRIMARY_SYSTEM] =
         g_param_spec_object ("primary-system",
                              "primary system",
-                             "A pointer to the system from where the energy transport is seen", MY_TYPE_SYSTEM, G_PARAM_READWRITE);
+                             "A pointer to the system from where the energy transport is seen",
+                             MY_TYPE_SYSTEM, G_PARAM_READWRITE);
 
     obj_properties[PROP_SECONDARY_SYSTEM] =
         g_param_spec_object ("secondary-system",
@@ -432,6 +472,13 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
                            "Determines on which side of the primary-system the arrow should snap",
                            MY_TYPE_ANCHOR_TYPE, MY_ANCHOR_EAST,
                            G_PARAM_READWRITE);
+
+    obj_properties[PROP_TRANSFER_TYPE] =
+        g_param_spec_uint ("transfer-type",
+                           "transfer-type",
+                           "transfer type",
+                           0, G_MAXUINT, 0,
+                           G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
     g_object_class_install_properties (gobject_class,
                                        N_PROPERTIES, obj_properties);
@@ -478,13 +525,13 @@ my_flow_arrow_set_coordinate (MyFlowArrow * self, const gchar * first_arg_name,
     if (my_flow_arrow_is_dragged (self))
         return;
 
-    goc_item_invalidate (GOC_ITEM(self));
+    goc_item_invalidate (GOC_ITEM (self));
 
     va_start (args, first_arg_name);
     g_object_set_valist (G_OBJECT (self), first_arg_name, args);
     va_end (args);
 
-    goc_item_invalidate (GOC_ITEM(self));
+    goc_item_invalidate (GOC_ITEM (self));
 }
 
 static void
@@ -605,7 +652,7 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self, GParamSpec * pspec,
 
     group_dragpoints = canvas->group_dragpoints;
 
-    g_return_if_fail(GOC_IS_GROUP(group_dragpoints));
+    g_return_if_fail (GOC_IS_GROUP (group_dragpoints));
 
     if (!MY_IS_DRAG_POINT (self->_priv->drag_point)) {
 
@@ -613,10 +660,17 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self, GParamSpec * pspec,
             goc_item_new (group_dragpoints, MY_TYPE_DRAG_POINT, "radius", 5.0,
                           "linked-item", self, NULL);
 
-        g_object_notify(G_OBJECT(self), "energy-quantity");
+        g_object_notify (G_OBJECT (self), "energy-quantity");
     }
 
     goc_group_add_child (group_dragpoints, GOC_ITEM (self->_priv->drag_point));
+}
+
+static void
+my_flow_arrow_transfer_type_changed (MyFlowArrow * self,
+                                     GParamSpec * pspec, gpointer data)
+{
+    g_print ("transfer type changed\n");
 }
 
 static void
@@ -655,7 +709,8 @@ my_flow_arrow_canvas_initial_changed (MyFlowArrow * self,
                       G_CALLBACK (my_flow_arrow_change_anchor_while_dragging),
                       NULL);
 
-    g_signal_handler_disconnect (self, self->_priv->handler[CANVAS_INITIAL_CHANGED]);
+    g_signal_handler_disconnect (self,
+                                 self->_priv->handler[CANVAS_INITIAL_CHANGED]);
 
     g_signal_connect (self, "notify::canvas",
                       G_CALLBACK (my_flow_arrow_canvas_changed), NULL);
@@ -670,13 +725,19 @@ my_flow_arrow_init (MyFlowArrow * self)
 
     self->_priv->is_dragged = FALSE;
     self->_priv->arrow = g_new0 (GOArrow, 1);
+    self->_priv->transfer_type = MY_TRANSFER_WORK;
 
     go_arrow_init_kite (self->_priv->arrow, 40, 40, 6);
 
     g_object_set (self, "end-arrow", self->_priv->arrow, NULL);
 
-    self->_priv->handler[CANVAS_INITIAL_CHANGED] = g_signal_connect (self, "notify::canvas",
-                      G_CALLBACK (my_flow_arrow_canvas_initial_changed), NULL);
+    self->_priv->handler[CANVAS_INITIAL_CHANGED] =
+        g_signal_connect (self, "notify::canvas",
+                          G_CALLBACK (my_flow_arrow_canvas_initial_changed),
+                          NULL);
+
+    g_signal_connect (self, "notify::transfer-type",
+                      G_CALLBACK (my_flow_arrow_transfer_type_changed), NULL);
 }
 
 static void

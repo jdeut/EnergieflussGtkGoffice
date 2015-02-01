@@ -45,6 +45,14 @@ typedef enum
   N_MY_ANCHORS
 } MyAnchorType;
 
+typedef enum
+{
+    MY_TRANSFER_WORK,
+    MY_TRANSFER_HEAT,
+    MY_TRANSFER_RADIATION,
+    MY_TRANSFER_MASS
+} MyTransferTypeEnum;
+
 
 #include "my-system.h"
 
