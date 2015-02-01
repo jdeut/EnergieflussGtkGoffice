@@ -130,6 +130,7 @@ my_canvas_init (MyCanvas * self)
 
     self->group_arrows = goc_group_new (root);
     self->group_systems = goc_group_new (root);
+    self->group_dragpoints = goc_group_new (root);
 
     g_signal_connect (G_OBJECT (self), "button-press-event",
                       G_CALLBACK (my_canvas_button_press_cb), NULL);
@@ -467,15 +468,6 @@ my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
     return TRUE;
 }
 
-void
-my_canvas_foreach_populate_group_from_array (GocItem * item, GocGroup * group)
-{
-    g_return_if_fail (GOC_IS_GROUP (group));
-    g_return_if_fail (GOC_IS_ITEM (item));
-
-    my_canvas_group_add_item (NULL, group, item);
-}
-
 /* transition */
 void
 my_canvas_model_current_index_changed (MyCanvas * self, MyTimelineModel * model)
@@ -483,6 +475,7 @@ my_canvas_model_current_index_changed (MyCanvas * self, MyTimelineModel * model)
     GPtrArray *array;
     GocGroup *root;
     GList *l;
+    guint i;
 
     g_return_if_fail (MY_IS_CANVAS (self));
     g_return_if_fail (MY_IS_TIMELINE_MODEL (model));
@@ -511,7 +504,11 @@ my_canvas_model_current_index_changed (MyCanvas * self, MyTimelineModel * model)
         }
 
         goc_item_destroy (GOC_ITEM (self->group_arrows));
+        goc_item_destroy (GOC_ITEM (self->group_dragpoints));
+
         self->group_arrows = goc_group_new (root);
+        self->group_dragpoints = goc_group_new (root);
+
         goc_item_lower_to_bottom (GOC_ITEM (self->group_arrows));
     }
 
@@ -519,11 +516,14 @@ my_canvas_model_current_index_changed (MyCanvas * self, MyTimelineModel * model)
 
     if (array != NULL) {
 
-        g_print ("array->len: %u\n", array->len);
+        for (i = 0; i < array->len; i++) {
 
-        g_ptr_array_foreach (array, (GFunc)
-                             my_canvas_foreach_populate_group_from_array,
-                             self->group_arrows);
+            MyFlowArrow *arrow;
+
+            arrow = g_ptr_array_index(array, i);
+
+            my_canvas_group_add_item (NULL, self->group_arrows, GOC_ITEM(arrow));
+        }
     }
 }
 

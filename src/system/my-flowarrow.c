@@ -17,6 +17,11 @@ enum
 
 static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
 
+enum {
+    CANVAS_INITIAL_CHANGED,
+    N_HANDLER
+};
+
 /* 'private'/'protected' functions */
 static void my_flow_arrow_class_init (MyFlowArrowClass * klass);
 static void my_flow_arrow_init (MyFlowArrow * self);
@@ -37,6 +42,8 @@ struct _MyFlowArrowPrivate
     gint primary_anchor, secondary_anchor;
     gdouble energy_quantity;
     gchar *label_text;
+
+    gulong handler[N_HANDLER];
     /* private members go here */
 };
 
@@ -588,7 +595,7 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self, GParamSpec * pspec,
 {
 
     MyCanvas *canvas;
-    GocGroup *group_arrows;
+    GocGroup *group_dragpoints;
 
     g_object_get (self, "canvas", &canvas, NULL);
 
@@ -596,13 +603,20 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self, GParamSpec * pspec,
         return;
     }
 
-    group_arrows = canvas->group_arrows;
+    group_dragpoints = canvas->group_dragpoints;
 
-    g_print ("canvas changed\n");
+    g_return_if_fail(GOC_IS_GROUP(group_dragpoints));
 
-    if (MY_IS_DRAG_POINT (self->_priv->drag_point)) {
-        goc_group_add_child (group_arrows, GOC_ITEM (self->_priv->drag_point));
+    if (!MY_IS_DRAG_POINT (self->_priv->drag_point)) {
+
+        self->_priv->drag_point = (MyDragPoint *)
+            goc_item_new (group_dragpoints, MY_TYPE_DRAG_POINT, "radius", 5.0,
+                          "linked-item", self, NULL);
+
+        g_object_notify(G_OBJECT(self), "energy-quantity");
     }
+
+    goc_group_add_child (group_dragpoints, GOC_ITEM (self->_priv->drag_point));
 }
 
 static void
@@ -610,14 +624,14 @@ my_flow_arrow_canvas_initial_changed (MyFlowArrow * self,
                                       GParamSpec * pspec, gpointer data)
 {
     MyCanvas *canvas;
-    GocGroup *group_arrows;
+    GocGroup *group_dragpoints;
 
     g_object_get (self, "canvas", &canvas, NULL);
 
-    group_arrows = canvas->group_arrows;
+    group_dragpoints = canvas->group_dragpoints;
 
     self->_priv->drag_point = (MyDragPoint *)
-        goc_item_new (group_arrows, MY_TYPE_DRAG_POINT, "radius", 5.0,
+        goc_item_new (group_dragpoints, MY_TYPE_DRAG_POINT, "radius", 5.0,
                       "linked-item", self, NULL);
 
     g_signal_connect (self, "notify::energy-quantity",
@@ -641,9 +655,7 @@ my_flow_arrow_canvas_initial_changed (MyFlowArrow * self,
                       G_CALLBACK (my_flow_arrow_change_anchor_while_dragging),
                       NULL);
 
-    g_signal_handlers_disconnect_by_func (self,
-                                          my_flow_arrow_canvas_initial_changed,
-                                          NULL);
+    g_signal_handler_disconnect (self, self->_priv->handler[CANVAS_INITIAL_CHANGED]);
 
     g_signal_connect (self, "notify::canvas",
                       G_CALLBACK (my_flow_arrow_canvas_changed), NULL);
@@ -663,7 +675,7 @@ my_flow_arrow_init (MyFlowArrow * self)
 
     g_object_set (self, "end-arrow", self->_priv->arrow, NULL);
 
-    g_signal_connect (self, "notify::canvas",
+    self->_priv->handler[CANVAS_INITIAL_CHANGED] = g_signal_connect (self, "notify::canvas",
                       G_CALLBACK (my_flow_arrow_canvas_initial_changed), NULL);
 }
 

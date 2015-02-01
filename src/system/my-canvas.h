@@ -26,7 +26,9 @@ struct _MyCanvas
 {
     GocCanvas parent;
     /* insert public members here */
-    GocGroup *group_arrows, *group_systems;
+    GocGroup *group_arrows;
+    GocGroup *group_systems;
+    GocGroup *group_dragpoints;
 
     /* private */
     MyCanvasPrivate *_priv;
