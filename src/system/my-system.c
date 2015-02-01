@@ -250,20 +250,21 @@ my_system_connection_dynamic_set_coordinate_of_arrow (GtkAllocation from,
 }
 
 void
-my_system_get_dynamic_coordinates_of_arrow_at_anchor (MySystem * self, MyAnchorType ta,
-                                            guint m, guint n, gdouble * x0,
-                                            gdouble * y0)
+my_system_get_dynamic_coordinates_of_arrow_at_anchor (MySystem * self,
+                                                      MyAnchorType ta, guint m,
+                                                      guint n, gdouble * x0,
+                                                      gdouble * y0)
 {
     my_system_get_coordinate_of_anchor (self, ta, x0, y0);
 
     if (n < 2)
         return;
 
-    if(ta == MY_ANCHOR_WEST || ta == MY_ANCHOR_EAST) {
+    if (ta == MY_ANCHOR_WEST || ta == MY_ANCHOR_EAST) {
         *y0 = *y0 + 120.0 * ((gdouble) m / (n - 1) - 0.5);
     }
     else {
-        *x0 = *x0 + 200.0 * ((gdouble) m / (n -1) -0.5);
+        *x0 = *x0 + 150.0 * ((gdouble) m / (n - 1) - 0.5);
     }
 }
 
@@ -280,27 +281,24 @@ my_system_draw_energy_flow_distribute_arrows (MySystem * self,
 
     MySystem *primary_system, *secondary_system;
 
-    for (i = 0; i < N_MY_ANCHORS; i++) {
-        n[i] = 0;
-        m[i] = 0;
-    }
+    for (i = 0; i < N_MY_ANCHORS; i++)
+        n[i] = m[i] = 0;
 
     /* distribute arrows if anchors are the same */
     for (l = group_arrows->children; l != NULL; l = l->next) {
 
-        if (MY_IS_FLOW_ARROW (l->data)) {
+        if (!MY_IS_FLOW_ARROW (l->data))
+            continue;
 
-            g_object_get (l->data, "primary-anchor", &pa, "secondary-anchor",
-                          &sa, "primary-system", &primary_system,
-                          "secondary-system", &secondary_system, NULL);
+        g_object_get (l->data, "primary-anchor", &pa, "secondary-anchor",
+                      &sa, "primary-system", &primary_system,
+                      "secondary-system", &secondary_system, NULL);
 
-            if (primary_system == self) {
-                n[pa]++;
-            }
-            else if (secondary_system == self) {
-                n[sa]++;
-            }
-        }
+        if (primary_system == self) 
+            n[pa]++;
+        else if (secondary_system == self)
+            n[sa]++;
+
     }
 
     for (l = group_arrows->children; l != NULL; l = l->next) {
@@ -328,11 +326,11 @@ my_system_draw_energy_flow_distribute_arrows (MySystem * self,
             continue;
 
         my_system_get_dynamic_coordinates_of_arrow_at_anchor (self, ta, m[ta],
-                                                    n[ta], &x0, &y0);
+                                                              n[ta], &x0, &y0);
 
         /* if arrow connects to environment */
         if (!MY_IS_SYSTEM (secondary_system)) {
-            if(ta == MY_ANCHOR_WEST || ta == MY_ANCHOR_EAST) 
+            if (ta == MY_ANCHOR_WEST || ta == MY_ANCHOR_EAST)
                 my_flow_arrow_set_coordinate (arrow, "y0", y0, "y1", y0, NULL);
             else
                 my_flow_arrow_set_coordinate (arrow, "x0", x0, "x1", x0, NULL);
@@ -486,7 +484,6 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
 
             my_flow_arrow_set_coordinate (MY_FLOW_ARROW (l->data), "x0", x0,
                                           "y0", y0, "x1", x1, "y1", y1, NULL);
-
         }
     }
 
