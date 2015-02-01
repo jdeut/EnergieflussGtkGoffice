@@ -144,7 +144,7 @@ my_flow_arrow_set_property (GObject * object,
             self->_priv->label_text = g_value_dup_string (value);
             break;
 
-        case PROP_PRIMARY_SYSTEM: {
+        case PROP_PRIMARY_SYSTEM:{
                 MySystem *primary_system =
                     MY_SYSTEM (g_value_get_object (value));
                 my_flow_arrow_set_linked_system (self, primary_system);
@@ -404,8 +404,7 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
     obj_properties[PROP_PRIMARY_SYSTEM] =
         g_param_spec_object ("primary-system",
                              "primary system",
-                             "A pointer to the system from where the energy transport is seen",
-                             MY_TYPE_SYSTEM, G_PARAM_READWRITE);
+                             "A pointer to the system from where the energy transport is seen", MY_TYPE_SYSTEM, G_PARAM_READWRITE);
 
     obj_properties[PROP_SECONDARY_SYSTEM] =
         g_param_spec_object ("secondary-system",
@@ -463,9 +462,27 @@ bind_s_to_t1_if_bound_to_t2 (GBinding ** binding,
     }
 }
 
+void
+my_flow_arrow_set_coordinate (MyFlowArrow * self, const gchar * first_arg_name,
+                              ...)
+{
+    va_list args;
+
+    if (my_flow_arrow_is_dragged (self))
+        return;
+
+    goc_item_invalidate (GOC_ITEM(self));
+
+    va_start (args, first_arg_name);
+    g_object_set_valist (G_OBJECT (self), first_arg_name, args);
+    va_end (args);
+
+    goc_item_invalidate (GOC_ITEM(self));
+}
+
 static void
-my_flow_arrow_energy_quantity_changed (MyFlowArrow * self, GParamSpec * pspec,
-                                       gpointer data)
+my_flow_arrow_energy_quantity_changed (MyFlowArrow * self,
+                                       GParamSpec * pspec, gpointer data)
 {
     GOStyle *style;
 
@@ -589,8 +606,8 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self, GParamSpec * pspec,
 }
 
 static void
-my_flow_arrow_canvas_initial_changed (MyFlowArrow * self, GParamSpec * pspec,
-                                      gpointer data)
+my_flow_arrow_canvas_initial_changed (MyFlowArrow * self,
+                                      GParamSpec * pspec, gpointer data)
 {
     MyCanvas *canvas;
     GocGroup *group_arrows;

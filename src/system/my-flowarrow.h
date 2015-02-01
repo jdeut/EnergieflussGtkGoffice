@@ -79,6 +79,9 @@ my_flow_arrow_end_dragging (MyFlowArrow * self);
 
 MyDragPoint *
 my_flow_arrow_get_drag_point (MyFlowArrow * self);
+
+void
+my_flow_arrow_set_coordinate (MyFlowArrow * self, const gchar * first_arg_name, ...);
 G_END_DECLS
 
 #endif /* __MY_FLOW_ARROW_H__ */

@@ -353,7 +353,7 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
                              gpointer data)
 {
     MyCanvas *self = MY_CANVAS (canvas);
-    MySystem *linked_system;
+    MySystem *primary_system;
     MyFlowArrow *arrow;
     GocItem *item;
 
@@ -371,12 +371,12 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
 
         if (MY_IS_FLOW_ARROW (arrow)) {
 
-            g_object_get (arrow, "primary-system", &linked_system, NULL);
+            g_object_get (arrow, "primary-system", &primary_system, NULL);
 
             /* only do it if drag point is over a system but not over the system the corresponding arrow is linked with */
 
             if (d == 0. && MY_IS_SYSTEM (item)
-                && MY_SYSTEM (linked_system) != MY_SYSTEM (item)) {
+                && MY_SYSTEM (primary_system) != MY_SYSTEM (item)) {
 
                 g_object_set (arrow, "secondary-system", item, NULL);
 
