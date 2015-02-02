@@ -5,6 +5,9 @@ static void my_window_class_init (MyWindowClass * klass);
 static void my_window_init (MyWindow * self);
 static void my_window_finalize (GObject *);
 static void my_window_dispose (GObject *);
+void my_window_show_drag_points_state_change (GSimpleAction * action,
+                                              GVariant * state,
+                                              gpointer user_data);
 
 enum
 {
@@ -41,7 +44,8 @@ G_DEFINE_TYPE_WITH_PRIVATE (MyWindow, my_window, GTK_TYPE_APPLICATION_WINDOW);
 static GActionEntry win_entries[] = {
     {"add-arrow", my_window_add_arrow, NULL, NULL, NULL},
     {"add-system", my_window_add_system, NULL, NULL, NULL},
-    {"show-drag-points", my_window_show_drag_points, NULL, NULL, NULL},
+    {"show-drag-points", my_window_show_drag_points, NULL, "true",
+     my_window_show_drag_points_state_change},
     {"save", my_window_save, NULL, NULL, NULL},
     {"timeline-add", my_window_timeline_add, NULL, NULL, NULL}
 };
@@ -214,10 +218,13 @@ timeline_model_handler_current_pos_changed (MyWindow * self,
 
     pos = my_timeline_model_get_current_pos (model);
 
-    if(my_timeline_model_current_pos_is_state (model)) {
-        str = g_strdup_printf ("Zustand %u", pos/2+1);
-    } else {
-        str = g_strdup_printf ("Übergang: Zustand %u → %u", (pos/2),(pos/2)+1);
+    if (my_timeline_model_current_pos_is_state (model)) {
+        str = g_strdup_printf ("Zustand %u", pos / 2 + 1);
+    }
+    else {
+        str =
+            g_strdup_printf ("Übergang: Zustand %u → %u", (pos / 2),
+                             (pos / 2) + 1);
     }
 
     gtk_label_set_text (GTK_LABEL (priv->description), str);
@@ -239,7 +246,8 @@ my_window_timeline_changed (MyWindow * self, gpointer data)
 
     for (i = 0; i < N_MODEL_HANDLER; i++) {
         if (priv->handler_model[i] != 0) {
-            g_signal_handler_disconnect (priv->timeline, priv->handler_model[i]);
+            g_signal_handler_disconnect (priv->timeline,
+                                         priv->handler_model[i]);
         }
     }
 
@@ -391,13 +399,33 @@ my_window_save (GSimpleAction * simple, GVariant * parameter, gpointer data)
 }
 
 void
-my_window_show_drag_points (GSimpleAction * simple,
+my_window_show_drag_points (GSimpleAction * action,
                             GVariant * parameter, gpointer data)
+{
+    GVariant *state;
+
+    state = g_action_get_state (G_ACTION (action));
+
+    g_action_change_state (G_ACTION (action),
+                           g_variant_new_boolean (!g_variant_get_boolean
+                                                  (state)));
+    g_variant_unref (state);
+}
+
+void
+my_window_show_drag_points_state_change (GSimpleAction * action,
+                                         GVariant * state, gpointer data)
 {
     MyWindowPrivate *priv;
 
     priv = my_window_get_instance_private (data);
-    my_canvas_show_drag_points_of_all_arrows (priv->canvas);
+
+    if (g_variant_get_boolean (state))
+        my_canvas_show_drag_points_of_all_arrows (priv->canvas);
+    else
+        my_canvas_hide_drag_points_of_all_arrows (priv->canvas);
+
+    g_simple_action_set_state (action, state);
 }
 
 void

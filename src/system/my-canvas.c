@@ -90,7 +90,7 @@ my_canvas_error_quark (void)
 static gboolean
 my_canvas_drag_drag_point (MyCanvas * self, gdouble x, gdouble y)
 {
-    g_return_if_fail(MY_IS_DRAG_POINT(self->_priv->active_item));
+    g_return_if_fail (MY_IS_DRAG_POINT (self->_priv->active_item));
 
     goc_item_set (self->_priv->active_item, "x", x, "y", y, NULL);
 }
@@ -167,6 +167,21 @@ my_canvas_show_drag_points_of_all_arrows (MyCanvas * self)
     for (l = group->children; l != NULL; l = l->next) {
         if (MY_IS_FLOW_ARROW (l->data)) {
             my_flow_arrow_show_drag_points (MY_FLOW_ARROW (l->data));
+        }
+    }
+}
+
+void
+my_canvas_hide_drag_points_of_all_arrows (MyCanvas * self)
+{
+    GList *l;
+    GocGroup *group;
+
+    group = self->group_arrows;
+
+    for (l = group->children; l != NULL; l = l->next) {
+        if (MY_IS_FLOW_ARROW (l->data)) {
+            my_flow_arrow_hide_drag_points (MY_FLOW_ARROW (l->data));
         }
     }
 }
@@ -369,7 +384,8 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
 
         gtk_widget_translate_coordinates (GTK_WIDGET (data),
                                           GTK_WIDGET (canvas),
-                                          event->button.x, event->button.y, &x, &y);
+                                          event->button.x, event->button.y, &x,
+                                          &y);
 
         /* coordinates on canvas */
         x_cv = x;
@@ -382,17 +398,16 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
 
     if (MY_IS_DRAG_POINT (self->_priv->active_item)) {
 
-        gdouble d =
-            goc_item_distance (GOC_ITEM (self->group_systems), x_cv,
-                               y_cv, &item);
+        gdouble d = goc_item_distance (GOC_ITEM (self->group_systems), x_cv,
+                                       y_cv, &item);
 
         g_object_get (self->_priv->active_item, "linked-item", &arrow, NULL);
-        g_object_unref(arrow);
+        g_object_unref (arrow);
 
         if (MY_IS_FLOW_ARROW (arrow)) {
 
             g_object_get (arrow, "primary-system", &primary_system, NULL);
-            g_object_unref(primary_system);
+            g_object_unref (primary_system);
 
             /* only do it if drag point is over a system but not over the system the corresponding arrow is linked with */
 
@@ -522,10 +537,11 @@ my_canvas_model_current_pos_changed (MyCanvas * self, MyTimelineModel * model)
 
             MyFlowArrow *arrow;
 
-            arrow = g_ptr_array_index(array, i);
+            arrow = g_ptr_array_index (array, i);
 
-            if(MY_IS_FLOW_ARROW(arrow)) {
-                my_canvas_group_add_item (NULL, self->group_arrows, GOC_ITEM(arrow));
+            if (MY_IS_FLOW_ARROW (arrow)) {
+                my_canvas_group_add_item (NULL, self->group_arrows,
+                                          GOC_ITEM (arrow));
             }
         }
     }
