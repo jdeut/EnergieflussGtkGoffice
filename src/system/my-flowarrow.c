@@ -689,8 +689,7 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
     }
 
     priv->drag_point = (MyDragPoint *)
-        goc_item_new (group_dragpoints, MY_TYPE_DRAG_POINT, "x", 10.0, "y",
-                      10.0, "radius", 10.0, "linked-item", self, NULL);
+        goc_item_new (group_dragpoints, MY_TYPE_DRAG_POINT, "radius", 10.0, "linked-item", self, NULL);
 
     priv->handler[CANVAS_CHANGED_ENERGY_QUANTITY] =
         g_signal_connect (self, "notify::energy-quantity",
