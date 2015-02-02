@@ -90,6 +90,8 @@ my_canvas_error_quark (void)
 static gboolean
 my_canvas_drag_drag_point (MyCanvas * self, gdouble x, gdouble y)
 {
+    g_return_if_fail(MY_IS_DRAG_POINT(self->_priv->active_item));
+
     goc_item_set (self->_priv->active_item, "x", x, "y", y, NULL);
 }
 
@@ -470,7 +472,7 @@ my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
 
 /* transition */
 void
-my_canvas_model_current_index_changed (MyCanvas * self, MyTimelineModel * model)
+my_canvas_model_current_pos_changed (MyCanvas * self, MyTimelineModel * model)
 {
     GPtrArray *array;
     GocGroup *root;
@@ -522,7 +524,9 @@ my_canvas_model_current_index_changed (MyCanvas * self, MyTimelineModel * model)
 
             arrow = g_ptr_array_index(array, i);
 
-            my_canvas_group_add_item (NULL, self->group_arrows, GOC_ITEM(arrow));
+            if(MY_IS_FLOW_ARROW(arrow)) {
+                my_canvas_group_add_item (NULL, self->group_arrows, GOC_ITEM(arrow));
+            }
         }
     }
 }
@@ -594,7 +598,7 @@ my_canvas_set_timeline (MyCanvas * self, MyTimelineModel * model)
 
     g_signal_connect_swapped (model, "current-pos-changed",
                               G_CALLBACK
-                              (my_canvas_model_current_index_changed), self);
+                              (my_canvas_model_current_pos_changed), self);
 
     g_signal_connect_swapped (model, "systems-changed",
                               G_CALLBACK

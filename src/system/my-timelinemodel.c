@@ -436,6 +436,7 @@ my_timeline_model_add_object (MyTimelineModel * self, gpointer object)
                 g_ptr_array_index (priv->tl_arrows,
                                    TIMELINE_MODEL_CURRENT_INDEX);
             g_ptr_array_add (transition, object);
+
             g_signal_emit (G_OBJECT (self),
                            signals[SIG_ARROW_ADDED_AT_CURRENT_POS], 0, object);
         }

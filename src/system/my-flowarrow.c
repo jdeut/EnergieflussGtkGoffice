@@ -20,7 +20,13 @@ static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
 
 enum
 {
-    CANVAS_INITIAL_CHANGED,
+    CANVAS_CHANGED_ENERGY_QUANTITY,
+    CANVAS_CHANGED_LABEL_TEXT,
+    CANVAS_CHANGED_TRANSFER_TYPE,
+    CANVAS_CHANGED_X0,
+    CANVAS_CHANGED_Y0,
+    CANVAS_CHANGED_X1,
+    CANVAS_CHANGED_Y1,
     N_HANDLER
 };
 
@@ -29,17 +35,18 @@ static void my_flow_arrow_class_init (MyFlowArrowClass * klass);
 static void my_flow_arrow_init (MyFlowArrow * self);
 static void my_flow_arrow_finalize (GObject *);
 static void my_flow_arrow_dispose (GObject *);
+static void my_flow_arrow_bind_to_drag_point (MyFlowArrow * self);
 void my_flow_arrow_set_transfer_type (MyFlowArrow * self, guint transfer_type);
 
-struct _MyFlowArrowPrivate
+typedef struct
 {
     gboolean is_dragged;
     GOArrow *arrow;
     GocItem *label;
     MyDragPoint *drag_point;
 
-    GBinding *bind_drag_point_of_self_x;
-    GBinding *bind_drag_point_of_self_y;
+    GBinding *bind_drag_point_to_x;
+    GBinding *bind_drag_point_to_y;
 
     MySystem *primary_system, *secondary_system;
     gint primary_anchor, secondary_anchor;
@@ -48,8 +55,10 @@ struct _MyFlowArrowPrivate
     guint transfer_type;
 
     gulong handler[N_HANDLER];
-    /* private members go here */
-};
+
+} MyFlowArrowPrivate;
+
+static guint globully = 0;
 
 GType
 my_anchor_type_get_type (void)
@@ -72,16 +81,13 @@ my_anchor_type_get_type (void)
     return etype;
 }
 
-#define MY_FLOW_ARROW_GET_PRIVATE(o)      (G_TYPE_INSTANCE_GET_PRIVATE((o), \
-                                       MY_TYPE_FLOW_ARROW, \
-                                       MyFlowArrowPrivate))
-
 static void my_flow_arrow_json_serializable_init (JsonSerializableIface *
                                                   iface);
 
-G_DEFINE_TYPE_EXTENDED (MyFlowArrow, my_flow_arrow, GOC_TYPE_LINE, 0,
-                        G_IMPLEMENT_INTERFACE (JSON_TYPE_SERIALIZABLE,
-                                               my_flow_arrow_json_serializable_init))
+G_DEFINE_TYPE_WITH_CODE (MyFlowArrow, my_flow_arrow, GOC_TYPE_LINE,
+                         G_ADD_PRIVATE (MyFlowArrow)
+                         G_IMPLEMENT_INTERFACE (JSON_TYPE_SERIALIZABLE,
+                                                my_flow_arrow_json_serializable_init))
 
      static JsonNode *_serialize_property (JsonSerializable * serializable,
                                            const gchar * name,
@@ -147,12 +153,13 @@ my_flow_arrow_set_property (GObject * object,
                             const GValue * value, GParamSpec * pspec)
 {
     MyFlowArrow *self = MY_FLOW_ARROW (object);
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
     switch (property_id) {
 
         case PROP_LABEL_TEXT:
-            g_free (self->_priv->label_text);
-            self->_priv->label_text = g_value_dup_string (value);
+            g_free (priv->label_text);
+            priv->label_text = g_value_dup_string (value);
             break;
 
         case PROP_PRIMARY_SYSTEM:{
@@ -163,21 +170,19 @@ my_flow_arrow_set_property (GObject * object,
             }
 
         case PROP_SECONDARY_SYSTEM:
-            self->_priv->secondary_system = g_value_get_object (value);
+            priv->secondary_system = g_value_get_object (value);
             break;
 
         case PROP_ENERGY_QUANTITY:
-            self->_priv->energy_quantity = g_value_get_double (value);
+            priv->energy_quantity = g_value_get_double (value);
             break;
 
         case PROP_PRIMARY_ANCHOR:
-            self->_priv->primary_anchor =
-                (MyAnchorType) g_value_get_enum (value);
+            priv->primary_anchor = (MyAnchorType) g_value_get_enum (value);
             break;
 
         case PROP_SECONDARY_ANCHOR:
-            self->_priv->secondary_anchor =
-                (MyAnchorType) g_value_get_enum (value);
+            priv->secondary_anchor = (MyAnchorType) g_value_get_enum (value);
             break;
 
         case PROP_TRANSFER_TYPE:
@@ -196,35 +201,36 @@ my_flow_arrow_get_property (GObject * object,
                             GValue * value, GParamSpec * pspec)
 {
     MyFlowArrow *self = MY_FLOW_ARROW (object);
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
     switch (property_id) {
 
         case PROP_LABEL_TEXT:
-            g_value_set_string (value, self->_priv->label_text);
+            g_value_set_string (value, priv->label_text);
             break;
 
         case PROP_PRIMARY_SYSTEM:
-            g_value_set_object (value, self->_priv->primary_system);
+            g_value_set_object (value, priv->primary_system);
             break;
 
         case PROP_SECONDARY_SYSTEM:
-            g_value_set_object (value, self->_priv->secondary_system);
+            g_value_set_object (value, priv->secondary_system);
             break;
 
         case PROP_ENERGY_QUANTITY:
-            g_value_set_double (value, self->_priv->energy_quantity);
+            g_value_set_double (value, priv->energy_quantity);
             break;
 
         case PROP_PRIMARY_ANCHOR:
-            g_value_set_enum (value, self->_priv->primary_anchor);
+            g_value_set_enum (value, priv->primary_anchor);
             break;
 
         case PROP_SECONDARY_ANCHOR:
-            g_value_set_enum (value, self->_priv->secondary_anchor);
+            g_value_set_enum (value, priv->secondary_anchor);
             break;
 
         case PROP_TRANSFER_TYPE:
-            g_value_set_uint (value, self->_priv->transfer_type);
+            g_value_set_uint (value, priv->transfer_type);
             break;
 
         default:
@@ -242,7 +248,7 @@ my_flow_arrow_set_transfer_type (MyFlowArrow * self, guint transfer_type)
 
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
-    g_object_get(self, "style", &style, NULL);
+    g_object_get (self, "style", &style, NULL);
 
     if (transfer_type == MY_TRANSFER_WORK) {
         style->line.color = GO_COLOR_FROM_RGBA (100, 200, 0, 255);
@@ -323,6 +329,7 @@ my_flow_arrow_error_quark (void)
 void
 my_flow_arrow_draw_label (MyFlowArrow * self, cairo_t * cr)
 {
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
     GocGroup *toplevel = NULL;
     gdouble x0, x1, y0, y1;
@@ -331,9 +338,9 @@ my_flow_arrow_draw_label (MyFlowArrow * self, cairo_t * cr)
 
     g_object_get (self, "x0", &x0, "x1", &x1, "y0", &y0, "y1", &y1, NULL);
 
-    if (self->_priv->label_text != NULL) {
+    if (priv->label_text != NULL) {
 
-        if (!GOC_IS_TEXT (self->_priv->label)) {
+        if (!GOC_IS_TEXT (priv->label)) {
             GError *err = NULL;
             gchar *text;
 
@@ -341,27 +348,27 @@ my_flow_arrow_draw_label (MyFlowArrow * self, cairo_t * cr)
 
             attr = pango_attr_list_new ();
 
-            pango_parse_markup (self->_priv->label_text, -1, 0, &attr,
+            pango_parse_markup (priv->label_text, -1, 0, &attr,
                                 &text, NULL, &err);
 
             if (err != NULL) {
                 g_printerr ("Error parsing str '%s': %s\n",
-                            self->_priv->label_text, err->message);
+                            priv->label_text, err->message);
                 g_clear_error (&err);
 
             }
             else {
 
-                self->_priv->label =
+                priv->label =
                     goc_item_new (toplevel, GOC_TYPE_TEXT, "attributes", attr,
                                   "text", text, NULL);
 
-                goc_item_lower_to_bottom (GOC_ITEM (self->_priv->label));
+                goc_item_lower_to_bottom (GOC_ITEM (priv->label));
             }
         }
 
 
-        if (GOC_IS_TEXT (self->_priv->label)) {
+        if (GOC_IS_TEXT (priv->label)) {
             gdouble angle;
             cairo_matrix_t matrix;
 
@@ -374,18 +381,17 @@ my_flow_arrow_draw_label (MyFlowArrow * self, cairo_t * cr)
                 angle += 2 * M_PI;
             }
 
-            goc_item_set (self->_priv->label, "rotation", angle,
+            goc_item_set (priv->label, "rotation", angle,
                           "primary-anchor", GO_ANCHOR_SOUTH, "x",
                           x0 + (x1 - x0) / 2, "y", y0 + (y1 - y0) / 2, NULL);
 
             cairo_matrix_init_identity (&matrix);
             cairo_matrix_translate (&matrix,
-                                    self->_priv->energy_quantity / 2 *
+                                    priv->energy_quantity / 2 *
                                     sin (angle),
-                                    -self->_priv->energy_quantity / 2 *
-                                    cos (angle));
+                                    -priv->energy_quantity / 2 * cos (angle));
 
-            goc_item_set_transform (self->_priv->label, &matrix);
+            goc_item_set_transform (priv->label, &matrix);
         }
     }
 }
@@ -416,6 +422,21 @@ my_flow_arrow_init_style (G_GNUC_UNUSED GocStyledItem * item, GOStyle * style)
         style->line.color = GO_COLOR_FROM_RGBA (0, 200, 0, 255);
     if (style->line.auto_fore)
         style->line.fore = 0;
+}
+
+void
+my_flow_arrow_realize (GocItem * item)
+{
+
+    MyFlowArrow *self = MY_FLOW_ARROW (item);
+
+    MyFlowArrowClass *class = MY_FLOW_ARROW_GET_CLASS (item);
+    GocItemClass *parent_class = g_type_class_peek_parent (class);
+
+    /* chaining up */
+    parent_class->realize (item);
+
+    /*my_flow_arrow_bind_to_drag_point(self); */
 }
 
 static void
@@ -483,37 +504,13 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
     g_object_class_install_properties (gobject_class,
                                        N_PROPERTIES, obj_properties);
 
-    g_type_class_add_private (gobject_class, sizeof (MyFlowArrowPrivate));
-
     gi_class->draw = my_flow_arrow_draw;
     gi_class->enter_notify = my_flow_arrow_enter_notify;
     gi_class->leave_notify = my_flow_arrow_leave_notify;
     gi_class->button_pressed = my_flow_arrow_button_pressed;
+    gi_class->realize = my_flow_arrow_realize;
 
     gsi_class->init_style = my_flow_arrow_init_style;
-}
-
-void
-bind_s_to_t1_if_bound_to_t2 (GBinding ** binding,
-                             GObject * source,
-                             GObject * target,
-                             const gchar * s,
-                             const gchar * t1, const gchar * t2)
-{
-
-    if (!G_IS_BINDING (*binding)) {
-        *binding =
-            g_object_bind_property (source, s, target, t1,
-                                    G_BINDING_BIDIRECTIONAL);
-    }
-    else if (g_str_equal (g_binding_get_target_property (*binding), t2)) {
-
-        g_object_unref (*binding);
-
-        *binding =
-            g_object_bind_property (source, s, target, t1,
-                                    G_BINDING_BIDIRECTIONAL);
-    }
 }
 
 void
@@ -525,8 +522,6 @@ my_flow_arrow_set_coordinate (MyFlowArrow * self, const gchar * first_arg_name,
     if (my_flow_arrow_is_dragged (self))
         return;
 
-    goc_item_invalidate (GOC_ITEM (self));
-
     va_start (args, first_arg_name);
     g_object_set_valist (G_OBJECT (self), first_arg_name, args);
     va_end (args);
@@ -535,52 +530,67 @@ my_flow_arrow_set_coordinate (MyFlowArrow * self, const gchar * first_arg_name,
 }
 
 static void
-my_flow_arrow_energy_quantity_changed (MyFlowArrow * self,
-                                       GParamSpec * pspec, gpointer data)
+my_flow_arrow_bind_to_drag_point (MyFlowArrow * self)
 {
-    GOStyle *style;
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+    gchar *x_str, *y_str;
 
-    g_object_get (G_OBJECT (self), "style", &style, NULL);
-
-    style->line.width = ABS (self->_priv->energy_quantity);
-
-    if (!MY_IS_DRAG_POINT (self->_priv->drag_point)) {
-        return;
-    }
+    g_return_if_fail (MY_IS_DRAG_POINT (priv->drag_point));
 
     /* if energy_quantity < 0.0 than arrow tip ends on calculated anchor point on the secondary_system */
-    if (self->_priv->energy_quantity < 0.0) {
-
-        bind_s_to_t1_if_bound_to_t2 (&self->_priv->bind_drag_point_of_self_x,
-                                     G_OBJECT (self->_priv->drag_point),
-                                     G_OBJECT (self), "x", "x1", "x0");
-
-        bind_s_to_t1_if_bound_to_t2 (&self->_priv->bind_drag_point_of_self_y,
-                                     G_OBJECT (self->_priv->drag_point),
-                                     G_OBJECT (self), "y", "y1", "y0");
+    if (priv->energy_quantity < 0.0) {
+        x_str = g_strdup_printf ("x1");
+        y_str = g_strdup_printf ("y1");
     }
     /* if energy_quantity > 0 than arrow tip ends on calculated anchor point on the primary_system,
      * so that the tail of the arrow is in the center of the secondary_system */
     else {
-
-        bind_s_to_t1_if_bound_to_t2 (&self->_priv->bind_drag_point_of_self_x,
-                                     G_OBJECT (self->_priv->drag_point),
-                                     G_OBJECT (self), "x", "x0", "x1");
-
-        bind_s_to_t1_if_bound_to_t2 (&self->_priv->bind_drag_point_of_self_y,
-                                     G_OBJECT (self->_priv->drag_point),
-                                     G_OBJECT (self), "y", "y0", "y1");
+        x_str = g_strdup_printf ("x0");
+        y_str = g_strdup_printf ("y0");
     }
+
+    if (G_IS_OBJECT (priv->bind_drag_point_to_x))
+        g_object_unref (priv->bind_drag_point_to_x); 
+
+    if (G_IS_OBJECT (priv->bind_drag_point_to_y))
+        g_object_unref (priv->bind_drag_point_to_y); 
+
+    priv->bind_drag_point_to_x =
+        g_object_bind_property (self, x_str, priv->drag_point, "x",
+                                G_BINDING_BIDIRECTIONAL |
+                                G_BINDING_SYNC_CREATE);
+
+    priv->bind_drag_point_to_y =
+        g_object_bind_property (self, y_str, priv->drag_point, "y",
+                                G_BINDING_BIDIRECTIONAL |
+                                G_BINDING_SYNC_CREATE);
+}
+
+static void
+my_flow_arrow_energy_quantity_changed (MyFlowArrow * self,
+                                       GParamSpec * pspec, gpointer data)
+{
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
+    GOStyle *style;
+
+    g_object_get (G_OBJECT (self), "style", &style, NULL);
+
+    style->line.width = ABS (priv->energy_quantity);
+
+    my_flow_arrow_bind_to_drag_point (self);
 }
 
 static void
 notify_label_text_changed_cb (MyFlowArrow * self, GParamSpec * pspec,
                               gpointer data)
 {
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
     GOStyle *style;
 
-    if (G_IS_OBJECT (self->_priv->label)) {
-        g_object_unref (self->_priv->label);
+    if (G_IS_OBJECT (priv->label)) {
+        g_object_unref (priv->label);
     }
 
     goc_item_invalidate (GOC_ITEM (self));
@@ -590,80 +600,45 @@ static void
 my_flow_arrow_change_anchor_while_dragging (MyFlowArrow * self,
                                             GParamSpec * pspec, gpointer data)
 {
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
     GtkAllocation from, to;
     gdouble x, y;
     MyAnchorType anchor;
 
-    if (my_flow_arrow_is_dragged (self)
-        && !MY_IS_SYSTEM (self->_priv->secondary_system)) {
+    g_return_if_fail (MY_IS_SYSTEM (priv->primary_system));
 
-        if (self->_priv->energy_quantity >= 0)
-            g_object_get (self, "x0", &x, "y0", &y, NULL);
-        else
-            g_object_get (self, "x1", &x, "y1", &y, NULL);
-
-        from.x = x;
-        from.y = y;
-
-        if (MY_IS_SYSTEM (self->_priv->primary_system)) {
-
-            gtk_widget_get_allocation (GOC_WIDGET
-                                       (self->_priv->primary_system)->ofbox,
-                                       &to);
-
-            anchor = calculate_anchor (from, to);
-
-            my_system_get_coordinate_of_anchor (self->_priv->primary_system,
-                                                anchor, &x, &y);
-
-            g_object_set (self, "primary-anchor", anchor, NULL);
-
-            g_signal_handlers_block_by_func (self,
-                                             my_flow_arrow_change_anchor_while_dragging,
-                                             NULL);
-
-            if (self->_priv->energy_quantity >= 0) {
-                goc_item_set (GOC_ITEM (self), "x1", x, "y1", y, NULL);
-            }
-            else {
-                goc_item_set (GOC_ITEM (self), "x0", x, "y0", y, NULL);
-            }
-
-            g_signal_handlers_unblock_by_func (self,
-                                               my_flow_arrow_change_anchor_while_dragging,
-                                               NULL);
-        }
-    }
-}
-
-static void
-my_flow_arrow_canvas_changed (MyFlowArrow * self, GParamSpec * pspec,
-                              gpointer data)
-{
-
-    MyCanvas *canvas;
-    GocGroup *group_dragpoints;
-
-    g_object_get (self, "canvas", &canvas, NULL);
-
-    if (!MY_IS_CANVAS (canvas)) {
+    if (!my_flow_arrow_is_dragged (self))
         return;
-    }
 
-    group_dragpoints = canvas->group_dragpoints;
+    if (priv->energy_quantity >= 0)
+        g_object_get (self, "x0", &x, "y0", &y, NULL);
+    else
+        g_object_get (self, "x1", &x, "y1", &y, NULL);
 
-    g_return_if_fail (GOC_IS_GROUP (group_dragpoints));
+    from.x = x;
+    from.y = y;
 
-    if (!MY_IS_DRAG_POINT (self->_priv->drag_point)) {
+    gtk_widget_get_allocation (GOC_WIDGET (priv->primary_system)->ofbox, &to);
 
-        self->_priv->drag_point = (MyDragPoint *)
-            goc_item_new (group_dragpoints, MY_TYPE_DRAG_POINT, "radius", 5.0,
-                          "linked-item", self, NULL);
+    anchor = calculate_anchor (from, to);
 
-        g_object_notify (G_OBJECT (self), "energy-quantity");
-    }
+    my_system_get_coordinate_of_anchor (priv->primary_system, anchor, &x, &y);
 
-    goc_group_add_child (group_dragpoints, GOC_ITEM (self->_priv->drag_point));
+    g_object_set (self, "primary-anchor", anchor, NULL);
+
+    g_signal_handlers_block_by_func (self,
+                                     my_flow_arrow_change_anchor_while_dragging,
+                                     NULL);
+
+    if (priv->energy_quantity >= 0)
+        g_object_set (self, "x1", x, "y1", y, NULL);
+    else
+        g_object_set (self, "x0", x, "y0", y, NULL);
+
+    g_signal_handlers_unblock_by_func (self,
+                                       my_flow_arrow_change_anchor_while_dragging,
+                                       NULL);
 }
 
 static void
@@ -674,70 +649,108 @@ my_flow_arrow_transfer_type_changed (MyFlowArrow * self,
 }
 
 static void
-my_flow_arrow_canvas_initial_changed (MyFlowArrow * self,
-                                      GParamSpec * pspec, gpointer data)
+my_flow_arrow_canvas_changed (MyFlowArrow * self,
+                              GParamSpec * pspec, gpointer data)
 {
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
     MyCanvas *canvas;
     GocGroup *group_dragpoints;
+    guint i;
+
+    g_return_if_fail (MY_IS_FLOW_ARROW (self));
+
+    priv->is_dragged = FALSE;
+
+    if(G_IS_OBJECT(priv->bind_drag_point_to_x))
+        g_object_unref(priv->bind_drag_point_to_x);
+    if(G_IS_OBJECT(priv->bind_drag_point_to_y))
+        g_object_unref(priv->bind_drag_point_to_y);
+
+    priv->bind_drag_point_to_y = NULL; 
+    priv->bind_drag_point_to_x = NULL; 
 
     g_object_get (self, "canvas", &canvas, NULL);
 
+    if (!MY_IS_CANVAS (canvas)) {
+        return;
+    }
+
+    g_object_unref (canvas);
+
     group_dragpoints = canvas->group_dragpoints;
 
-    self->_priv->drag_point = (MyDragPoint *)
-        goc_item_new (group_dragpoints, MY_TYPE_DRAG_POINT, "radius", 5.0,
-                      "linked-item", self, NULL);
+    g_return_if_fail (GOC_IS_GROUP (group_dragpoints));
 
-    g_signal_connect (self, "notify::energy-quantity",
-                      G_CALLBACK (my_flow_arrow_energy_quantity_changed), NULL);
+    for (i = 0; i < N_HANDLER; i++) {
+        if (priv->handler[i] != 0) {
+            g_signal_handler_disconnect (self, priv->handler[i]);
+        }
+    }
 
-    my_flow_arrow_energy_quantity_changed (self, NULL, NULL);
+    priv->drag_point = (MyDragPoint *)
+        goc_item_new (group_dragpoints, MY_TYPE_DRAG_POINT, "x", 10.0, "y",
+                      10.0, "radius", 10.0, "linked-item", self, NULL);
 
-    g_signal_connect (self, "notify::label-text",
-                      G_CALLBACK (notify_label_text_changed_cb), NULL);
+    priv->handler[CANVAS_CHANGED_ENERGY_QUANTITY] =
+        g_signal_connect (self, "notify::energy-quantity",
+                          G_CALLBACK (my_flow_arrow_energy_quantity_changed),
+                          NULL);
 
-    g_signal_connect (self, "notify::x0",
-                      G_CALLBACK (my_flow_arrow_change_anchor_while_dragging),
-                      NULL);
-    g_signal_connect (self, "notify::x1",
-                      G_CALLBACK (my_flow_arrow_change_anchor_while_dragging),
-                      NULL);
-    g_signal_connect (self, "notify::y0",
-                      G_CALLBACK (my_flow_arrow_change_anchor_while_dragging),
-                      NULL);
-    g_signal_connect (self, "notify::y1",
-                      G_CALLBACK (my_flow_arrow_change_anchor_while_dragging),
-                      NULL);
+    g_object_notify (G_OBJECT (self), "energy-quantity");
 
-    g_signal_handler_disconnect (self,
-                                 self->_priv->handler[CANVAS_INITIAL_CHANGED]);
+    priv->handler[CANVAS_CHANGED_LABEL_TEXT] =
+        g_signal_connect (self, "notify::label-text",
+                          G_CALLBACK (notify_label_text_changed_cb), NULL);
 
-    g_signal_connect (self, "notify::canvas",
-                      G_CALLBACK (my_flow_arrow_canvas_changed), NULL);
+    priv->handler[CANVAS_CHANGED_X0] =
+        g_signal_connect (self, "notify::x0",
+                          G_CALLBACK
+                          (my_flow_arrow_change_anchor_while_dragging), NULL);
+
+    priv->handler[CANVAS_CHANGED_X1] =
+        g_signal_connect (self, "notify::x1",
+                          G_CALLBACK
+                          (my_flow_arrow_change_anchor_while_dragging), NULL);
+
+    priv->handler[CANVAS_CHANGED_Y0] =
+        g_signal_connect (self, "notify::y0",
+                          G_CALLBACK
+                          (my_flow_arrow_change_anchor_while_dragging), NULL);
+
+    priv->handler[CANVAS_CHANGED_Y1] =
+        g_signal_connect (self, "notify::y1",
+                          G_CALLBACK
+                          (my_flow_arrow_change_anchor_while_dragging), NULL);
+
+    priv->handler[CANVAS_CHANGED_TRANSFER_TYPE] =
+        g_signal_connect (self, "notify::transfer-type",
+                          G_CALLBACK (my_flow_arrow_transfer_type_changed),
+                          NULL);
 }
 
 static void
 my_flow_arrow_init (MyFlowArrow * self)
 {
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
     GOStyle *style;
+    guint i;
 
-    self->_priv = MY_FLOW_ARROW_GET_PRIVATE (self);
+    priv->is_dragged = FALSE;
+    priv->arrow = g_new0 (GOArrow, 1);
+    priv->transfer_type = MY_TRANSFER_WORK;
 
-    self->_priv->is_dragged = FALSE;
-    self->_priv->arrow = g_new0 (GOArrow, 1);
-    self->_priv->transfer_type = MY_TRANSFER_WORK;
+    for (i = 0; i < N_HANDLER; i++) {
+        priv->handler[i] = 0;
+    }
 
-    go_arrow_init_kite (self->_priv->arrow, 40, 40, 6);
+    g_signal_connect (self, "notify::canvas",
+                      G_CALLBACK (my_flow_arrow_canvas_changed), NULL);
 
-    g_object_set (self, "end-arrow", self->_priv->arrow, NULL);
+    go_arrow_init_kite (priv->arrow, 40, 40, 6);
 
-    self->_priv->handler[CANVAS_INITIAL_CHANGED] =
-        g_signal_connect (self, "notify::canvas",
-                          G_CALLBACK (my_flow_arrow_canvas_initial_changed),
-                          NULL);
+    g_object_set (self, "end-arrow", priv->arrow, NULL);
 
-    g_signal_connect (self, "notify::transfer-type",
-                      G_CALLBACK (my_flow_arrow_transfer_type_changed), NULL);
 }
 
 static void
@@ -749,17 +762,20 @@ my_flow_arrow_dispose (GObject * object)
 static void
 my_flow_arrow_finalize (GObject * object)
 {
+    MyFlowArrowPrivate *priv =
+        my_flow_arrow_get_instance_private (MY_FLOW_ARROW (object));
+
     MyFlowArrow *self = MY_FLOW_ARROW (object);
 
-    if (GOC_IS_TEXT (self->_priv->label)) {
-        goc_item_destroy (GOC_ITEM (self->_priv->label));
+    if (GOC_IS_TEXT (priv->label)) {
+        goc_item_destroy (GOC_ITEM (priv->label));
     }
 
-    if (MY_IS_DRAG_POINT (self->_priv->drag_point)) {
-        goc_item_destroy (GOC_ITEM (self->_priv->drag_point));
+    if (MY_IS_DRAG_POINT (priv->drag_point)) {
+        goc_item_destroy (GOC_ITEM (priv->drag_point));
     }
 
-    g_free (self->_priv->arrow);
+    g_free (priv->arrow);
 
     /* free/unref instance resources here */
     G_OBJECT_CLASS (my_flow_arrow_parent_class)->finalize (object);
@@ -770,69 +786,84 @@ my_flow_arrow_finalize (GObject * object)
 void
 my_flow_arrow_begin_dragging (MyFlowArrow * self)
 {
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
-    self->_priv->is_dragged = TRUE;
+    priv->is_dragged = TRUE;
 }
 
 gboolean
 my_flow_arrow_is_dragged (MyFlowArrow * self)
 {
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
-    return self->_priv->is_dragged;
+    return priv->is_dragged;
 }
 
 void
 my_flow_arrow_end_dragging (MyFlowArrow * self)
 {
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
-    self->_priv->is_dragged = FALSE;
+    priv->is_dragged = FALSE;
 }
 
 MyDragPoint *
 my_flow_arrow_get_drag_point (MyFlowArrow * self)
 {
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
-    return self->_priv->drag_point;
+    return priv->drag_point;
 }
 
 void
 my_flow_arrow_show_drag_points (MyFlowArrow * self)
 {
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
-    if (MY_IS_DRAG_POINT (self->_priv->drag_point)) {
-        goc_item_show (GOC_ITEM (self->_priv->drag_point));
+    if (MY_IS_DRAG_POINT (priv->drag_point)) {
+        goc_item_show (GOC_ITEM (priv->drag_point));
     }
 }
 
 void
 my_flow_arrow_hide_drag_points (MyFlowArrow * self)
 {
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
-    if (MY_IS_DRAG_POINT (self->_priv->drag_point)) {
-        goc_item_hide (GOC_ITEM (self->_priv->drag_point));
+    if (MY_IS_DRAG_POINT (priv->drag_point)) {
+        goc_item_hide (GOC_ITEM (priv->drag_point));
     }
 }
 
 MySystem *
 my_flow_arrow_get_linked_system (MyFlowArrow * self)
 {
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
-    return self->_priv->primary_system;
+    return priv->primary_system;
 }
 
 void
 my_flow_arrow_set_linked_system (MyFlowArrow * self, MySystem * system)
 {
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
     g_return_if_fail (MY_IS_SYSTEM (system));
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
-    self->_priv->primary_system = system;
+    priv->primary_system = system;
 }

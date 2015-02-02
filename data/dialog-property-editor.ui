@@ -43,7 +43,6 @@
     <property name="can_focus">False</property>
     <property name="window_position">mouse</property>
     <property name="default_width">320</property>
-    <property name="default_height">260</property>
     <property name="type_hint">dialog</property>
     <property name="gravity">north-east</property>
     <child internal-child="vbox">
@@ -298,6 +297,7 @@
                     </child>
                     <child>
                       <object class="GtkBox" id="box9">
+                        <property name="width_request">170</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="orientation">vertical</property>
@@ -308,7 +308,7 @@
                             <property name="receives_default">True</property>
                             <property name="halign">end</property>
                             <property name="valign">center</property>
-                            <property name="hexpand">False</property>
+                            <property name="hexpand">True</property>
                             <property name="vexpand">True</property>
                             <property name="image">image1</property>
                             <property name="image_position">top</property>

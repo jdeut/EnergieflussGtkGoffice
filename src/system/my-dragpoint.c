@@ -23,12 +23,7 @@ struct _MyDragPointPrivate
     gboolean is_dragged;
 };
 
-#define MY_DRAG_POINT_GET_PRIVATE(o)      (G_TYPE_INSTANCE_GET_PRIVATE((o), \
-                                       MY_TYPE_DRAG_POINT, \
-                                       MyDragPointPrivate))
-
-G_DEFINE_TYPE (MyDragPoint, my_drag_point, GOC_TYPE_CIRCLE);
-
+G_DEFINE_TYPE_WITH_PRIVATE (MyDragPoint, my_drag_point, GOC_TYPE_CIRCLE);
 
 GQuark
 my_drag_point_error_quark (void)
@@ -42,15 +37,13 @@ my_drag_point_set_property (GObject * object,
                             const GValue * value, GParamSpec * pspec)
 {
     MyDragPoint *self = MY_DRAG_POINT (object);
+    MyDragPointPrivate *priv = my_drag_point_get_instance_private(self);
 
     switch (property_id) {
 
-        case PROP_LINKED_ITEM: {
-                self->_priv->linked_item =
-                    GOC_ITEM (g_value_get_object (value));
-
+        case PROP_LINKED_ITEM: 
+                priv->linked_item = (GocItem*) g_value_get_object (value);
                 return;
-            }
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
@@ -63,11 +56,12 @@ my_drag_point_get_property (GObject * object,
                             GValue * value, GParamSpec * pspec)
 {
     MyDragPoint *self = MY_DRAG_POINT (object);
+    MyDragPointPrivate *priv = my_drag_point_get_instance_private(self);
 
     switch (property_id) {
 
         case PROP_LINKED_ITEM:
-            g_value_set_object (value, self->_priv->linked_item);
+            g_value_set_object (value, priv->linked_item);
             break;
 
         default:
@@ -80,6 +74,8 @@ my_drag_point_get_property (GObject * object,
 gboolean
 my_drag_point_button_pressed (GocItem * item, int button, double x, double y)
 {
+    MyDragPointPrivate *priv = my_drag_point_get_instance_private(MY_DRAG_POINT(item));
+
     GOStyle *style;
     cairo_surface_t *surf;
     cairo_t *cr;
@@ -90,7 +86,10 @@ my_drag_point_button_pressed (GocItem * item, int button, double x, double y)
 
     parent_class->button_pressed (item, button, x, y);
 
-    g_print ("button pressed...\n");
+    /*gdouble x0, x1, y0,y1;*/
+    /*g_print ("button pressed...\n");*/
+    /*g_object_get(priv->linked_item, "x0", &x0, "y0", &y0, "x1", &x1, "y1", &y1, NULL);*/
+    /*g_print ("x0: %f, x1: %f, y0: %f, %y1: %f\n", x0, x1, y0, y1);*/
 
     style = go_style_dup (go_styled_object_get_style (gso));
     style->line.width = 2;
@@ -130,21 +129,40 @@ my_drag_point_class_init (MyDragPointClass * klass)
     g_object_class_install_properties (gobject_class,
                                        N_PROPERTIES, obj_properties);
 
-    g_type_class_add_private (gobject_class,
-                              sizeof (MyDragPointPrivate));
-
     gi_class->button_pressed = my_drag_point_button_pressed;
+}
+
+static void
+my_drag_point_sync_with_linked_system (MyDragPoint * self,
+                                            GParamSpec * pspec, gpointer data)
+{
+    /*MyDragPointPrivate *priv = my_drag_point_get_instance_private(self);*/
+
+    /*gdouble x,y;*/
+
+    /*if(!priv->is_dragged)*/
+        /*return;*/
+
+    /*if(!MY_IS_FLOW_ARROW(priv->linked_item))*/
+        /*return;*/
+
+    /*g_object_get(self, "x", &x, "y", &y, NULL);*/
+
+    /*g_object_set(priv->linked_item, "x1", x, "y1", y, NULL);*/
 }
 
 static void
 my_drag_point_init (MyDragPoint * self)
 {
-    self->_priv = MY_DRAG_POINT_GET_PRIVATE (self);
+    MyDragPointPrivate *priv = my_drag_point_get_instance_private(self);
 
     /* to init any of the private data, do e.g: */
 
-    self->_priv->linked_item = NULL;
-    self->_priv->is_dragged = FALSE;
+    priv->linked_item = NULL;
+    priv->is_dragged = FALSE;
+
+    /*g_signal_connect(self, "notify::x", G_CALLBACK(my_drag_point_sync_with_linked_system), NULL);*/
+    /*g_signal_connect(self, "notify::y", G_CALLBACK(my_drag_point_sync_with_linked_system), NULL);*/
 }
 
 static void
@@ -165,31 +183,37 @@ my_drag_point_finalize (GObject * object)
 void
 my_drag_point_begin_dragging (MyDragPoint * self)
 {
+    MyDragPointPrivate *priv = my_drag_point_get_instance_private(self);
+
     g_return_if_fail(MY_IS_DRAG_POINT(self));
 
-    self->_priv->is_dragged = TRUE;
+    priv->is_dragged = TRUE;
 
-    if(MY_IS_FLOW_ARROW(self->_priv->linked_item)) {
-        my_flow_arrow_begin_dragging(MY_FLOW_ARROW(self->_priv->linked_item));
+    if(MY_IS_FLOW_ARROW(priv->linked_item)) {
+        my_flow_arrow_begin_dragging(MY_FLOW_ARROW(priv->linked_item));
     }
 }
 
 gboolean
 my_drag_point_is_dragged (MyDragPoint * self)
 {
+    MyDragPointPrivate *priv = my_drag_point_get_instance_private(self);
+
     g_return_if_fail(MY_IS_DRAG_POINT(self));
 
-    return self->_priv->is_dragged;
+    return priv->is_dragged;
 }
 
 void
 my_drag_point_end_dragging (MyDragPoint * self)
 {
+    MyDragPointPrivate *priv = my_drag_point_get_instance_private(self);
+
     g_return_if_fail(MY_IS_DRAG_POINT(self));
     
-    if(MY_IS_FLOW_ARROW(self->_priv->linked_item)) {
-        my_flow_arrow_end_dragging(MY_FLOW_ARROW(self->_priv->linked_item));
+    if(MY_IS_FLOW_ARROW(priv->linked_item)) {
+        my_flow_arrow_end_dragging(MY_FLOW_ARROW(priv->linked_item));
     }
 
-    self->_priv->is_dragged = FALSE;
+    priv->is_dragged = FALSE;
 }

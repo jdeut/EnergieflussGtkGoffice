@@ -19,21 +19,15 @@ G_BEGIN_DECLS
 
 typedef struct _MyFlowArrow MyFlowArrow;
 typedef struct _MyFlowArrowClass MyFlowArrowClass;
-typedef struct _MyFlowArrowPrivate MyFlowArrowPrivate;
 
 struct _MyFlowArrow
 {
     GocLine parent;
-    /* insert public members here */
-
-    /* private */
-    MyFlowArrowPrivate *_priv;
 };
 
 struct _MyFlowArrowClass
 {
     GocLineClass parent_class;
-
 };
 
 typedef enum
