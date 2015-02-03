@@ -467,12 +467,12 @@ my_system_coordinates_changed (MySystem * self,
 
         /* draw arrow */
 
+        gtk_widget_get_allocation (GOC_WIDGET (primary_system)->ofbox, &alloc_primary);
+
         arrow_len = alloc_primary.width * 0.3;
 
         /* if arrow depicts transfer between primary and secondary system */
         if (MY_IS_SYSTEM (secondary_system)) {
-
-            gtk_widget_get_allocation (GOC_WIDGET (primary_system)->ofbox, &alloc_primary);
 
             gtk_widget_get_allocation (GOC_WIDGET (secondary_system)->ofbox,
                                        &alloc_secondary);

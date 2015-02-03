@@ -161,22 +161,6 @@ my_window_populate (MyWindow * self)
     system1 = g_object_new (MY_TYPE_SYSTEM, "x", 100.0, "y", 200.0, NULL);
 
     my_timeline_model_add_object (timeline, system1);
-
-    GtkWidget *eventbox;
-    GtkWidget *widget;
-    GtkStyleContext *context;
-
-    eventbox = gtk_event_box_new ();
-    context = gtk_widget_get_style_context (eventbox);
-    gtk_style_context_add_class (context, "test");
-    widget = gtk_label_new ("test");
-    gtk_container_add (GTK_CONTAINER (eventbox), widget);
-    gtk_widget_set_visible (eventbox, TRUE);
-
-
-    goc_item_new (priv->canvas->group[GROUP_LABELS], GOC_TYPE_WIDGET, "widget", eventbox,
-                  "x", 100.0, "y", 100.0, "width", 100.0, "height",
-                  50.0, NULL);
 }
 
 static void
