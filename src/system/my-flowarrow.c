@@ -333,11 +333,14 @@ void
 my_flow_arrow_draw_label (MyFlowArrow * self, cairo_t * cr)
 {
     MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+    MyCanvas *canvas;
 
-    GocGroup *toplevel = NULL;
+    GocGroup *group_labels = NULL;
     gdouble x0, x1, y0, y1;
 
-    toplevel = goc_canvas_get_root (GOC_ITEM (self)->canvas);
+    canvas = (MyCanvas *) GOC_ITEM (self)->canvas;
+
+    group_labels = canvas->group[GROUP_LABELS];
 
     g_object_get (self, "x0", &x0, "x1", &x1, "y0", &y0, "y1", &y1, NULL);
 
@@ -363,7 +366,7 @@ my_flow_arrow_draw_label (MyFlowArrow * self, cairo_t * cr)
             else {
 
                 priv->label =
-                    goc_item_new (toplevel, GOC_TYPE_TEXT, "attributes", attr,
+                    goc_item_new (group_labels, GOC_TYPE_TEXT, "attributes", attr,
                                   "text", text, NULL);
 
                 goc_item_lower_to_bottom (GOC_ITEM (priv->label));
@@ -686,7 +689,7 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
 
     g_object_unref (canvas);
 
-    group_dragpoints = canvas->group_dragpoints;
+    group_dragpoints = canvas->group[GROUP_DRAGPOINTS];
 
     g_return_if_fail (GOC_IS_GROUP (group_dragpoints));
 

@@ -90,9 +90,11 @@ my_canvas_error_quark (void)
 static gboolean
 my_canvas_drag_drag_point (MyCanvas * self, gdouble x, gdouble y)
 {
-    g_return_if_fail (MY_IS_DRAG_POINT (self->_priv->active_item));
+    MyCanvasPrivate *priv = my_canvas_get_instance_private (MY_CANVAS (self));
 
-    goc_item_set (self->_priv->active_item, "x", x, "y", y, NULL);
+    g_return_if_fail (MY_IS_DRAG_POINT (priv->active_item));
+
+    goc_item_set (priv->active_item, "x", x, "y", y, NULL);
 }
 
 static void
@@ -121,18 +123,21 @@ static void
 my_canvas_init (MyCanvas * self)
 {
     GocGroup *root;
+    guint i;
+
+    MyCanvasPrivate *priv = my_canvas_get_instance_private (self);
 
     root = goc_canvas_get_root (GOC_CANVAS (self));
 
-    self->_priv = my_canvas_get_instance_private (self);
+    priv = my_canvas_get_instance_private (self);
 
-    self->_priv->active_item = NULL;
-    self->_priv->add_arrow_mode = FALSE;
-    self->_priv->add_system_mode = FALSE;
+    priv->active_item = NULL;
+    priv->add_arrow_mode = FALSE;
+    priv->add_system_mode = FALSE;
 
-    self->group_arrows = goc_group_new (root);
-    self->group_systems = goc_group_new (root);
-    self->group_dragpoints = goc_group_new (root);
+    for(i=0; i<=N_GROUPS; i++) {
+        self->group[i] = goc_group_new (root);
+    }
 
     g_signal_connect (G_OBJECT (self), "button-press-event",
                       G_CALLBACK (my_canvas_button_press_cb), NULL);
@@ -162,7 +167,7 @@ my_canvas_show_drag_points_of_all_arrows (MyCanvas * self)
     GList *l;
     GocGroup *group;
 
-    group = self->group_arrows;
+    group = self->group[GROUP_ARROWS];
 
     for (l = group->children; l != NULL; l = l->next) {
         if (MY_IS_FLOW_ARROW (l->data)) {
@@ -177,7 +182,7 @@ my_canvas_hide_drag_points_of_all_arrows (MyCanvas * self)
     GList *l;
     GocGroup *group;
 
-    group = self->group_arrows;
+    group = self->group[GROUP_ARROWS];
 
     for (l = group->children; l != NULL; l = l->next) {
         if (MY_IS_FLOW_ARROW (l->data)) {
@@ -195,8 +200,8 @@ my_canvas_generate_json_data_stream (MyCanvas * self, gchar ** str, gsize * len)
     GocGroup *group_arrows, *group_systems;
     GList *l;
 
-    group_arrows = self->group_arrows;
-    group_systems = self->group_systems;
+    group_arrows = self->group[GROUP_ARROWS];
+    group_systems = self->group[GROUP_SYSTEMS];
 
     root = json_node_new (JSON_NODE_ARRAY);
     arrows = json_node_new (JSON_NODE_ARRAY);
@@ -246,6 +251,8 @@ my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
 {
     MyCanvas *self = MY_CANVAS (canvas);
 
+    MyCanvasPrivate *priv = my_canvas_get_instance_private (MY_CANVAS (self));
+
     gdouble offsetx, offsety;
     gdouble x_cv, y_cv, dx, dy;
 
@@ -268,34 +275,34 @@ my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
     dx = event->x;
     dy = event->y;
 
-    self->_priv->active_item = goc_canvas_get_item_at (canvas, x_cv, y_cv);
+    priv->active_item = goc_canvas_get_item_at (canvas, x_cv, y_cv);
 
     /* if in ADD SYSTEM MODE */
-    if (self->_priv->add_system_mode && !GOC_IS_ITEM (self->_priv->active_item)) {
+    if (priv->add_system_mode && !GOC_IS_ITEM (priv->active_item)) {
 
         MySystem *system;
 
         system = g_object_new (MY_TYPE_SYSTEM, "x", x_cv, "y", y_cv, NULL);
 
-        my_timeline_model_add_object (self->_priv->timeline, system);
+        my_timeline_model_add_object (priv->timeline, system);
 
-        self->_priv->add_system_mode = FALSE;
+        priv->add_system_mode = FALSE;
     }
     /* if in ADD ARROW MODE */
-    else if (self->_priv->add_arrow_mode
-             && MY_IS_SYSTEM (self->_priv->active_item)) {
+    else if (priv->add_arrow_mode
+             && MY_IS_SYSTEM (priv->active_item)) {
 
         MyFlowArrow *arrow;
         MyDragPoint *point;
 
         arrow =
             g_object_new (MY_TYPE_FLOW_ARROW, "primary-system",
-                          self->_priv->active_item, "x1", x_cv, "y1", y_cv,
+                          priv->active_item, "x1", x_cv, "y1", y_cv,
                           "x0", x_cv, "y0", y_cv, NULL);
 
-        if (!my_timeline_model_add_object (self->_priv->timeline, arrow)) {
+        if (!my_timeline_model_add_object (priv->timeline, arrow)) {
 
-            self->_priv->add_arrow_mode = FALSE;
+            priv->add_arrow_mode = FALSE;
 
             g_object_unref (arrow);
 
@@ -308,34 +315,34 @@ my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
 
             goc_item_set (GOC_ITEM (point), "x", x_cv, "y", y_cv, NULL);
 
-            self->_priv->active_item = GOC_ITEM (point);
+            priv->active_item = GOC_ITEM (point);
         }
     }
     else {
-        self->_priv->add_arrow_mode = FALSE;
+        priv->add_arrow_mode = FALSE;
     }
 
-    if (GOC_IS_CIRCLE (self->_priv->active_item)
-        || MY_IS_DRAG_POINT (self->_priv->active_item)) {
+    if (GOC_IS_CIRCLE (priv->active_item)
+        || MY_IS_DRAG_POINT (priv->active_item)) {
 
         gdouble x, y;
 
-        g_object_get (self->_priv->active_item, "x", &x, "y", &y, NULL);
+        g_object_get (priv->active_item, "x", &x, "y", &y, NULL);
 
         dx = event->x - x;
         dy = event->y - y;
     }
 
-    self->_priv->offsetx = (canvas->direction == GOC_DIRECTION_RTL) ?
+    priv->offsetx = (canvas->direction == GOC_DIRECTION_RTL) ?
         canvas->scroll_x1 + (canvas->width -
                              dx) /
         canvas->pixels_per_unit : canvas->scroll_x1 +
         dx / canvas->pixels_per_unit;
 
-    self->_priv->offsety = canvas->scroll_y1 + dy / canvas->pixels_per_unit;
+    priv->offsety = canvas->scroll_y1 + dy / canvas->pixels_per_unit;
 
-    if (MY_IS_DRAG_POINT (self->_priv->active_item)) {
-        my_drag_point_begin_dragging (MY_DRAG_POINT (self->_priv->active_item));
+    if (MY_IS_DRAG_POINT (priv->active_item)) {
+        my_drag_point_begin_dragging (MY_DRAG_POINT (priv->active_item));
     }
 
     return FALSE;
@@ -370,6 +377,8 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
                              gpointer data)
 {
     MyCanvas *self = MY_CANVAS (canvas);
+    MyCanvasPrivate *priv = my_canvas_get_instance_private (MY_CANVAS (self));
+
     MySystem *primary_system;
     MyFlowArrow *arrow;
     GocItem *item;
@@ -392,16 +401,16 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
         y_cv = y;
     }
 
-    if (self->_priv->add_arrow_mode) {
-        self->_priv->add_arrow_mode = FALSE;
+    if (priv->add_arrow_mode) {
+        priv->add_arrow_mode = FALSE;
     }
 
-    if (MY_IS_DRAG_POINT (self->_priv->active_item)) {
+    if (MY_IS_DRAG_POINT (priv->active_item)) {
 
-        gdouble d = goc_item_distance (GOC_ITEM (self->group_systems), x_cv,
+        gdouble d = goc_item_distance (GOC_ITEM (self->group[GROUP_SYSTEMS]), x_cv,
                                        y_cv, &item);
 
-        g_object_get (self->_priv->active_item, "linked-item", &arrow, NULL);
+        g_object_get (priv->active_item, "linked-item", &arrow, NULL);
         g_object_unref (arrow);
 
         if (MY_IS_FLOW_ARROW (arrow)) {
@@ -422,10 +431,10 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
             }
         }
 
-        my_drag_point_end_dragging (MY_DRAG_POINT (self->_priv->active_item));
+        my_drag_point_end_dragging (MY_DRAG_POINT (priv->active_item));
     }
 
-    self->_priv->active_item = NULL;
+    priv->active_item = NULL;
 
     return TRUE;
 }
@@ -435,7 +444,9 @@ my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
                             gpointer data)
 {
     MyCanvas *self = MY_CANVAS (canvas);
-    GocItem *active_item = self->_priv->active_item;
+    MyCanvasPrivate *priv = my_canvas_get_instance_private (MY_CANVAS (self));
+
+    GocItem *active_item = priv->active_item;
 
     cairo_matrix_t matrix;
     gdouble x_cv, y_cv;
@@ -466,8 +477,8 @@ my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
 
         g_object_get (active_item, "x", &x_item_old, "y", &y_item_old, NULL);
 
-        x_item_new = x_cv - self->_priv->offsetx;
-        y_item_new = y_cv - self->_priv->offsety;
+        x_item_new = x_cv - priv->offsetx;
+        y_item_new = y_cv - priv->offsety;
 
         if (GOC_IS_WIDGET (active_item)) {
             goc_item_set (active_item, "x", x_item_new, "y", y_item_new, NULL);
@@ -489,6 +500,8 @@ my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
 void
 my_canvas_model_current_pos_changed (MyCanvas * self, MyTimelineModel * model)
 {
+    MyCanvasPrivate *priv = my_canvas_get_instance_private (MY_CANVAS (self));
+
     GPtrArray *array;
     GocGroup *root;
     GList *l;
@@ -499,37 +512,32 @@ my_canvas_model_current_pos_changed (MyCanvas * self, MyTimelineModel * model)
 
     root = goc_canvas_get_root (GOC_CANVAS (self));
 
-    if (GOC_IS_GROUP (self->group_arrows)) {
+    for(i=0; i<=N_GROUPS; i++) {
 
-        l = self->group_arrows->children;
+        if (i == GROUP_SYSTEMS) {
+            continue;
 
-        while (l != NULL) {
+        } else if (i == GROUP_ARROWS && GOC_IS_GROUP (self->group[i])) {
 
-            /*if (MY_IS_FLOW_ARROW (l->data)) { */
-            /*g_print ("Arrow -> RefCount: %u\n", */
-            /*G_OBJECT (l->data)->ref_count); */
-            /*} */
-            /*else { */
-            /*g_print ("Other -> RefCount: %u\n", */
-            /*G_OBJECT (l->data)->ref_count); */
-            /*} */
+            l = self->group[i]->children;
 
-            goc_group_remove_child (self->group_arrows, GOC_ITEM (l->data));
+            while (l != NULL) {
 
-            /* since list changes upon goc_group_remove_child l must be refreshed */
-            l = self->group_arrows->children;
+                goc_group_remove_child (self->group[i], GOC_ITEM (l->data));
+
+                /* since list changes upon goc_group_remove_child l must be refreshed */
+                l = self->group[i]->children;
+            }
         }
 
-        goc_item_destroy (GOC_ITEM (self->group_arrows));
-        goc_item_destroy (GOC_ITEM (self->group_dragpoints));
+        goc_item_destroy (GOC_ITEM (self->group[i]));
 
-        self->group_arrows = goc_group_new (root);
-        self->group_dragpoints = goc_group_new (root);
-
-        goc_item_lower_to_bottom (GOC_ITEM (self->group_arrows));
+        self->group[i] = goc_group_new (root);
     }
 
-    array = my_timeline_model_get_arrows_of_current_pos (self->_priv->timeline);
+    goc_item_lower_to_bottom (GOC_ITEM (self->group[GROUP_ARROWS]));
+
+    array = my_timeline_model_get_arrows_of_current_pos (priv->timeline);
 
     if (array != NULL) {
 
@@ -540,7 +548,7 @@ my_canvas_model_current_pos_changed (MyCanvas * self, MyTimelineModel * model)
             arrow = g_ptr_array_index (array, i);
 
             if (MY_IS_FLOW_ARROW (arrow)) {
-                my_canvas_group_add_item (NULL, self->group_arrows,
+                my_canvas_group_add_item (NULL, self->group[GROUP_ARROWS],
                                           GOC_ITEM (arrow));
             }
         }
@@ -560,17 +568,21 @@ my_canvas_group_add_item (MyCanvas * self, GocGroup * group, GocItem * item)
 void
 my_canvas_set_add_system_mode (MyCanvas * self)
 {
+    MyCanvasPrivate *priv = my_canvas_get_instance_private (MY_CANVAS (self));
+
     g_return_if_fail (MY_IS_CANVAS (self));
 
-    self->_priv->add_system_mode = TRUE;
+    priv->add_system_mode = TRUE;
 }
 
 void
 my_canvas_set_add_arrow_mode (MyCanvas * self)
 {
+    MyCanvasPrivate *priv = my_canvas_get_instance_private (MY_CANVAS (self));
+
     g_return_if_fail (MY_IS_CANVAS (self));
 
-    self->_priv->add_arrow_mode = TRUE;
+    priv->add_arrow_mode = TRUE;
 }
 
 void
@@ -582,7 +594,7 @@ my_canvas_model_arrow_added_at_current_index (MyCanvas * self,
     g_return_if_fail (MY_IS_TIMELINE_MODEL (model));
     g_return_if_fail (MY_IS_FLOW_ARROW (arrow));
 
-    my_canvas_group_add_item (self, self->group_arrows, GOC_ITEM (arrow));
+    my_canvas_group_add_item (self, self->group[GROUP_ARROWS], GOC_ITEM (arrow));
 }
 
 void
@@ -593,7 +605,7 @@ my_canvas_model_system_added (MyCanvas * self, MySystem * system,
     g_return_if_fail (MY_IS_TIMELINE_MODEL (model));
     g_return_if_fail (MY_IS_SYSTEM (system));
 
-    my_canvas_group_add_item (self, self->group_systems, GOC_ITEM (system));
+    my_canvas_group_add_item (self, self->group[GROUP_SYSTEMS], GOC_ITEM (system));
 }
 
 void

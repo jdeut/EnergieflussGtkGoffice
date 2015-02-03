@@ -366,7 +366,7 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
 
     g_object_get (self, "canvas", &canvas, NULL);
 
-    group_arrows = canvas->group_arrows;
+    group_arrows = canvas->group[GROUP_ARROWS];
 
     g_return_if_fail (GOC_IS_GROUP (group_arrows));
 

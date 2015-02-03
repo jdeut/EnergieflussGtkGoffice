@@ -22,13 +22,20 @@ typedef struct _MyCanvas MyCanvas;
 typedef struct _MyCanvasClass MyCanvasClass;
 typedef struct _MyCanvasPrivate MyCanvasPrivate;
 
+enum {
+    GROUP_ARROWS,
+    GROUP_SYSTEMS,
+    GROUP_DRAGPOINTS,
+    GROUP_LABELS,
+    N_GROUPS
+};
+
 struct _MyCanvas
 {
     GocCanvas parent;
     /* insert public members here */
-    GocGroup *group_arrows;
-    GocGroup *group_systems;
-    GocGroup *group_dragpoints;
+
+    GocGroup *group[N_GROUPS];
 
     /* private */
     MyCanvasPrivate *_priv;
