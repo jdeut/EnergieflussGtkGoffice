@@ -86,11 +86,6 @@ my_drag_point_button_pressed (GocItem * item, int button, double x, double y)
 
     parent_class->button_pressed (item, button, x, y);
 
-    /*gdouble x0, x1, y0,y1;*/
-    /*g_print ("button pressed...\n");*/
-    /*g_object_get(priv->linked_item, "x0", &x0, "y0", &y0, "x1", &x1, "y1", &y1, NULL);*/
-    /*g_print ("x0: %f, x1: %f, y0: %f, %y1: %f\n", x0, x1, y0, y1);*/
-
     style = go_style_dup (go_styled_object_get_style (gso));
     style->line.width = 2;
     style->fill.type = GO_STYLE_FILL_PATTERN;
@@ -136,19 +131,6 @@ static void
 my_drag_point_sync_with_linked_system (MyDragPoint * self,
                                             GParamSpec * pspec, gpointer data)
 {
-    /*MyDragPointPrivate *priv = my_drag_point_get_instance_private(self);*/
-
-    /*gdouble x,y;*/
-
-    /*if(!priv->is_dragged)*/
-        /*return;*/
-
-    /*if(!MY_IS_FLOW_ARROW(priv->linked_item))*/
-        /*return;*/
-
-    /*g_object_get(self, "x", &x, "y", &y, NULL);*/
-
-    /*g_object_set(priv->linked_item, "x1", x, "y1", y, NULL);*/
 }
 
 static void

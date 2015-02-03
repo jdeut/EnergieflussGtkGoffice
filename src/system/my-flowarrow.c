@@ -576,6 +576,8 @@ notify_label_text_changed (MyFlowArrow * self, GParamSpec * pspec,
 
             goc_item_set (priv->label, "width", ((gdouble) width)+10.0, "height", ((gdouble) height)+10.0, NULL);
 
+            goc_item_raise_to_top (priv->label);
+
             gtk_widget_show_all (priv->eventbox);
 
             my_flow_arrow_coordinates_changed (self, NULL, NULL);
@@ -594,6 +596,7 @@ my_flow_arrow_change_anchor_while_dragging (MyFlowArrow * self,
     MyAnchorType anchor;
 
     g_return_if_fail (MY_IS_SYSTEM (priv->primary_system));
+    g_return_if_fail (MY_IS_FLOW_ARROW(self));
 
     if (!my_flow_arrow_is_dragged (self))
         return;
@@ -730,10 +733,11 @@ my_flow_arrow_coordinates_changed (MyFlowArrow * self,
     cairo_matrix_t matrix;
 
     g_object_get (self, "x0", &x0, "y0", &y0, "x1", &x1, "y1", &y1, NULL);
-    g_object_get (priv->label, "width", &width, "height", &height, NULL);
 
     if (!GOC_IS_WIDGET (priv->label))
         return;
+
+    g_object_get (priv->label, "width", &width, "height", &height, NULL);
 
     angle = atan2 (y1 - y0, x1 - x0);
 

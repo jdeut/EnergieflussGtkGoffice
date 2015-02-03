@@ -429,7 +429,7 @@ my_system_coordinates_changed (MySystem * self,
 
     MySystemClass *class = MY_SYSTEM_GET_CLASS (self);
 
-    /* chaining up */
+    g_return_if_fail(MY_IS_SYSTEM(self));
 
     g_object_get (self, "canvas", &canvas, NULL);
 
