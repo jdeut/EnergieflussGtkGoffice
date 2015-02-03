@@ -37,6 +37,12 @@ static void my_flow_arrow_finalize (GObject *);
 static void my_flow_arrow_dispose (GObject *);
 static void my_flow_arrow_bind_to_drag_point (MyFlowArrow * self);
 void my_flow_arrow_set_transfer_type (MyFlowArrow * self, guint transfer_type);
+static void my_flow_arrow_coordinates_changed (MyFlowArrow * self,
+                                               GParamSpec * pspec,
+                                               gpointer data);
+static void notify_label_text_changed (MyFlowArrow * self, GParamSpec * pspec,
+                                       gpointer data);
+
 
 typedef struct
 {
@@ -44,6 +50,8 @@ typedef struct
     GOArrow *arrow;
     GocItem *label;
     MyDragPoint *drag_point;
+
+    GtkWidget *eventbox;
 
     GBinding *bind_drag_point_to_x;
     GBinding *bind_drag_point_to_y;
@@ -330,92 +338,18 @@ my_flow_arrow_error_quark (void)
 }
 
 void
-my_flow_arrow_draw_label (MyFlowArrow * self, cairo_t * cr)
-{
-    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
-    MyCanvas *canvas;
-
-    GocGroup *group_labels = NULL;
-    gdouble x0, x1, y0, y1;
-
-    canvas = (MyCanvas *) GOC_ITEM (self)->canvas;
-
-    group_labels = canvas->group[GROUP_LABELS];
-
-    g_object_get (self, "x0", &x0, "x1", &x1, "y0", &y0, "y1", &y1, NULL);
-
-    if (priv->label_text != NULL) {
-
-        if (!GOC_IS_TEXT (priv->label)) {
-            GError *err = NULL;
-            gchar *text;
-
-            PangoAttrList *attr;
-
-            attr = pango_attr_list_new ();
-
-            pango_parse_markup (priv->label_text, -1, 0, &attr,
-                                &text, NULL, &err);
-
-            if (err != NULL) {
-                g_printerr ("Error parsing str '%s': %s\n",
-                            priv->label_text, err->message);
-                g_clear_error (&err);
-
-            }
-            else {
-
-                priv->label =
-                    goc_item_new (group_labels, GOC_TYPE_TEXT, "attributes", attr,
-                                  "text", text, NULL);
-
-                goc_item_lower_to_bottom (GOC_ITEM (priv->label));
-            }
-        }
-
-
-        if (GOC_IS_TEXT (priv->label)) {
-            gdouble angle;
-            cairo_matrix_t matrix;
-
-            g_object_get (self, "x0", &x0, "x1", &x1, "y0", &y0, "y1", &y1,
-                          NULL);
-
-            angle = atan2 (y1 - y0, x1 - x0);
-
-            if (angle < 0) {
-                angle += 2 * M_PI;
-            }
-
-            goc_item_set (priv->label, "rotation", angle,
-                          "primary-anchor", GO_ANCHOR_SOUTH, "x",
-                          x0 + (x1 - x0) / 2, "y", y0 + (y1 - y0) / 2, NULL);
-
-            cairo_matrix_init_identity (&matrix);
-            cairo_matrix_translate (&matrix,
-                                    priv->energy_quantity / 2 *
-                                    sin (angle),
-                                    -priv->energy_quantity / 2 * cos (angle));
-
-            goc_item_set_transform (priv->label, &matrix);
-        }
-    }
-}
-
-void
 my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
 {
     MyFlowArrow *self = MY_FLOW_ARROW (item);
-
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
     MyFlowArrowClass *class = MY_FLOW_ARROW_GET_CLASS (self);
+
     GocItemClass *parent_class = g_type_class_peek_parent (class);
 
     /* chaining up */
     parent_class->draw (GOC_ITEM (self), cr);
 
-    my_flow_arrow_draw_label (self, cr);
-
-    gtk_widget_queue_draw (GTK_WIDGET (item->canvas));
+    /*goc_item_invalidate (GOC_ITEM (self)); */
 }
 
 static void
@@ -515,11 +449,11 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
     g_object_class_install_properties (gobject_class,
                                        N_PROPERTIES, obj_properties);
 
-    gi_class->draw = my_flow_arrow_draw;
+    /*gi_class->draw = my_flow_arrow_draw; */
     gi_class->enter_notify = my_flow_arrow_enter_notify;
     gi_class->leave_notify = my_flow_arrow_leave_notify;
     gi_class->button_pressed = my_flow_arrow_button_pressed;
-    gi_class->realize = my_flow_arrow_realize;
+    /*gi_class->realize = my_flow_arrow_realize; */
 
     gsi_class->init_style = my_flow_arrow_init_style;
 }
@@ -528,6 +462,7 @@ void
 my_flow_arrow_set_coordinate (MyFlowArrow * self, const gchar * first_arg_name,
                               ...)
 {
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
     va_list args;
 
     if (my_flow_arrow_is_dragged (self))
@@ -536,8 +471,6 @@ my_flow_arrow_set_coordinate (MyFlowArrow * self, const gchar * first_arg_name,
     va_start (args, first_arg_name);
     g_object_set_valist (G_OBJECT (self), first_arg_name, args);
     va_end (args);
-
-    goc_item_invalidate (GOC_ITEM (self));
 }
 
 static void
@@ -593,18 +526,52 @@ my_flow_arrow_energy_quantity_changed (MyFlowArrow * self,
 }
 
 static void
-notify_label_text_changed_cb (MyFlowArrow * self, GParamSpec * pspec,
-                              gpointer data)
+notify_label_text_changed (MyFlowArrow * self, GParamSpec * pspec,
+                           gpointer data)
 {
     MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
-    GOStyle *style;
-
-    if (G_IS_OBJECT (priv->label)) {
-        g_object_unref (priv->label);
+    if (GOC_IS_ITEM (priv->label)) {
+        goc_item_destroy (priv->label);
+        priv->label = NULL;
     }
 
-    goc_item_invalidate (GOC_ITEM (self));
+    MyCanvas *canvas;
+
+    GocGroup *group_labels = NULL;
+
+    g_object_get (self, "canvas", &canvas, NULL);
+
+    group_labels = canvas->group[GROUP_LABELS];
+
+    if (priv->label_text != NULL) {
+
+        if (!GOC_IS_ITEM (priv->label)) {
+
+            GError *err = NULL;
+            gchar *text;
+            GtkWidget *widget;
+            GtkStyleContext *context;
+
+            priv->eventbox = gtk_event_box_new ();
+            context = gtk_widget_get_style_context (priv->eventbox);
+            gtk_style_context_add_class (context, "test");
+            widget = gtk_label_new (priv->label_text);
+            gtk_container_add (GTK_CONTAINER (priv->eventbox), widget);
+            gtk_widget_set_visible (priv->eventbox, TRUE);
+            gtk_widget_set_visible (widget, TRUE);
+
+            priv->label =
+                goc_item_new (canvas->group[GROUP_LABELS], GOC_TYPE_WIDGET,
+                              "widget", priv->eventbox, NULL);
+
+            goc_item_set (priv->label, "width", 100.0, "height", 50.0, NULL);
+
+            gtk_widget_show_all (priv->eventbox);
+
+            my_flow_arrow_coordinates_changed (self, NULL, NULL);
+        }
+    }
 }
 
 static void
@@ -712,7 +679,7 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
 
     priv->handler[CANVAS_CHANGED_LABEL_TEXT] =
         g_signal_connect (self, "notify::label-text",
-                          G_CALLBACK (notify_label_text_changed_cb), NULL);
+                          G_CALLBACK (notify_label_text_changed), NULL);
 
     priv->handler[CANVAS_CHANGED_X0] =
         g_signal_connect (self, "notify::x0",
@@ -740,6 +707,40 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
                           NULL);
 }
 
+
+static void
+my_flow_arrow_coordinates_changed (MyFlowArrow * self,
+                                   GParamSpec * pspec, gpointer data)
+{
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
+    gdouble x0, x1, y0, y1;
+    gdouble angle;
+    cairo_matrix_t matrix;
+
+    g_object_get (self, "x0", &x0, "y0", &y0, "x1", &x1, "y1", &y1, NULL);
+
+    if (!GOC_IS_WIDGET (priv->label))
+        return;
+
+    angle = atan2 (y1 - y0, x1 - x0);
+
+    if (angle < 0) {
+        angle += 2 * M_PI;
+    }
+
+    goc_item_set (priv->label, "x", x0 + (x1 - x0) / 2, "y",
+                  y0 + (y1 - y0) / 2, NULL);
+
+    cairo_matrix_init_identity (&matrix);
+    cairo_matrix_translate (&matrix, priv->energy_quantity / 2 * sin (angle),
+                            -priv->energy_quantity / 2 * cos (angle));
+
+    goc_item_set_transform (priv->label, &matrix);
+
+    goc_item_invalidate (priv->label);
+}
+
 static void
 my_flow_arrow_init (MyFlowArrow * self)
 {
@@ -757,6 +758,15 @@ my_flow_arrow_init (MyFlowArrow * self)
 
     g_signal_connect (self, "notify::canvas",
                       G_CALLBACK (my_flow_arrow_canvas_changed), NULL);
+
+    g_signal_connect (self, "notify::x0",
+                      G_CALLBACK (my_flow_arrow_coordinates_changed), NULL);
+    g_signal_connect (self, "notify::x1",
+                      G_CALLBACK (my_flow_arrow_coordinates_changed), NULL);
+    g_signal_connect (self, "notify::y0",
+                      G_CALLBACK (my_flow_arrow_coordinates_changed), NULL);
+    g_signal_connect (self, "notify::y1",
+                      G_CALLBACK (my_flow_arrow_coordinates_changed), NULL);
 
     go_arrow_init_kite (priv->arrow, 40, 40, 6);
 
@@ -778,7 +788,7 @@ my_flow_arrow_finalize (GObject * object)
 
     MyFlowArrow *self = MY_FLOW_ARROW (object);
 
-    if (GOC_IS_TEXT (priv->label)) {
+    if (GOC_IS_ITEM (priv->label)) {
         goc_item_destroy (GOC_ITEM (priv->label));
     }
 
@@ -822,6 +832,10 @@ my_flow_arrow_end_dragging (MyFlowArrow * self)
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
     priv->is_dragged = FALSE;
+
+    goc_item_invalidate (GOC_ITEM (self));
+
+    g_object_notify(G_OBJECT(priv->primary_system), "x");
 }
 
 MyDragPoint *

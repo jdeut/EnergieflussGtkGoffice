@@ -294,7 +294,7 @@ my_system_draw_energy_flow_distribute_arrows (MySystem * self,
                       &sa, "primary-system", &primary_system,
                       "secondary-system", &secondary_system, NULL);
 
-        if (primary_system == self) 
+        if (primary_system == self)
             n[pa]++;
         else if (secondary_system == self)
             n[sa]++;
@@ -334,48 +334,117 @@ my_system_draw_energy_flow_distribute_arrows (MySystem * self,
                 my_flow_arrow_set_coordinate (arrow, "y0", y0, "y1", y0, NULL);
             else
                 my_flow_arrow_set_coordinate (arrow, "x0", x0, "x1", x0, NULL);
-        }
-        else if (energy_quantity >= 0.0) {
-            my_flow_arrow_set_coordinate (arrow, "y1", y0, "x1", x0, NULL);
-        }
-        else if (energy_quantity < 0.0) {
-            my_flow_arrow_set_coordinate (arrow, "y0", y0, "x0", x0, NULL);
+        } else {
+            if (energy_quantity >= 0.0) {
+                my_flow_arrow_set_coordinate (arrow, "y1", y0, "x1", x0, NULL);
+            }
+            else if (energy_quantity < 0.0) {
+                my_flow_arrow_set_coordinate (arrow, "y0", y0, "x0", x0, NULL);
+            }
         }
 
         m[ta]++;
     }
 }
 
-void
-my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
+static void
+my_system_class_init (MySystemClass * klass)
 {
-    MySystem *self;
+    GObjectClass *gobject_class;
+    GocItemClass *gi_class;
+
+    gobject_class = G_OBJECT_CLASS (klass);
+    gi_class = (GocItemClass *) klass;
+
+    gobject_class->set_property = my_system_set_property;
+    gobject_class->get_property = my_system_get_property;
+
+    gobject_class->finalize = my_system_finalize;
+    gobject_class->dispose = my_system_dispose;
+
+    obj_properties[PROP_ID] =
+        g_param_spec_uint ("id",
+                           "id",
+                           "unique identifier of system",
+                           0, G_MAXUINT, 0,
+                           G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
+
+    obj_properties[PROP_LABEL] =
+        g_param_spec_string ("label",
+                             "label",
+                             "label text",
+                             NULL, G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
+
+    g_object_class_install_properties (gobject_class,
+                                       N_PROPERTIES, obj_properties);
+
+    /*gi_class->draw = my_system_draw_energy_flow; */
+}
+
+static gboolean
+my_system_begin_drag (GtkWidget * button, GdkEventButton * event,
+                      MySystem * self)
+{
+    GocCanvas *canvas;
+
+    g_object_get (self, "canvas", &canvas, NULL);
+
+    my_canvas_button_press_cb (canvas, event, button);
+
+    return FALSE;
+}
+
+static gboolean
+my_system_is_dragged (GtkWidget * button,
+                      GdkEventMotion * event, MySystem * self)
+{
+    GocCanvas *canvas;
+
+    g_object_get (self, "canvas", &canvas, NULL);
+
+    my_canvas_motion_notify_cb (canvas, event, button);
+
+    return FALSE;
+}
+
+static gboolean
+my_system_end_drag (GtkWidget * button, GdkEvent * event, MySystem * self)
+{
+    GocCanvas *canvas;
+
+    g_object_get (self, "canvas", &canvas, NULL);
+
+    my_canvas_button_release_cb (canvas, event, button);
+
+    return FALSE;
+}
+
+static void
+my_system_coordinates_changed (MySystem * self,
+                               GParamSpec * pspec, gpointer data)
+{
     GocGroup *group_arrows = NULL;
     MyCanvas *canvas;
-    GtkAllocation alloc_primary, alloc_secondary;
     GList *l;
-
-    self = MY_SYSTEM (item);
 
     MySystemClass *class = MY_SYSTEM_GET_CLASS (self);
 
-    GocItemClass *parent_class = g_type_class_peek_parent (class);
-
     /* chaining up */
-    parent_class->draw (item, cr);
 
     g_object_get (self, "canvas", &canvas, NULL);
+
+    if(!MY_IS_CANVAS(canvas))
+        return;
 
     group_arrows = canvas->group[GROUP_ARROWS];
 
     g_return_if_fail (GOC_IS_GROUP (group_arrows));
 
-    gtk_widget_get_allocation (GOC_WIDGET (self)->ofbox, &alloc_primary);
-
     for (l = group_arrows->children; l != NULL; l = l->next) {
 
         MySystem *secondary_system, *primary_system;
         MyAnchorType secondary_anchor, primary_anchor;
+        GtkAllocation alloc_primary, alloc_secondary;
 
         gdouble x0, x1, y0, y1, arrow_len;
         gdouble energy_quantity;
@@ -384,17 +453,17 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
             continue;
         }
 
-        g_object_get (l->data, "primary-system", &primary_system, NULL);
+        g_object_get (l->data, "primary-system", &primary_system, "secondary-system", &secondary_system, NULL);
 
         /* fetch next arrow if current arrow doesn't belong to system */
-        if (primary_system != self) {
+        if (primary_system != self && secondary_system != self) {
             continue;
         }
 
         g_object_get (l->data,
                       "energy-quantity", &energy_quantity,
                       "primary-anchor", &primary_anchor,
-                      "secondary-system", &secondary_system, NULL);
+                      NULL);
 
         /* draw arrow */
 
@@ -402,6 +471,8 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
 
         /* if arrow depicts transfer between primary and secondary system */
         if (MY_IS_SYSTEM (secondary_system)) {
+
+            gtk_widget_get_allocation (GOC_WIDGET (primary_system)->ofbox, &alloc_primary);
 
             gtk_widget_get_allocation (GOC_WIDGET (secondary_system)->ofbox,
                                        &alloc_secondary);
@@ -485,84 +556,17 @@ my_system_draw_energy_flow (GocItem const *item, cairo_t * cr)
             my_flow_arrow_set_coordinate (MY_FLOW_ARROW (l->data), "x0", x0,
                                           "y0", y0, "x1", x1, "y1", y1, NULL);
         }
+
+        if (MY_IS_SYSTEM (primary_system)) {
+            my_system_draw_energy_flow_distribute_arrows (MY_SYSTEM (primary_system),
+                                                          group_arrows);
+        }
+
+        if (MY_IS_SYSTEM (secondary_system)) {
+            my_system_draw_energy_flow_distribute_arrows (secondary_system, group_arrows);
+        }
     }
-
-    my_system_draw_energy_flow_distribute_arrows (MY_SYSTEM (item),
-                                                  group_arrows);
 }
-
-static void
-my_system_class_init (MySystemClass * klass)
-{
-    GObjectClass *gobject_class;
-    GocItemClass *gi_class;
-
-    gobject_class = G_OBJECT_CLASS (klass);
-    gi_class = (GocItemClass *) klass;
-
-    gobject_class->set_property = my_system_set_property;
-    gobject_class->get_property = my_system_get_property;
-
-    gobject_class->finalize = my_system_finalize;
-    gobject_class->dispose = my_system_dispose;
-
-    obj_properties[PROP_ID] =
-        g_param_spec_uint ("id",
-                           "id",
-                           "unique identifier of system",
-                           0, G_MAXUINT, 0,
-                           G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
-
-    obj_properties[PROP_LABEL] =
-        g_param_spec_string ("label",
-                             "label",
-                             "label text",
-                             NULL, G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
-
-    g_object_class_install_properties (gobject_class,
-                                       N_PROPERTIES, obj_properties);
-
-    gi_class->draw = my_system_draw_energy_flow;
-}
-
-static gboolean
-my_system_begin_drag (GtkWidget * button, GdkEventButton * event,
-                      MySystem * self)
-{
-    GocCanvas *canvas;
-
-    g_object_get (self, "canvas", &canvas, NULL);
-
-    my_canvas_button_press_cb (canvas, event, button);
-
-    return FALSE;
-}
-
-static gboolean
-my_system_is_dragged (GtkWidget * button,
-                      GdkEventMotion * event, MySystem * self)
-{
-    GocCanvas *canvas;
-
-    g_object_get (self, "canvas", &canvas, NULL);
-
-    my_canvas_motion_notify_cb (canvas, event, button);
-
-    return FALSE;
-}
-
-static gboolean
-my_system_end_drag (GtkWidget * button, GdkEvent * event, MySystem * self)
-{
-    GocCanvas *canvas;
-
-    g_object_get (self, "canvas", &canvas, NULL);
-
-    my_canvas_button_release_cb (canvas, event, button);
-
-    return FALSE;
-}
-
 
 static void
 my_system_init (MySystem * self)
@@ -589,6 +593,12 @@ my_system_init (MySystem * self)
 
     g_signal_connect (button, "motion-notify-event",
                       G_CALLBACK (my_system_is_dragged), self);
+
+    g_signal_connect (self, "notify::x",
+                      G_CALLBACK (my_system_coordinates_changed), NULL);
+
+    g_signal_connect (self, "notify::y",
+                      G_CALLBACK (my_system_coordinates_changed), NULL);
 }
 
 static void
