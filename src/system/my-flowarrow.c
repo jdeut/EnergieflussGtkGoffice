@@ -551,21 +551,30 @@ notify_label_text_changed (MyFlowArrow * self, GParamSpec * pspec,
             GError *err = NULL;
             gchar *text;
             GtkWidget *widget;
+            GtkAllocation alloc;
             GtkStyleContext *context;
 
+            gint width, height;
+
             priv->eventbox = gtk_event_box_new ();
+
             context = gtk_widget_get_style_context (priv->eventbox);
             gtk_style_context_add_class (context, "test");
-            widget = gtk_label_new (priv->label_text);
+
+            widget = gtk_label_new (NULL);
+            gtk_label_set_markup(GTK_LABEL(widget), priv->label_text);
             gtk_container_add (GTK_CONTAINER (priv->eventbox), widget);
             gtk_widget_set_visible (priv->eventbox, TRUE);
             gtk_widget_set_visible (widget, TRUE);
+
+            gtk_widget_get_preferred_width(widget, NULL, &width);
+            gtk_widget_get_preferred_height(widget, NULL, &height);
 
             priv->label =
                 goc_item_new (canvas->group[GROUP_LABELS], GOC_TYPE_WIDGET,
                               "widget", priv->eventbox, NULL);
 
-            goc_item_set (priv->label, "width", 100.0, "height", 50.0, NULL);
+            goc_item_set (priv->label, "width", ((gdouble) width)+10.0, "height", ((gdouble) height)+10.0, NULL);
 
             gtk_widget_show_all (priv->eventbox);
 
@@ -681,6 +690,8 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
         g_signal_connect (self, "notify::label-text",
                           G_CALLBACK (notify_label_text_changed), NULL);
 
+    g_object_notify (G_OBJECT (self), "label-text");
+
     priv->handler[CANVAS_CHANGED_X0] =
         g_signal_connect (self, "notify::x0",
                           G_CALLBACK
@@ -714,11 +725,12 @@ my_flow_arrow_coordinates_changed (MyFlowArrow * self,
 {
     MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
-    gdouble x0, x1, y0, y1;
+    gdouble x0, x1, y0, y1, width, height;
     gdouble angle;
     cairo_matrix_t matrix;
 
     g_object_get (self, "x0", &x0, "y0", &y0, "x1", &x1, "y1", &y1, NULL);
+    g_object_get (priv->label, "width", &width, "height", &height, NULL);
 
     if (!GOC_IS_WIDGET (priv->label))
         return;
@@ -729,7 +741,7 @@ my_flow_arrow_coordinates_changed (MyFlowArrow * self,
         angle += 2 * M_PI;
     }
 
-    goc_item_set (priv->label, "x", x0 + (x1 - x0) / 2, "y",
+    goc_item_set (priv->label, "x", x0 + (x1 - x0) / 2.0 - width/2.0, "y",
                   y0 + (y1 - y0) / 2, NULL);
 
     cairo_matrix_init_identity (&matrix);
