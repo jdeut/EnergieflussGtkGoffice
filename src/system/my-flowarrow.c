@@ -243,10 +243,13 @@ my_flow_arrow_get_property (GObject * object,
 void
 my_flow_arrow_set_transfer_type (MyFlowArrow * self, guint transfer_type)
 {
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
     GOStyle *style;
 
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
+
+    priv->transfer_type = transfer_type;
 
     g_object_get (self, "style", &style, NULL);
 
@@ -415,13 +418,18 @@ my_flow_arrow_draw (GocItem const *item, cairo_t * cr)
 static void
 my_flow_arrow_init_style (G_GNUC_UNUSED GocStyledItem * item, GOStyle * style)
 {
+    MyFlowArrow *self = MY_FLOW_ARROW (item);
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
     style->interesting_fields = GO_STYLE_LINE;
+
     if (style->line.auto_dash)
         style->line.dash_type = GO_LINE_SOLID;
-    if (style->line.auto_color)
-        style->line.color = GO_COLOR_FROM_RGBA (0, 200, 0, 255);
     if (style->line.auto_fore)
         style->line.fore = 0;
+
+    my_flow_arrow_set_transfer_type (self, priv->transfer_type);
+
 }
 
 void
@@ -550,10 +558,10 @@ my_flow_arrow_bind_to_drag_point (MyFlowArrow * self)
     }
 
     if (G_IS_OBJECT (priv->bind_drag_point_to_x))
-        g_object_unref (priv->bind_drag_point_to_x); 
+        g_object_unref (priv->bind_drag_point_to_x);
 
     if (G_IS_OBJECT (priv->bind_drag_point_to_y))
-        g_object_unref (priv->bind_drag_point_to_y); 
+        g_object_unref (priv->bind_drag_point_to_y);
 
     priv->bind_drag_point_to_x =
         g_object_bind_property (self, x_str, priv->drag_point, "x",
@@ -662,13 +670,13 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
 
     priv->is_dragged = FALSE;
 
-    if(G_IS_OBJECT(priv->bind_drag_point_to_x))
-        g_object_unref(priv->bind_drag_point_to_x);
-    if(G_IS_OBJECT(priv->bind_drag_point_to_y))
-        g_object_unref(priv->bind_drag_point_to_y);
+    if (G_IS_OBJECT (priv->bind_drag_point_to_x))
+        g_object_unref (priv->bind_drag_point_to_x);
+    if (G_IS_OBJECT (priv->bind_drag_point_to_y))
+        g_object_unref (priv->bind_drag_point_to_y);
 
-    priv->bind_drag_point_to_y = NULL; 
-    priv->bind_drag_point_to_x = NULL; 
+    priv->bind_drag_point_to_y = NULL;
+    priv->bind_drag_point_to_x = NULL;
 
     g_object_get (self, "canvas", &canvas, NULL);
 
@@ -689,7 +697,8 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
     }
 
     priv->drag_point = (MyDragPoint *)
-        goc_item_new (group_dragpoints, MY_TYPE_DRAG_POINT, "radius", 10.0, "linked-item", self, NULL);
+        goc_item_new (group_dragpoints, MY_TYPE_DRAG_POINT, "radius", 10.0,
+                      "linked-item", self, NULL);
 
     priv->handler[CANVAS_CHANGED_ENERGY_QUANTITY] =
         g_signal_connect (self, "notify::energy-quantity",
