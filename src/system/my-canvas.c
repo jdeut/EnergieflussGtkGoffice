@@ -535,6 +535,7 @@ my_canvas_model_current_pos_changed (MyCanvas * self, MyTimelineModel * model)
         self->group[i] = goc_group_new (root);
     }
 
+    goc_item_lower_to_bottom (GOC_ITEM (self->group[GROUP_DRAGPOINTS]));
     goc_item_lower_to_bottom (GOC_ITEM (self->group[GROUP_ARROWS]));
 
     array = my_timeline_model_get_arrows_of_current_pos (priv->timeline);
