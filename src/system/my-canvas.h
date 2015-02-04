@@ -79,6 +79,9 @@ my_canvas_generate_json_data_stream (MyCanvas * self, gchar ** str, gsize * len)
 void
 my_canvas_hide_drag_points_of_all_arrows (MyCanvas * self);
 
+void
+my_canvas_transform_coordinate (GocCanvas * canvas, gdouble * x, gdouble * y);
+
 G_END_DECLS
 
 #endif /* __MY_CANVAS_H__ */

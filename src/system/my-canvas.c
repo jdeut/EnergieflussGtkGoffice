@@ -135,7 +135,7 @@ my_canvas_init (MyCanvas * self)
     priv->add_arrow_mode = FALSE;
     priv->add_system_mode = FALSE;
 
-    for(i=0; i<=N_GROUPS; i++) {
+    for (i = 0; i <= N_GROUPS; i++) {
         self->group[i] = goc_group_new (root);
     }
 
@@ -245,6 +245,22 @@ my_canvas_generate_json_data_stream (MyCanvas * self, gchar ** str, gsize * len)
     return TRUE;
 }
 
+void
+my_canvas_transform_coordinate (GocCanvas * canvas, gdouble * x, gdouble * y)
+{
+
+    if (x != NULL) {
+        *x = (canvas->direction ==
+              GOC_DIRECTION_RTL) ? canvas->scroll_x1 + (canvas->width -
+                                                        *x) /
+            canvas->pixels_per_unit : canvas->scroll_x1 +
+            *x / canvas->pixels_per_unit;
+    }
+    if (y != NULL) {
+        *y = canvas->scroll_y1 + *y / canvas->pixels_per_unit;
+    }
+}
+
 static gboolean
 my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
                              gpointer data)
@@ -255,25 +271,25 @@ my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
 
     gdouble offsetx, offsety;
     gdouble x_cv, y_cv, dx, dy;
+    gint xr, yr;
 
     /* coordinates on canvas */
-    x_cv = event->x;
-    y_cv = event->y;
+    x_cv = event->x_root;
+    y_cv = event->y_root;
 
-    if (event->window != gtk_layout_get_bin_window (&canvas->base)) {
-        gint x, y;
+    gdk_window_get_position(gtk_widget_get_window(GTK_WIDGET(canvas)), &xr, &yr);
 
-        gtk_widget_translate_coordinates (GTK_WIDGET (data),
-                                          GTK_WIDGET (canvas),
-                                          event->x, event->y, &x, &y);
-
-        /* coordinates on canvas */
-        x_cv = x;
-        y_cv = y;
-    }
+    x_cv = x_cv - xr;
+    y_cv = y_cv - yr;
 
     dx = event->x;
     dy = event->y;
+
+    my_canvas_transform_coordinate (canvas, &x_cv, &y_cv);
+
+    g_print("xr: %u, yr: %u\n", xr, yr);
+    g_print("x_cv: %f, y_cv: %f\n", x_cv, y_cv);
+    g_print("eventx: %f, eventy: %f\n", event->x, event->y);
 
     priv->active_item = goc_canvas_get_item_at (canvas, x_cv, y_cv);
 
@@ -289,8 +305,7 @@ my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
         priv->add_system_mode = FALSE;
     }
     /* if in ADD ARROW MODE */
-    else if (priv->add_arrow_mode
-             && MY_IS_SYSTEM (priv->active_item)) {
+    else if (priv->add_arrow_mode && MY_IS_SYSTEM (priv->active_item)) {
 
         MyFlowArrow *arrow;
         MyDragPoint *point;
@@ -329,17 +344,12 @@ my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
 
         g_object_get (priv->active_item, "x", &x, "y", &y, NULL);
 
-        dx = event->x - x;
-        dy = event->y - y;
+        dx = x_cv - x;
+        dy = y_cv - y;
     }
 
-    priv->offsetx = (canvas->direction == GOC_DIRECTION_RTL) ?
-        canvas->scroll_x1 + (canvas->width -
-                             dx) /
-        canvas->pixels_per_unit : canvas->scroll_x1 +
-        dx / canvas->pixels_per_unit;
-
-    priv->offsety = canvas->scroll_y1 + dy / canvas->pixels_per_unit;
+    priv->offsetx = dx;
+    priv->offsety = dy;
 
     if (MY_IS_DRAG_POINT (priv->active_item)) {
         my_drag_point_begin_dragging (MY_DRAG_POINT (priv->active_item));
@@ -382,24 +392,23 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
     MySystem *primary_system;
     MyFlowArrow *arrow;
     GocItem *item;
-    gint x_cv, y_cv;
+    gdouble x_cv, y_cv;
+    gint xr, yr;
 
-    x_cv = event->button.x;
-    y_cv = event->button.y;
+    /* coordinates on canvas */
+    x_cv = event->button.x_root;
+    y_cv = event->button.y_root;
 
-    if (event->button.window != gtk_layout_get_bin_window (&canvas->base)) {
+    gdk_window_get_position(gtk_widget_get_window(GTK_WIDGET(canvas)), &xr, &yr);
 
-        gint x, y;
+    x_cv = x_cv - xr;
+    y_cv = y_cv - yr;
 
-        gtk_widget_translate_coordinates (GTK_WIDGET (data),
-                                          GTK_WIDGET (canvas),
-                                          event->button.x, event->button.y, &x,
-                                          &y);
+    /*g_print("x: %f y: %f\n", x_cv, y_cv); */
 
-        /* coordinates on canvas */
-        x_cv = x;
-        y_cv = y;
-    }
+    my_canvas_transform_coordinate (canvas, &x_cv, &y_cv);
+
+    /*g_print("x: %f y: %f\n", x_cv, y_cv); */
 
     if (priv->add_arrow_mode) {
         priv->add_arrow_mode = FALSE;
@@ -407,8 +416,9 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
 
     if (MY_IS_DRAG_POINT (priv->active_item)) {
 
-        gdouble d = goc_item_distance (GOC_ITEM (self->group[GROUP_SYSTEMS]), x_cv,
-                                       y_cv, &item);
+        gdouble d =
+            goc_item_distance (GOC_ITEM (self->group[GROUP_SYSTEMS]), x_cv,
+                               y_cv, &item);
 
         g_object_get (priv->active_item, "linked-item", &arrow, NULL);
         g_object_unref (arrow);
@@ -448,51 +458,58 @@ my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
 
     GocItem *active_item = priv->active_item;
 
-    cairo_matrix_t matrix;
+    gdouble x_item_new, y_item_new;
+
     gdouble x_cv, y_cv;
 
+    gint xr, yr;
+
     /* coordinates on canvas */
-    x_cv = event->x;
-    y_cv = event->y;
+    x_cv = event->x_root;
+    y_cv = event->y_root;
 
-    if (active_item != NULL) {
+    gdk_window_get_position(gtk_widget_get_window(GTK_WIDGET(canvas)), &xr, &yr);
 
-        gdouble x_item_old, y_item_old;
-        gdouble x_item_new, y_item_new;
+    x_cv = x_cv - xr;
+    y_cv = y_cv - yr;
 
-        if (GOC_IS_WIDGET (active_item)) {
+    if (active_item == NULL)
+        return;
 
-            gint x, y;
+    /*if (GOC_IS_WIDGET (active_item)) {*/
 
-            g_return_val_if_fail (GTK_IS_WIDGET (data), FALSE);
+        /*gint x, y;*/
 
-            gtk_widget_translate_coordinates (GTK_WIDGET (data),
-                                              GTK_WIDGET (canvas),
-                                              event->x, event->y, &x, &y);
+        /*g_return_val_if_fail (GTK_IS_WIDGET (data), FALSE);*/
 
-            /* coordinates on canvas */
-            x_cv = x;
-            y_cv = y;
-        }
+        /*gtk_widget_translate_coordinates (GTK_WIDGET (data),*/
+                                          /*GTK_WIDGET (canvas),*/
+                                          /*event->x, event->y, &x, &y);*/
 
-        g_object_get (active_item, "x", &x_item_old, "y", &y_item_old, NULL);
+        /*[> coordinates on canvas <]*/
+        /*x_cv = x;*/
+        /*y_cv = y;*/
+    /*}*/
 
-        x_item_new = x_cv - priv->offsetx;
-        y_item_new = y_cv - priv->offsety;
+    my_canvas_transform_coordinate (canvas, &x_cv, &y_cv);
 
-        if (GOC_IS_WIDGET (active_item)) {
-            goc_item_set (active_item, "x", x_item_new, "y", y_item_new, NULL);
-        }
-        else if (MY_IS_DRAG_POINT (active_item)) {
-            my_canvas_drag_drag_point (self, x_item_new, y_item_new);
-        }
-        else if (GOC_IS_CIRCLE (active_item)) {
-            goc_item_set (active_item, "x", x_item_new, "y", y_item_new, NULL);
-        }
+    x_item_new = x_cv - priv->offsetx;
+    y_item_new = y_cv - priv->offsety;
 
-        goc_item_invalidate (active_item);
-        gtk_widget_queue_draw (GTK_WIDGET (canvas));
+    if (GOC_IS_WIDGET (active_item)) {
+        goc_item_set (active_item, "x", x_item_new, "y", y_item_new, NULL);
     }
+    else if (MY_IS_DRAG_POINT (active_item)) {
+        goc_item_set (active_item, "x", x_item_new, "y", y_item_new, NULL);
+    }
+    else if (GOC_IS_CIRCLE (active_item)) {
+        goc_item_set (active_item, "x", x_item_new, "y", y_item_new, NULL);
+    }
+
+    goc_item_invalidate (active_item);
+
+    gtk_widget_queue_draw (GTK_WIDGET (canvas));
+
     return TRUE;
 }
 
@@ -512,12 +529,13 @@ my_canvas_model_current_pos_changed (MyCanvas * self, MyTimelineModel * model)
 
     root = goc_canvas_get_root (GOC_CANVAS (self));
 
-    for(i=0; i<=N_GROUPS; i++) {
+    for (i = 0; i <= N_GROUPS; i++) {
 
         if (i == GROUP_SYSTEMS) {
             continue;
 
-        } else if (i == GROUP_ARROWS && GOC_IS_GROUP (self->group[i])) {
+        }
+        else if (i == GROUP_ARROWS && GOC_IS_GROUP (self->group[i])) {
 
             l = self->group[i]->children;
 
@@ -595,7 +613,8 @@ my_canvas_model_arrow_added_at_current_index (MyCanvas * self,
     g_return_if_fail (MY_IS_TIMELINE_MODEL (model));
     g_return_if_fail (MY_IS_FLOW_ARROW (arrow));
 
-    my_canvas_group_add_item (self, self->group[GROUP_ARROWS], GOC_ITEM (arrow));
+    my_canvas_group_add_item (self, self->group[GROUP_ARROWS],
+                              GOC_ITEM (arrow));
 }
 
 void
@@ -606,7 +625,8 @@ my_canvas_model_system_added (MyCanvas * self, MySystem * system,
     g_return_if_fail (MY_IS_TIMELINE_MODEL (model));
     g_return_if_fail (MY_IS_SYSTEM (system));
 
-    my_canvas_group_add_item (self, self->group[GROUP_SYSTEMS], GOC_ITEM (system));
+    my_canvas_group_add_item (self, self->group[GROUP_SYSTEMS],
+                              GOC_ITEM (system));
 }
 
 void

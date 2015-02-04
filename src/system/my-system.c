@@ -200,9 +200,16 @@ calculate_anchor (GtkAllocation from, GtkAllocation to)
 }
 
 void
-alloc_get_coordinate_of_anchor (GtkAllocation alloc, MyAnchorType anchor,
-                                gdouble * x, gdouble * y)
+my_system_alloc_get_coordinate_of_anchor (MySystem * system,
+                                          GtkAllocation alloc,
+                                          MyAnchorType anchor, gdouble * x,
+                                          gdouble * y)
 {
+    GocCanvas *canvas;
+
+    g_object_get (G_OBJECT (system), "canvas", &canvas, NULL);
+
+    g_return_if_fail (MY_IS_SYSTEM (system));
 
     if (anchor == MY_ANCHOR_WEST) {
         *x = alloc.x;
@@ -220,7 +227,10 @@ alloc_get_coordinate_of_anchor (GtkAllocation alloc, MyAnchorType anchor,
         *x = alloc.x + alloc.width;
         *y = alloc.y + alloc.height / 2;
     }
+
+    my_canvas_transform_coordinate (canvas, x, y);
 }
+
 
 void
 my_system_get_coordinate_of_anchor (MySystem * system, MyAnchorType anchor,
@@ -232,11 +242,12 @@ my_system_get_coordinate_of_anchor (MySystem * system, MyAnchorType anchor,
 
     gtk_widget_get_allocation (GOC_WIDGET (system)->ofbox, &alloc);
 
-    alloc_get_coordinate_of_anchor (alloc, anchor, x, y);
+    my_system_alloc_get_coordinate_of_anchor (system, alloc, anchor, x, y);
 }
 
 MyAnchorType
-my_system_connection_dynamic_set_coordinate_of_arrow (GtkAllocation from,
+my_system_connection_dynamic_set_coordinate_of_arrow (MySystem * system,
+                                                      GtkAllocation from,
                                                       GtkAllocation to,
                                                       gdouble * x, gdouble * y)
 {
@@ -244,7 +255,7 @@ my_system_connection_dynamic_set_coordinate_of_arrow (GtkAllocation from,
 
     anchor = calculate_anchor (from, to);
 
-    alloc_get_coordinate_of_anchor (to, anchor, x, y);
+    my_system_alloc_get_coordinate_of_anchor (system, to, anchor, x, y);
 
     return anchor;
 }
@@ -334,7 +345,8 @@ my_system_draw_energy_flow_distribute_arrows (MySystem * self,
                 my_flow_arrow_set_coordinate (arrow, "y0", y0, "y1", y0, NULL);
             else
                 my_flow_arrow_set_coordinate (arrow, "x0", x0, "x1", x0, NULL);
-        } else {
+        }
+        else {
             if (energy_quantity >= 0.0) {
                 my_flow_arrow_set_coordinate (arrow, "y1", y0, "x1", x0, NULL);
             }
@@ -429,11 +441,11 @@ my_system_coordinates_changed (MySystem * self,
 
     MySystemClass *class = MY_SYSTEM_GET_CLASS (self);
 
-    g_return_if_fail(MY_IS_SYSTEM(self));
+    /* chaining up */
 
     g_object_get (self, "canvas", &canvas, NULL);
 
-    if(!MY_IS_CANVAS(canvas))
+    if (!MY_IS_CANVAS (canvas))
         return;
 
     group_arrows = canvas->group[GROUP_ARROWS];
@@ -453,7 +465,8 @@ my_system_coordinates_changed (MySystem * self,
             continue;
         }
 
-        g_object_get (l->data, "primary-system", &primary_system, "secondary-system", &secondary_system, NULL);
+        g_object_get (l->data, "primary-system", &primary_system,
+                      "secondary-system", &secondary_system, NULL);
 
         /* fetch next arrow if current arrow doesn't belong to system */
         if (primary_system != self && secondary_system != self) {
@@ -462,12 +475,12 @@ my_system_coordinates_changed (MySystem * self,
 
         g_object_get (l->data,
                       "energy-quantity", &energy_quantity,
-                      "primary-anchor", &primary_anchor,
-                      NULL);
+                      "primary-anchor", &primary_anchor, NULL);
 
         /* draw arrow */
 
-        gtk_widget_get_allocation (GOC_WIDGET (primary_system)->ofbox, &alloc_primary);
+        gtk_widget_get_allocation (GOC_WIDGET (primary_system)->ofbox,
+                                   &alloc_primary);
 
         arrow_len = alloc_primary.width * 0.3;
 
@@ -481,22 +494,22 @@ my_system_coordinates_changed (MySystem * self,
 
                 primary_anchor =
                     my_system_connection_dynamic_set_coordinate_of_arrow
-                    (alloc_secondary, alloc_primary, &x0, &y0);
+                    (self, alloc_secondary, alloc_primary, &x0, &y0);
 
                 secondary_anchor =
                     my_system_connection_dynamic_set_coordinate_of_arrow
-                    (alloc_primary, alloc_secondary, &x1, &y1);
+                    (self, alloc_primary, alloc_secondary, &x1, &y1);
 
             }
             else {
 
                 primary_anchor =
                     my_system_connection_dynamic_set_coordinate_of_arrow
-                    (alloc_secondary, alloc_primary, &x1, &y1);
+                    (self, alloc_secondary, alloc_primary, &x1, &y1);
 
                 secondary_anchor =
                     my_system_connection_dynamic_set_coordinate_of_arrow
-                    (alloc_primary, alloc_secondary, &x0, &y0);
+                    (self, alloc_primary, alloc_secondary, &x0, &y0);
 
             }
 
@@ -509,8 +522,8 @@ my_system_coordinates_changed (MySystem * self,
             /* if arrow depicts transfer to environment */
             if (energy_quantity < 0.0) {
 
-                alloc_get_coordinate_of_anchor (alloc_primary, primary_anchor,
-                                                &x0, &y0);
+                my_system_get_coordinate_of_anchor (self,
+                                                    primary_anchor, &x0, &y0);
 
                 if (primary_anchor == MY_ANCHOR_WEST) {
                     x1 = x0 - arrow_len;
@@ -532,8 +545,8 @@ my_system_coordinates_changed (MySystem * self,
             /* if arrow depicts transfer from environment */
             else if (energy_quantity >= 0.0) {
 
-                alloc_get_coordinate_of_anchor (alloc_primary, primary_anchor,
-                                                &x1, &y1);
+                my_system_get_coordinate_of_anchor (self, primary_anchor,
+                                                    &x1, &y1);
 
                 if (primary_anchor == MY_ANCHOR_WEST) {
                     x0 = x1 - arrow_len;
@@ -558,12 +571,14 @@ my_system_coordinates_changed (MySystem * self,
         }
 
         if (MY_IS_SYSTEM (primary_system)) {
-            my_system_draw_energy_flow_distribute_arrows (MY_SYSTEM (primary_system),
+            my_system_draw_energy_flow_distribute_arrows (MY_SYSTEM
+                                                          (primary_system),
                                                           group_arrows);
         }
 
         if (MY_IS_SYSTEM (secondary_system)) {
-            my_system_draw_energy_flow_distribute_arrows (secondary_system, group_arrows);
+            my_system_draw_energy_flow_distribute_arrows (secondary_system,
+                                                          group_arrows);
         }
     }
 }

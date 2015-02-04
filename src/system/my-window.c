@@ -5,6 +5,8 @@ static void my_window_class_init (MyWindowClass * klass);
 static void my_window_init (MyWindow * self);
 static void my_window_finalize (GObject *);
 static void my_window_dispose (GObject *);
+void my_window_zoom_in (GSimpleAction * simple, GVariant * parameter, gpointer data);
+void my_window_zoom_out (GSimpleAction * simple, GVariant * parameter, gpointer data);
 void my_window_show_drag_points_state_change (GSimpleAction * action,
                                               GVariant * state,
                                               gpointer user_data);
@@ -32,6 +34,8 @@ struct _MyWindowPrivate
     GtkWidget *scale;
     GtkWidget *description;
 
+    gdouble zoom_factor;
+
     gulong handler_model[N_MODEL_HANDLER];
 
     MyTimelineModel *timeline;
@@ -44,6 +48,8 @@ G_DEFINE_TYPE_WITH_PRIVATE (MyWindow, my_window, GTK_TYPE_APPLICATION_WINDOW);
 static GActionEntry win_entries[] = {
     {"add-arrow", my_window_add_arrow, NULL, NULL, NULL},
     {"add-system", my_window_add_system, NULL, NULL, NULL},
+    {"zoom-in", my_window_zoom_in, NULL, NULL, NULL},
+    {"zoom-out", my_window_zoom_out, NULL, NULL, NULL},
     {"show-drag-points", my_window_show_drag_points, NULL, "true",
      my_window_show_drag_points_state_change},
     {"save", my_window_save, NULL, NULL, NULL},
@@ -158,7 +164,7 @@ my_window_populate (MyWindow * self)
 
     my_canvas_set_timeline (priv->canvas, timeline);
 
-    system1 = g_object_new (MY_TYPE_SYSTEM, "x", 100.0, "y", 200.0, NULL);
+    system1 = g_object_new (MY_TYPE_SYSTEM, "x", 0.0, "y", 0.0, NULL);
 
     my_timeline_model_add_object (timeline, system1);
 }
@@ -269,6 +275,7 @@ my_window_init (MyWindow * self)
     priv = my_window_get_instance_private (self);
 
     priv->timeline = NULL;
+    priv->zoom_factor = 1;
 
     for (i = 0; i < N_MODEL_HANDLER; i++) {
         priv->handler_model[i] = 0;
@@ -302,11 +309,17 @@ my_window_new (GtkApplication * app)
 {
     MyWindow *self;
 
+    const gchar *zoom_in_accels[2] = {"plus", NULL};
+    const gchar *zoom_out_accels[2] = {"minus", NULL};
+
     self = g_object_new (MY_TYPE_WINDOW, "application", app, NULL);
 
     my_window_populate (self);
 
     my_window_style_init (self);
+
+    gtk_application_set_accels_for_action (app, "win.zoom-in", zoom_in_accels);
+    gtk_application_set_accels_for_action (app, "win.zoom-out", zoom_out_accels);
 
     return self;
 }
@@ -448,6 +461,30 @@ my_window_get_timeline (MyWindow * self)
     priv = my_window_get_instance_private (self);
 
     return priv->timeline;
+}
+
+void
+my_window_zoom_in (GSimpleAction * simple, GVariant * parameter, gpointer data)
+{
+    MyWindowPrivate *priv;
+
+    priv = my_window_get_instance_private (data);
+    
+    priv->zoom_factor += 0.2;
+
+    goc_canvas_set_pixels_per_unit(GOC_CANVAS(priv->canvas), priv->zoom_factor);
+}
+
+void
+my_window_zoom_out (GSimpleAction * simple, GVariant * parameter, gpointer data)
+{
+    MyWindowPrivate *priv;
+
+    priv = my_window_get_instance_private (data);
+    
+    priv->zoom_factor -= 0.2;
+
+    goc_canvas_set_pixels_per_unit(GOC_CANVAS(priv->canvas), priv->zoom_factor);
 }
 
 void
