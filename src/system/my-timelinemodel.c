@@ -3,18 +3,6 @@
 #define TIMELINE_MODEL_CURRENT_INDEX        (((gint)gtk_adjustment_get_value (priv->adjust)) - 1)
 #define TIMELINE_MODEL_INDEX_IS_TRANSFER    TIMELINE_MODEL_CURRENT_INDEX % 2 == 1
 
-static void
-my_timeline_model_time_pos_added (MyTimelineModel * self, guint pos,
-                                  gpointer data);
-
-void
-tl_systems_data_fill_new_n_at_pos (MyTimelineModel * self, guint pos,
-                                   gpointer data);
-
-void
-tl_systems_data_new_models_for_appended_element (GPtrArray * tl_systems_data);
-
-
 guint g_counter = 0;
 
 /* Signals */
@@ -45,11 +33,17 @@ static void my_timeline_model_class_init (MyTimelineModelClass * klass);
 static void my_timeline_model_init (MyTimelineModel * self);
 static void my_timeline_model_finalize (GObject *);
 static void my_timeline_model_dispose (GObject *);
+static void my_timeline_model_time_pos_added (MyTimelineModel * self, guint pos, gpointer data);
+void tl_systems_data_fill_new_n_at_pos (MyTimelineModel * self, guint pos, gpointer data);
+void tl_systems_data_new_models_for_appended_element (GPtrArray * tl_systems_data);
+void std_systems_data_new_model_for_appended_element (GPtrArray * std_systems_data);
+
 
 struct _MyTimelineModelPrivate
 {
     guint index;
     GPtrArray *systems;
+    GPtrArray *std_systems_data;
     GPtrArray *tl_arrows;
     GPtrArray *tl_systems_data;
     GtkAdjustment *adjust;
@@ -214,10 +208,12 @@ my_timeline_model_init (MyTimelineModel * self)
         my_timeline_model_get_instance_private (MY_TIMELINE_MODEL (self));
 
     priv->systems = g_ptr_array_new ();
+    priv->std_systems_data = g_ptr_array_new ();   
     priv->tl_systems_data = g_ptr_array_new ();
     priv->tl_arrows = g_ptr_array_new ();
 
     g_ptr_array_set_free_func (priv->systems, g_object_unref);
+    g_ptr_array_set_free_func (priv->std_systems_data, g_object_unref);
     g_ptr_array_set_free_func (priv->tl_systems_data,
                                (GDestroyNotify) g_ptr_array_unref);
     g_ptr_array_set_free_func (priv->tl_arrows,
@@ -400,28 +396,44 @@ my_timeline_model_add_object (MyTimelineModel * self, gpointer object)
 
     if (MY_IS_SYSTEM (object)) {
 
-        MySystemWidget *widget;
+        MySystemWidget *systemwidget;
         MySystemModel *model;
         GPtrArray *n;
         guint i;
-
-        /* add new system-data-model of the system for every instance of time */
-        tl_systems_data_new_models_for_appended_element (priv->tl_systems_data);
-
-        g_object_get (object, "widget", &widget, NULL);
-
-        g_return_if_fail (MY_IS_SYSTEM_WIDGET (widget));
+        
+        /* append object to priv->systems */
 
         g_ptr_array_add (priv->systems, object);
         /* remember the -1 */
         g_object_set (object, "id", priv->systems->len - 1, NULL);
+
+        /* add new specific system-data-model of 'object' for every instance of time */
+        tl_systems_data_new_models_for_appended_element (priv->tl_systems_data);
+        /* add new generic system-data-model of 'object' for every instance of time */
+        std_systems_data_new_model_for_appended_element (priv->std_systems_data);
+
+        g_object_get (object, "widget", &systemwidget, NULL);
+
+        g_return_if_fail (MY_IS_SYSTEM_WIDGET (systemwidget));
+
+        /* handle generic model */
+
+        model = g_ptr_array_index (priv->std_systems_data, priv->systems->len - 1);
+
+        g_return_if_fail(MY_IS_SYSTEM_MODEL(model));
+
+        g_object_set (systemwidget, "generic-model", model, NULL);
+
+        /* handle specific model */
 
         model =
             tl_systems_data_get_ith_model_at_pos (priv->tl_systems_data,
                                                   priv->systems->len - 1,
                                                   TIMELINE_MODEL_CURRENT_INDEX);
 
-        g_object_set (widget, "model", model, NULL);
+        g_return_if_fail(MY_IS_SYSTEM_MODEL(model));
+
+        g_object_set (systemwidget, "specific-model", model, NULL);
 
         g_signal_emit (G_OBJECT (self), signals[SIG_SYSTEMS_CHANGED], 0);
         g_signal_emit (G_OBJECT (self), signals[SIG_SYSTEM_ADDED], 0, object);
@@ -468,6 +480,16 @@ tl_systems_data_fill_new_n_at_pos (MyTimelineModel * self,
         g_ptr_array_add (systems_data_n, model);
         g_counter++;
     }
+}
+
+void
+std_systems_data_new_model_for_appended_element (GPtrArray * std_systems_data)
+{
+    guint i;
+    MySystemModel *model;
+        
+    model = g_object_new (MY_TYPE_SYSTEM_MODEL, NULL);
+    g_ptr_array_add (std_systems_data, model);
 }
 
 void

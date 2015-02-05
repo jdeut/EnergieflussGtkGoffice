@@ -5,28 +5,46 @@ static void my_system_widget_class_init (MySystemWidgetClass * klass);
 static void my_system_widget_init (MySystemWidget * self);
 static void my_system_widget_finalize (GObject *);
 static void my_system_widget_dispose (GObject *);
-void my_system_widget_set_model (MySystemWidget *, MySystemModel *);
-void my_system_widget_new_model_added (MySystemWidget * self,
-                                       GParamSpec * pspec, gpointer user_data);
-void model_handler_picture_path_changed (MySystemWidget * self, gpointer);
+void my_system_widget_update (MySystemWidget * self);
+void my_system_widget_initialize_handlers (MySystemWidget *, MySystemModel *);
+void my_system_widget_specific_model_added (MySystemWidget * self,
+                                            GParamSpec * pspec,
+                                            gpointer user_data);
+void model_handler_picture_path_changed (MySystemWidget * self,
+                                         GParamSpec * pspec,
+                                         MySystemModel * model);
+void
+my_system_widget_set_label_from_model (MySystemWidget * self,
+                                       MySystemModel * model);
 void my_system_widget_realized (MySystemWidget * self, gpointer data);
+void
+my_system_widget_set_pixbuf_from_model (MySystemWidget * self,
+                                        MySystemModel * model);
 
 enum
 {
     PROP_0,
-    PROP_MODEL,
+    PROP_SPECIFIC_MODEL,
+    PROP_GENERIC_MODEL,
     PROP_ID,
     N_PROPERTIES
 };
 
 enum
 {
-    MODEL_CHANGED,
     MODEL_PICTURE_PATH_CHANGED,
+    MODEL_LABEL_CHANGED,
     N_MODEL_HANDLER
 };
 
 static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
+
+enum
+{
+    MODEL_SPECIFIC,
+    MODEL_GENERIC,
+    N_MODEL
+};
 
 struct _MySystemWidgetPrivate
 {
@@ -36,9 +54,10 @@ struct _MySystemWidgetPrivate
     GtkWidget *button_properties;
 
     GdkPixbuf *pixbuf;
-    MySystemModel *model;
 
-    gulong handler_model[N_MODEL_HANDLER];
+    MySystemModel *model[N_MODEL];
+
+    gulong model_handler[N_MODEL][N_MODEL_HANDLER];
 
     guint id;
 };
@@ -63,8 +82,12 @@ my_system_widget_set_property (GObject * object,
 
     switch (property_id) {
 
-        case PROP_MODEL:
-            my_system_widget_set_model (self, g_value_get_object (value));
+        case PROP_SPECIFIC_MODEL:
+            priv->model[MODEL_SPECIFIC] = g_value_get_object (value);
+            break;
+
+        case PROP_GENERIC_MODEL:
+            priv->model[MODEL_GENERIC] = g_value_get_object (value);
             break;
 
         case PROP_ID:
@@ -89,8 +112,12 @@ my_system_widget_get_property (GObject * object,
 
     switch (property_id) {
 
-        case PROP_MODEL:
-            g_value_set_object (value, priv->model);
+        case PROP_SPECIFIC_MODEL:
+            g_value_set_object (value, priv->model[MODEL_SPECIFIC]);
+            break;
+
+        case PROP_GENERIC_MODEL:
+            g_value_set_object (value, priv->model[MODEL_GENERIC]);
             break;
 
         case PROP_ID:
@@ -118,9 +145,15 @@ my_system_widget_class_init (MySystemWidgetClass * klass)
     gobject_class->set_property = my_system_widget_set_property;
     gobject_class->get_property = my_system_widget_get_property;
 
-    obj_properties[PROP_MODEL] =
-        g_param_spec_object ("model",
+    obj_properties[PROP_SPECIFIC_MODEL] =
+        g_param_spec_object ("specific-model",
+                             "specific data model",
                              "data model",
+                             MY_TYPE_SYSTEM_MODEL, G_PARAM_READWRITE);
+
+    obj_properties[PROP_GENERIC_MODEL] =
+        g_param_spec_object ("generic-model",
+                             "generic data model",
                              "data model",
                              MY_TYPE_SYSTEM_MODEL, G_PARAM_READWRITE);
 
@@ -175,31 +208,44 @@ my_system_widget_pixbuf_set_proper_size (MySystemWidget * self)
 
     gtk_widget_get_allocation (GTK_WIDGET (self), &alloc);
 
-    alloc.width = ((gfloat) 0.7*alloc.width);
-    alloc.height = ((gfloat) 0.6*alloc.height);
+    alloc.width = ((gfloat) 0.7 * alloc.width);
+    alloc.height = ((gfloat) 0.6 * alloc.height);
 
     p_w = gdk_pixbuf_get_width (priv->pixbuf);
     p_h = gdk_pixbuf_get_height (priv->pixbuf);
 
-    if( ((gfloat) alloc.width / alloc.height) >= ((gfloat) p_w / p_h)) {
+    if (((gfloat) alloc.width / alloc.height) >= ((gfloat) p_w / p_h)) {
         dest_h = alloc.height;
         dest_w = p_w * alloc.height / p_h;
-    } else {
+    }
+    else {
         dest_h = p_h * alloc.width / p_w;
         dest_w = alloc.width;
     }
 
-    new = gdk_pixbuf_scale_simple (priv->pixbuf, dest_w, dest_h, GDK_INTERP_BILINEAR);
+    new =
+        gdk_pixbuf_scale_simple (priv->pixbuf, dest_w, dest_h,
+                                 GDK_INTERP_BILINEAR);
 
-    g_return_if_fail(GDK_IS_PIXBUF(new));
+    g_return_if_fail (GDK_IS_PIXBUF (new));
 
-    g_object_unref(priv->pixbuf);
+    g_object_unref (priv->pixbuf);
 
     priv->pixbuf = new;
 }
 
 void
-model_handler_picture_path_changed (MySystemWidget * self, gpointer data)
+model_handler_label_changed (MySystemWidget * self, GParamSpec * pspec,
+                             MySystemModel * model)
+{
+    MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
+
+    my_system_widget_update(self);
+}
+
+void
+model_handler_picture_path_changed (MySystemWidget * self, GParamSpec * pspec,
+                                    MySystemModel * model)
 {
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
 
@@ -207,14 +253,13 @@ model_handler_picture_path_changed (MySystemWidget * self, gpointer data)
     GError *err = NULL;
     GdkPixbuf *pixbuf_new, *pixbuf_tmp;
 
-    g_return_if_fail (MY_IS_SYSTEM_MODEL (priv->model));
+    g_return_if_fail (MY_IS_SYSTEM_MODEL (model));
     g_return_if_fail (MY_IS_SYSTEM_WIDGET (self));
 
-    g_object_get (priv->model, "picture-path", &picture_path, NULL);
+    g_object_get (model, "picture-path", &picture_path, NULL);
 
     if (picture_path == NULL)
         return;
-
 
     pixbuf_new = gdk_pixbuf_new_from_file (picture_path, &err);
 
@@ -244,53 +289,33 @@ model_handler_picture_path_changed (MySystemWidget * self, gpointer data)
 
     my_system_widget_pixbuf_set_proper_size (self);
 
-    g_object_set (priv->model, "pixbuf", priv->pixbuf, NULL);
+    g_object_set (model, "pixbuf", priv->pixbuf, NULL);
 
-    gtk_image_set_from_pixbuf (priv->image, priv->pixbuf);
+    my_system_widget_update (self);
 }
 
 void
-model_handler_changed (MySystemWidget * self, MySystemModel * model)
-{
-    my_system_widget_new_model_added (self, (GParamSpec *) NULL,
-                                      (gpointer) NULL);
-}
-
-void
-my_system_widget_set_model (MySystemWidget * self, MySystemModel * model)
+my_system_widget_set_label_from_model (MySystemWidget * self,
+                                       MySystemModel * model)
 {
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
-    gulong i = 0;
+    gchar *label;
 
-    g_return_if_fail (MY_IS_SYSTEM_MODEL (model));
-    g_return_if_fail (MY_IS_SYSTEM_MODEL (priv->model) || priv->model == NULL);
+    g_object_get (model, "label", &label, NULL);
 
-    for (i = 0; i < N_MODEL_HANDLER; i++) {
-        if (priv->handler_model[i] != 0) {
-            g_signal_handler_disconnect (priv->model, priv->handler_model[i]);
-        }
-    }
+    gtk_label_set_text (GTK_LABEL (priv->label1), label);
 
-    priv->handler_model[MODEL_PICTURE_PATH_CHANGED] =
-        g_signal_connect_swapped (model, "notify::picture-path",
-                                  G_CALLBACK
-                                  (model_handler_picture_path_changed), self);
-
-    priv->handler_model[MODEL_CHANGED] =
-        g_signal_connect_swapped (model, "model-changed",
-                                  G_CALLBACK (model_handler_changed), self);
-
-    priv->model = model;
+    g_free (label);
 }
 
 void
-my_system_widget_set_pixbuf_from_model (MySystemWidget * self)
+my_system_widget_set_pixbuf_from_model (MySystemWidget * self,
+                                        MySystemModel * model)
 {
-
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
     GdkPixbuf *pixbuf;
 
-    g_object_get (priv->model, "pixbuf", &pixbuf, NULL);
+    g_object_get (model, "pixbuf", &pixbuf, NULL);
 
     if (pixbuf != NULL) {
         priv->pixbuf = pixbuf;
@@ -305,12 +330,42 @@ my_system_widget_set_pixbuf_from_model (MySystemWidget * self)
 }
 
 void
-my_system_widget_new_model_added (MySystemWidget * self,
-                                  GParamSpec * pspec, gpointer user_data)
+my_system_widget_update (MySystemWidget * self)
 {
+
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
 
-    my_system_widget_set_pixbuf_from_model (self);
+    GdkPixbuf *pixbuf;
+    gchar *label;
+
+    g_object_get (priv->model[MODEL_SPECIFIC], "pixbuf", &pixbuf, NULL);
+
+    if (pixbuf == NULL)
+        my_system_widget_set_pixbuf_from_model (self,
+                                                priv->model[MODEL_GENERIC]);
+    else {
+        g_object_unref (pixbuf);
+        my_system_widget_set_pixbuf_from_model (self,
+                                                priv->model[MODEL_SPECIFIC]);
+    }
+
+    g_object_get (priv->model[MODEL_SPECIFIC], "label", &label, NULL);
+
+    if (label == NULL)
+        my_system_widget_set_label_from_model (self,
+                                               priv->model[MODEL_GENERIC]);
+    else
+        my_system_widget_set_label_from_model (self,
+                                               priv->model[MODEL_SPECIFIC]);
+
+    g_free (label);
+}
+
+void
+my_system_widget_specific_model_added (MySystemWidget * self,
+                                       GParamSpec * pspec, gpointer user_data)
+{
+    my_system_widget_update (self);
 }
 
 void
@@ -331,14 +386,15 @@ my_system_widget_init (MySystemWidget * self)
 {
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
 
-    gulong i;
+    gulong i, j;
 
     /* to init any of the private data, do e.g: */
 
-    priv->model = NULL;
-
-    for (i = 0; i < N_MODEL_HANDLER; i++) {
-        priv->handler_model[i] = 0;
+    for (i = 0; i < N_MODEL; i++) {
+        for (j = 0; j < N_MODEL_HANDLER; j++) {
+            priv->model_handler[i][j] = 0;
+        }
+        priv->model[i] = NULL;
     }
 
     gtk_widget_init_template (GTK_WIDGET (self));
@@ -347,17 +403,15 @@ my_system_widget_init (MySystemWidget * self)
                       G_CALLBACK (my_system_enter_event), NULL);
     g_signal_connect (self, "leave-notify-event",
                       G_CALLBACK (my_system_leave_event), NULL);
-    g_signal_connect (self, "notify::model",
-                      G_CALLBACK (my_system_widget_new_model_added), NULL);
+    g_signal_connect (self, "notify::specific-model",
+                      G_CALLBACK (my_system_widget_specific_model_added), NULL);
+    g_signal_connect (self, "realize", G_CALLBACK (my_system_widget_realized),
+                      NULL);
 
     g_signal_connect_swapped (priv->button_properties, "clicked",
                               G_CALLBACK
                               (my_system_widget_button_properties_clicked),
                               self);
-
-    g_signal_connect (self, "realize", G_CALLBACK (my_system_widget_realized),
-                      NULL);
-
 }
 
 static void
@@ -380,6 +434,7 @@ my_system_widget_timeline_current_index_changed (MySystemWidget * self,
     MySystemWidgetPrivate *priv;
     MySystemModel *model;
     GPtrArray *data;
+    gulong i, j;
 
     priv = my_system_widget_get_instance_private (self);
 
@@ -391,7 +446,25 @@ my_system_widget_timeline_current_index_changed (MySystemWidget * self,
 
     g_return_if_fail (MY_IS_SYSTEM_MODEL (model));
 
-    g_object_set (self, "model", model, NULL);
+    for (i = 0; i < N_MODEL; i++) {
+        for (j = 0; j < N_MODEL_HANDLER; j++) {
+            if (priv->model_handler[i][j] != 0) {
+                g_signal_handler_disconnect (priv->model[i], priv->model_handler[i][j]);
+            }
+        }
+
+        g_object_set (self, "specific-model", model, NULL);
+
+        priv->model_handler[i][MODEL_PICTURE_PATH_CHANGED] =
+            g_signal_connect_swapped (priv->model[i], "notify::picture-path",
+                                      G_CALLBACK
+                                      (model_handler_picture_path_changed), self);
+
+        priv->model_handler[i][MODEL_LABEL_CHANGED] =
+            g_signal_connect_swapped (priv->model[i], "notify::label",
+                                      G_CALLBACK
+                                      (model_handler_label_changed), self);
+    }
 }
 
 void
@@ -411,16 +484,12 @@ my_system_widget_realized (MySystemWidget * self, gpointer data)
 
     g_return_if_fail (MY_IS_TIMELINE_MODEL (timeline));
 
-    system = my_timeline_get_system_with_id(timeline, priv->id);
-
-    g_object_bind_property (system, "label", priv->label1, "label",
-                            G_BINDING_BIDIRECTIONAL |
-                            G_BINDING_SYNC_CREATE);
-
     g_signal_connect_swapped (timeline, "current-pos-changed",
                               G_CALLBACK
                               (my_system_widget_timeline_current_index_changed),
                               self);
+
+    my_system_widget_timeline_current_index_changed(self, timeline);
 }
 
 MySystemWidget *

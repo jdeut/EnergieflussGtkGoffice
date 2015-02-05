@@ -39,7 +39,6 @@ enum
 {
     PROP_0,
     PROP_ID,
-    PROP_LABEL,
     N_PROPERTIES
 };
 
@@ -55,7 +54,6 @@ typedef struct
 {
     /* private members go here */
     guint id;
-    gchar *label;
 } MySystemPrivate;
 
 
@@ -132,10 +130,6 @@ my_system_set_property (GObject * object,
             priv->id = g_value_get_uint (value);
             break;
 
-        case PROP_LABEL:
-            priv->label = g_value_dup_string (value);
-            break;
-
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
@@ -155,10 +149,6 @@ my_system_get_property (GObject * object,
 
         case PROP_ID:
             g_value_set_uint (value, priv->id);
-            break;
-
-        case PROP_LABEL:
-            g_value_set_string (value, priv->label);
             break;
 
         default:
@@ -381,12 +371,6 @@ my_system_class_init (MySystemClass * klass)
                            0, G_MAXUINT, 0,
                            G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
-    obj_properties[PROP_LABEL] =
-        g_param_spec_string ("label",
-                             "label",
-                             "label text",
-                             NULL, G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
-
     g_object_class_install_properties (gobject_class,
                                        N_PROPERTIES, obj_properties);
 
@@ -586,27 +570,25 @@ my_system_coordinates_changed (MySystem * self,
 static void
 my_system_init (MySystem * self)
 {
-    GtkWidget *button;
+    MySystemWidget *system_widget;
 
     MySystemPrivate *priv = my_system_get_instance_private (self);
 
-    button = (GtkWidget *) my_system_widget_new ();
+    system_widget = my_system_widget_new ();
 
-    g_object_bind_property (self, "id", button, "id",
+    g_object_bind_property (self, "id", system_widget, "id",
                             G_BINDING_DEFAULT | G_BINDING_SYNC_CREATE);
 
-    priv->label = g_strdup_printf ("System %u", priv->id);
-
-    goc_item_set (GOC_ITEM (self), "widget", button, "width", 300.0, "height",
+    goc_item_set (GOC_ITEM (self), "widget", system_widget, "width", 300.0, "height",
                   250.0, NULL);
 
-    g_signal_connect (button, "button-press-event",
+    g_signal_connect (system_widget, "button-press-event",
                       G_CALLBACK (my_system_begin_drag), self);
 
-    g_signal_connect (button, "button-release-event",
+    g_signal_connect (system_widget, "button-release-event",
                       G_CALLBACK (my_system_end_drag), self);
 
-    g_signal_connect (button, "motion-notify-event",
+    g_signal_connect (system_widget, "motion-notify-event",
                       G_CALLBACK (my_system_is_dragged), self);
 
     g_signal_connect (self, "notify::x",

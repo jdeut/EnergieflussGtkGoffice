@@ -19,6 +19,7 @@ enum
     PROP_0,
     PROP_PICTURE_PATH,
     PROP_PIXBUF,
+    PROP_LABEL,
     N_PROPERTIES
 };
 
@@ -30,6 +31,8 @@ struct _MySystemModelPrivate
     gchar *name;
 
     gchar *picture_path;
+    gchar *label;
+
     GdkPixbuf *pixbuf;
     guint id;
 };
@@ -61,6 +64,10 @@ my_system_model_set_property (GObject * object,
             priv->pixbuf = g_value_get_object (value);
             break;
 
+        case PROP_LABEL:
+            priv->label = g_value_dup_string (value);
+            break;
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
@@ -84,6 +91,10 @@ my_system_model_get_property (GObject * object,
 
         case PROP_PIXBUF:
             g_value_set_object (value, priv->pixbuf);
+            break;
+
+        case PROP_LABEL:
+            g_value_set_string (value, priv->label);
             break;
 
         default:
@@ -120,6 +131,13 @@ my_system_model_class_init (MySystemModelClass * klass)
                            NULL,
                            G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
+    obj_properties[PROP_LABEL] =
+        g_param_spec_string ("label",
+                           "label",
+                           "label",
+                           NULL,
+                           G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
+
     obj_properties[PROP_PIXBUF] =
         g_param_spec_object ("pixbuf",
                            "pixbuf",
@@ -130,39 +148,6 @@ my_system_model_class_init (MySystemModelClass * klass)
     g_object_class_install_properties (gobject_class,
                                        N_PROPERTIES, obj_properties);
 }
-
-/*void*/
-/*my_system_model_picture_path_changed (MySystemModel * self,*/
-                                /*GParamSpec * pspec, gpointer user_data)*/
-/*{*/
-    /*GError *err = NULL;*/
-    /*MySystemModelPrivate *priv;*/
-
-    /*priv = my_system_model_get_instance_private(self);*/
-
-    /*if(priv->picture_path != NULL) {*/
-
-        /*priv->pixbuf =*/
-            /*gdk_pixbuf_new_from_file_at_scale (priv->picture_path,*/
-                                                   /*200, -1, TRUE, &err);*/
-
-        /*if (err) {*/
-            /*gchar *str;*/
-
-            /*str = g_strdup_printf ("Failed to load file '%s' into pixbuf", priv->picture_path);*/
-
-            /*g_print("%s\n", str);*/
-            /*g_free (str);*/
-            /*g_error_free (err);*/
-
-            /*priv->pixbuf = NULL;*/
-        /*}*/
-
-        /*if(priv->pixbuf != NULL) {*/
-            /*g_signal_emit (G_OBJECT (self), signals[SIG_MODEL_CHANGED], 0);*/
-        /*}*/
-    /*}*/
-/*}*/
 
 static void
 my_system_model_init (MySystemModel * self)
