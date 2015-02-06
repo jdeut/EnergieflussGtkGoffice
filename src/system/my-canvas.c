@@ -246,6 +246,31 @@ my_canvas_generate_json_data_stream (MyCanvas * self, gchar ** str, gsize * len)
 }
 
 void
+my_canvas_center_system_bounds (MyCanvas * canvas)
+{
+
+    gdouble x0, x1, y0, y1, xc, yc;
+    gdouble scroll_x, scroll_y;
+
+    gint width;
+    gint height;
+
+    goc_item_get_bounds (GOC_ITEM (canvas->group[GROUP_SYSTEMS]), &x0, &y0, &x1,
+                         &y1);
+
+    xc = (x1 - x0) / 2. + x0;
+    yc = (y1 - y0) / 2. + y0;
+
+    width = goc_canvas_get_width (GOC_CANVAS (canvas)) / GOC_CANVAS(canvas)->pixels_per_unit;
+    height = goc_canvas_get_height (GOC_CANVAS (canvas)) / GOC_CANVAS(canvas)->pixels_per_unit;
+
+    scroll_x = xc - (gdouble) width / 2.0;
+    scroll_y = yc - (gdouble) height / 2.0;
+
+    goc_canvas_scroll_to (GOC_CANVAS (canvas), scroll_x, scroll_y);
+}
+
+void
 my_canvas_transform_coordinate (GocCanvas * canvas, gdouble * x, gdouble * y)
 {
 
@@ -279,9 +304,6 @@ my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
                                            &x_cv, &y_cv, NULL);
 
     my_canvas_transform_coordinate (canvas, &x_cv, &y_cv);
-
-    g_print ("x_cv: %f, y_cv: %f\n", x_cv, y_cv);
-    g_print ("eventx: %f, eventy: %f\n", event->x, event->y);
 
     priv->active_item = goc_canvas_get_item_at (canvas, x_cv, y_cv);
 
@@ -351,7 +373,7 @@ my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
                                                (GTK_WIDGET (widget)),
                                                event->device, &dx, &dy, NULL);
 
-        g_object_unref(widget);
+        g_object_unref (widget);
     }
 
     priv->offsetx = dx;

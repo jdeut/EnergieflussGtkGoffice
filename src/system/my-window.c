@@ -485,10 +485,14 @@ my_window_zoom_in (GSimpleAction * simple, GVariant * parameter, gpointer data)
 
     priv = my_window_get_instance_private (data);
 
-    priv->zoom_factor += 0.2;
+    if(priv->zoom_factor < 1.6) {
+        priv->zoom_factor += 0.2;
+    }
 
     goc_canvas_set_pixels_per_unit (GOC_CANVAS (priv->canvas),
                                     priv->zoom_factor);
+
+    my_canvas_center_system_bounds (priv->canvas);
 }
 
 void
@@ -498,10 +502,14 @@ my_window_zoom_out (GSimpleAction * simple, GVariant * parameter, gpointer data)
 
     priv = my_window_get_instance_private (data);
 
-    priv->zoom_factor -= 0.2;
+    if(priv->zoom_factor > 0.5) {
+        priv->zoom_factor -= 0.2;
+    }
 
     goc_canvas_set_pixels_per_unit (GOC_CANVAS (priv->canvas),
                                     priv->zoom_factor);
+
+    my_canvas_center_system_bounds (priv->canvas);
 }
 
 void

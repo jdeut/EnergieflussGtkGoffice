@@ -80,6 +80,9 @@ my_canvas_hide_drag_points_of_all_arrows (MyCanvas * self);
 void
 my_canvas_transform_coordinate (GocCanvas * canvas, gdouble * x, gdouble * y);
 
+void
+my_canvas_center_system_bounds (MyCanvas * canvas);
+
 G_END_DECLS
 
 #endif /* __MY_CANVAS_H__ */
