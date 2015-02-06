@@ -5,8 +5,10 @@ static void my_window_class_init (MyWindowClass * klass);
 static void my_window_init (MyWindow * self);
 static void my_window_finalize (GObject *);
 static void my_window_dispose (GObject *);
-void my_window_zoom_in (GSimpleAction * simple, GVariant * parameter, gpointer data);
-void my_window_zoom_out (GSimpleAction * simple, GVariant * parameter, gpointer data);
+void my_window_zoom_in (GSimpleAction * simple, GVariant * parameter,
+                        gpointer data);
+void my_window_zoom_out (GSimpleAction * simple, GVariant * parameter,
+                         gpointer data);
 void my_window_show_drag_points_state_change (GSimpleAction * action,
                                               GVariant * state,
                                               gpointer user_data);
@@ -164,7 +166,7 @@ my_window_populate (MyWindow * self)
 
     my_canvas_set_timeline (priv->canvas, timeline);
 
-    system1 = g_object_new (MY_TYPE_SYSTEM, "x", 0.0, "y", 0.0, NULL);
+    system1 = g_object_new (MY_TYPE_SYSTEM, "x", 100.0, "y", 100.0, NULL);
 
     my_timeline_model_add_object (timeline, system1);
 }
@@ -309,8 +311,8 @@ my_window_new (GtkApplication * app)
 {
     MyWindow *self;
 
-    const gchar *zoom_in_accels[2] = {"plus", NULL};
-    const gchar *zoom_out_accels[2] = {"minus", NULL};
+    const gchar *zoom_in_accels[2] = { "plus", NULL };
+    const gchar *zoom_out_accels[2] = { "minus", NULL };
 
     self = g_object_new (MY_TYPE_WINDOW, "application", app, NULL);
 
@@ -319,7 +321,8 @@ my_window_new (GtkApplication * app)
     my_window_style_init (self);
 
     gtk_application_set_accels_for_action (app, "win.zoom-in", zoom_in_accels);
-    gtk_application_set_accels_for_action (app, "win.zoom-out", zoom_out_accels);
+    gtk_application_set_accels_for_action (app, "win.zoom-out",
+                                           zoom_out_accels);
 
     return self;
 }
@@ -463,16 +466,29 @@ my_window_get_timeline (MyWindow * self)
     return priv->timeline;
 }
 
+MyCanvas *
+my_window_get_canvas (MyWindow * self)
+{
+    MyWindowPrivate *priv;
+
+    g_return_if_fail (MY_IS_WINDOW (self));
+
+    priv = my_window_get_instance_private (self);
+
+    return priv->canvas;
+}
+
 void
 my_window_zoom_in (GSimpleAction * simple, GVariant * parameter, gpointer data)
 {
     MyWindowPrivate *priv;
 
     priv = my_window_get_instance_private (data);
-    
+
     priv->zoom_factor += 0.2;
 
-    goc_canvas_set_pixels_per_unit(GOC_CANVAS(priv->canvas), priv->zoom_factor);
+    goc_canvas_set_pixels_per_unit (GOC_CANVAS (priv->canvas),
+                                    priv->zoom_factor);
 }
 
 void
@@ -481,10 +497,11 @@ my_window_zoom_out (GSimpleAction * simple, GVariant * parameter, gpointer data)
     MyWindowPrivate *priv;
 
     priv = my_window_get_instance_private (data);
-    
+
     priv->zoom_factor -= 0.2;
 
-    goc_canvas_set_pixels_per_unit(GOC_CANVAS(priv->canvas), priv->zoom_factor);
+    goc_canvas_set_pixels_per_unit (GOC_CANVAS (priv->canvas),
+                                    priv->zoom_factor);
 }
 
 void

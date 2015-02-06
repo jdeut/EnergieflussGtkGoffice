@@ -240,7 +240,7 @@ model_handler_label_changed (MySystemWidget * self, GParamSpec * pspec,
 {
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
 
-    my_system_widget_update(self);
+    my_system_widget_update (self);
 }
 
 void
@@ -449,7 +449,8 @@ my_system_widget_timeline_current_index_changed (MySystemWidget * self,
     for (i = 0; i < N_MODEL; i++) {
         for (j = 0; j < N_MODEL_HANDLER; j++) {
             if (priv->model_handler[i][j] != 0) {
-                g_signal_handler_disconnect (priv->model[i], priv->model_handler[i][j]);
+                g_signal_handler_disconnect (priv->model[i],
+                                             priv->model_handler[i][j]);
             }
         }
 
@@ -458,7 +459,8 @@ my_system_widget_timeline_current_index_changed (MySystemWidget * self,
         priv->model_handler[i][MODEL_PICTURE_PATH_CHANGED] =
             g_signal_connect_swapped (priv->model[i], "notify::picture-path",
                                       G_CALLBACK
-                                      (model_handler_picture_path_changed), self);
+                                      (model_handler_picture_path_changed),
+                                      self);
 
         priv->model_handler[i][MODEL_LABEL_CHANGED] =
             g_signal_connect_swapped (priv->model[i], "notify::label",
@@ -467,21 +469,108 @@ my_system_widget_timeline_current_index_changed (MySystemWidget * self,
     }
 }
 
+static void
+my_system_widget_translate_to_canvas_coordinates (MySystemWidget * self,
+                                                  gdouble * x, gdouble * y)
+{
+    GtkWidget *toplevel;
+    gint dest_x, dest_y;
+    MyCanvas *canvas;
+
+    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
+
+    canvas = my_window_get_canvas (MY_WINDOW (toplevel));
+
+    gtk_widget_translate_coordinates (GTK_WIDGET (self), GTK_WIDGET (canvas),
+                                      (gint) * x, (gint) * y, &dest_x, &dest_y);
+
+    *x += dest_x;
+    *y += dest_y;
+}
+
+gboolean
+my_system_widget_begin_drag (MySystemWidget * self, GdkEventButton * event,
+                             gpointer data)
+{
+    GtkWidget *toplevel;
+    MyCanvas *canvas;
+
+    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
+
+    g_print("begin\n");
+
+    canvas = my_window_get_canvas (MY_WINDOW (toplevel));
+
+    my_system_widget_translate_to_canvas_coordinates (self, &event->x,
+                                                      &event->y);
+
+    gtk_event_box_set_above_child(GTK_EVENT_BOX(self), TRUE);
+
+    my_canvas_button_press_cb (GOC_CANVAS (canvas), event, NULL);
+
+    return GDK_EVENT_STOP;
+}
+
+gboolean
+my_system_widget_is_dragged (MySystemWidget * self, GdkEventMotion * event,
+                             gpointer data)
+{
+    GtkWidget *toplevel;
+    MyCanvas *canvas;
+
+    /*if(event->window != gtk_widget_get_window(GTK_WIDGET(self)))*/
+        /*return;*/
+
+    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
+
+    canvas = my_window_get_canvas (MY_WINDOW (toplevel));
+
+    g_print("BEFORE ISDRAGGED: x: %f y: %f\n", event->x, event->y); 
+
+    my_system_widget_translate_to_canvas_coordinates (self, &event->x,
+                                                      &event->y);
+
+    my_canvas_motion_notify_cb (GOC_CANVAS (canvas), event, NULL);
+
+    return GDK_EVENT_STOP;
+}
+
+gboolean
+my_system_widget_end_drag (MySystemWidget * self, GdkEvent * event,
+                           gpointer data)
+{
+
+    GtkWidget *toplevel;
+    MyCanvas *canvas;
+
+    g_print("end\n");
+
+    gtk_event_box_set_above_child(GTK_EVENT_BOX(self), FALSE);
+
+    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
+
+    canvas = my_window_get_canvas (MY_WINDOW (toplevel));
+
+    my_system_widget_translate_to_canvas_coordinates (self, &event->button.x,
+                                                      &event->button.y);
+
+    my_canvas_button_release_cb (GOC_CANVAS (canvas), event, NULL);
+
+    return GDK_EVENT_STOP;
+}
+
+
 void
 my_system_widget_realized (MySystemWidget * self, gpointer data)
 {
     MyTimelineModel *timeline;
     GtkWidget *toplevel;
     MySystem *system;
-
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
 
     toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
-
     g_return_if_fail (MY_IS_WINDOW (toplevel));
-
     timeline = my_window_get_timeline (MY_WINDOW (toplevel));
-
     g_return_if_fail (MY_IS_TIMELINE_MODEL (timeline));
 
     g_signal_connect_swapped (timeline, "current-pos-changed",
@@ -489,7 +578,19 @@ my_system_widget_realized (MySystemWidget * self, gpointer data)
                               (my_system_widget_timeline_current_index_changed),
                               self);
 
-    my_system_widget_timeline_current_index_changed(self, timeline);
+    g_signal_connect (self,
+                      "button-press-event",
+                      G_CALLBACK (my_system_widget_begin_drag), NULL);
+
+    g_signal_connect (self,
+                      "button-release-event",
+                      G_CALLBACK (my_system_widget_end_drag), NULL);
+
+    g_signal_connect (self,
+                      "motion-notify-event",
+                      G_CALLBACK (my_system_widget_is_dragged), NULL);
+
+    my_system_widget_timeline_current_index_changed (self, timeline);
 }
 
 MySystemWidget *
@@ -498,6 +599,5 @@ my_system_widget_new (void)
     MySystemWidget *self;
 
     self = g_object_new (MY_TYPE_SYSTEM_WIDGET, NULL);
-
     return self;
 }

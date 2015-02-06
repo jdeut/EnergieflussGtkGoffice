@@ -377,44 +377,6 @@ my_system_class_init (MySystemClass * klass)
     /*gi_class->draw = my_system_draw_energy_flow; */
 }
 
-static gboolean
-my_system_begin_drag (GtkWidget * button, GdkEventButton * event,
-                      MySystem * self)
-{
-    GocCanvas *canvas;
-
-    g_object_get (self, "canvas", &canvas, NULL);
-
-    my_canvas_button_press_cb (canvas, event, button);
-
-    return FALSE;
-}
-
-static gboolean
-my_system_is_dragged (GtkWidget * button,
-                      GdkEventMotion * event, MySystem * self)
-{
-    GocCanvas *canvas;
-
-    g_object_get (self, "canvas", &canvas, NULL);
-
-    my_canvas_motion_notify_cb (canvas, event, button);
-
-    return FALSE;
-}
-
-static gboolean
-my_system_end_drag (GtkWidget * button, GdkEvent * event, MySystem * self)
-{
-    GocCanvas *canvas;
-
-    g_object_get (self, "canvas", &canvas, NULL);
-
-    my_canvas_button_release_cb (canvas, event, button);
-
-    return FALSE;
-}
-
 static void
 my_system_coordinates_changed (MySystem * self,
                                GParamSpec * pspec, gpointer data)
@@ -581,15 +543,6 @@ my_system_init (MySystem * self)
 
     goc_item_set (GOC_ITEM (self), "widget", system_widget, "width", 300.0, "height",
                   250.0, NULL);
-
-    g_signal_connect (system_widget, "button-press-event",
-                      G_CALLBACK (my_system_begin_drag), self);
-
-    g_signal_connect (system_widget, "button-release-event",
-                      G_CALLBACK (my_system_end_drag), self);
-
-    g_signal_connect (system_widget, "motion-notify-event",
-                      G_CALLBACK (my_system_is_dragged), self);
 
     g_signal_connect (self, "notify::x",
                       G_CALLBACK (my_system_coordinates_changed), NULL);

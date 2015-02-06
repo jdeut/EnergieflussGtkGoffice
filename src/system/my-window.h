@@ -5,8 +5,8 @@
 
 #include <gtk/gtk.h>
 
-#include "my-canvas.h"
 #include "my-application.h"
+#include "my-canvas.h"
 
 G_BEGIN_DECLS
 
@@ -62,6 +62,9 @@ my_window_timeline_add (GSimpleAction * simple, GVariant * parameter,
 
 MyTimelineModel *
 my_window_get_timeline (MyWindow * self);
+
+MyCanvas *
+my_window_get_canvas (MyWindow * self);
 
 G_END_DECLS
 
