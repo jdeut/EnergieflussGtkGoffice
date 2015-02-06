@@ -278,9 +278,6 @@ my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
                                            (GTK_WIDGET (canvas)), event->device,
                                            &x_cv, &y_cv, NULL);
 
-    dx = event->x;
-    dy = event->y;
-
     my_canvas_transform_coordinate (canvas, &x_cv, &y_cv);
 
     g_print ("x_cv: %f, y_cv: %f\n", x_cv, y_cv);
@@ -332,6 +329,7 @@ my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
         priv->add_arrow_mode = FALSE;
     }
 
+    /* set offset for different items */
     if (GOC_IS_CIRCLE (priv->active_item)
         || MY_IS_DRAG_POINT (priv->active_item)) {
 
@@ -341,6 +339,19 @@ my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
 
         dx = x_cv - x;
         dy = y_cv - y;
+
+    }
+    else if (MY_IS_SYSTEM (priv->active_item)) {
+
+        GtkWidget *widget;
+
+        g_object_get (priv->active_item, "widget", &widget, NULL);
+
+        gdk_window_get_device_position_double (gtk_widget_get_window
+                                               (GTK_WIDGET (widget)),
+                                               event->device, &dx, &dy, NULL);
+
+        g_object_unref(widget);
     }
 
     priv->offsetx = dx;
