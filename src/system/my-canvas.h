@@ -60,15 +60,14 @@ void
 my_canvas_show_drag_points_of_all_arrows (MyCanvas * self);
 
 gboolean
-my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
-                             gpointer data);
+my_canvas_end_drag (GocCanvas * canvas, GdkEvent * event, gpointer data);
 
 gboolean
-my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
+my_canvas_is_dragged (GocCanvas * canvas, GdkEventMotion * event,
                             gpointer data);
 
 gboolean
-my_canvas_button_press_cb (GocCanvas * canvas, GdkEventButton * event,
+my_canvas_begin_drag (GocCanvas * canvas, GdkEventButton * event,
                            gpointer data);
 
 gboolean

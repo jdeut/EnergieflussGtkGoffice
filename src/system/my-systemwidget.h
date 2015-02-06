@@ -7,6 +7,7 @@
 #include "my-systemmodel.h"
 #include "my-timelinemodel.h"
 #include "my-window.h"
+#include "my-intensitybox.h"
 
 G_BEGIN_DECLS
 

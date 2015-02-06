@@ -165,25 +165,28 @@ my_system_error_quark (void)
 }
 
 MyAnchorType
-calculate_anchor (GtkAllocation from, GtkAllocation to)
+calculate_anchor (MySystem *self, GtkAllocation to, GtkAllocation from)
 {
     gdouble dx, dy, alpha;
     MyAnchorType anchor;
+    GocCanvas *canvas;
 
-    dx = to.x - from.x;
-    dy = to.y - from.y;
+    g_return_if_fail(MY_IS_SYSTEM(self));
+
+    dx = from.x + (from.width / 2) - to.x;
+    dy = from.y + (from.height / 2) - to.y;
 
     alpha = atan2 (dy, dx);
+    
+    anchor = MY_ANCHOR_NORTH;
 
-    anchor = MY_ANCHOR_SOUTH;
-
-    if (-M_PI / 4 < alpha && alpha <= M_PI / 4) {
+    if (atan2(-from.height/2, from.width/2) < alpha && alpha <= atan2(from.height/2, from.width/2)) {
         anchor = MY_ANCHOR_WEST;
     }
-    else if (M_PI / 4 < alpha && alpha <= 3 * M_PI / 4) {
-        anchor = MY_ANCHOR_NORTH;
+    else if (atan2(-from.height/2, -from.width/2) < alpha && alpha <= atan2(-from.height/2, from.width/2)) {
+        anchor = MY_ANCHOR_SOUTH;
     }
-    else if (3 * M_PI / 4 < alpha || alpha <= -3 * M_PI / 4) {
+    else if (atan2(from.height/2, -from.width/2) < alpha || alpha < atan2(-from.height/2, from.width/2)) {
         anchor = MY_ANCHOR_EAST;
     }
     return anchor;
@@ -237,13 +240,13 @@ my_system_get_coordinate_of_anchor (MySystem * system, MyAnchorType anchor,
 
 MyAnchorType
 my_system_connection_dynamic_set_coordinate_of_arrow (MySystem * system,
-                                                      GtkAllocation from,
                                                       GtkAllocation to,
+                                                      GtkAllocation from,
                                                       gdouble * x, gdouble * y)
 {
     MyAnchorType anchor;
 
-    anchor = calculate_anchor (from, to);
+    anchor = calculate_anchor (system, to, from);
 
     my_system_alloc_get_coordinate_of_anchor (system, to, anchor, x, y);
 

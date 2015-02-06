@@ -594,6 +594,7 @@ my_flow_arrow_change_anchor_while_dragging (MyFlowArrow * self,
     GtkAllocation from, to;
     gdouble x, y;
     MyAnchorType anchor;
+    GocCanvas *canvas;
 
     g_return_if_fail (MY_IS_SYSTEM (priv->primary_system));
     g_return_if_fail (MY_IS_FLOW_ARROW(self));
@@ -606,12 +607,22 @@ my_flow_arrow_change_anchor_while_dragging (MyFlowArrow * self,
     else
         g_object_get (self, "x1", &x, "y1", &y, NULL);
 
+    to.x = x;
+    to.y = y;
+
+    g_object_get(self, "canvas", &canvas, NULL);
+
+    gtk_widget_get_allocation (GOC_WIDGET (priv->primary_system)->ofbox, &from);
+
+    x = from.x;
+    y = from.y;
+
+    my_canvas_transform_coordinate(canvas, &x, &y);
+
     from.x = x;
     from.y = y;
 
-    gtk_widget_get_allocation (GOC_WIDGET (priv->primary_system)->ofbox, &to);
-
-    anchor = calculate_anchor (from, to);
+    anchor = calculate_anchor (priv->primary_system, to, from);
 
     my_system_get_coordinate_of_anchor (priv->primary_system, anchor, &x, &y);
 

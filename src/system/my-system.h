@@ -51,7 +51,7 @@ enum
 /* fill in public functions */
 
 MyAnchorType
-calculate_anchor (GtkAllocation from, GtkAllocation to);
+calculate_anchor (MySystem *self, GtkAllocation from, GtkAllocation to);
 
 G_END_DECLS
 

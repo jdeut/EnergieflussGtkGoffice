@@ -52,6 +52,7 @@ struct _MySystemWidgetPrivate
     GtkImage *image;
     GtkWidget *label1;
     GtkWidget *button_properties;
+    GtkWidget *stack;
 
     GdkPixbuf *pixbuf;
 
@@ -174,6 +175,8 @@ my_system_widget_class_init (MySystemWidgetClass * klass)
                                                   image);
     gtk_widget_class_bind_template_child_private (widget_class, MySystemWidget,
                                                   label1);
+    gtk_widget_class_bind_template_child_private (widget_class, MySystemWidget,
+                                                  stack);
     gtk_widget_class_bind_template_child_private (widget_class, MySystemWidget,
                                                   button_properties);
 }
@@ -412,6 +415,17 @@ my_system_widget_init (MySystemWidget * self)
                               G_CALLBACK
                               (my_system_widget_button_properties_clicked),
                               self);
+
+    MyIntensityBox *ib;
+    GtkWidget *box;
+
+    ib = my_intensity_box_new();
+    box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_container_add (GTK_CONTAINER(box), GTK_WIDGET(ib));
+
+    gtk_stack_add_titled(GTK_STACK(priv->stack), GTK_WIDGET(box), "ib", "ib");
+
+    gtk_stack_set_visible_child (GTK_STACK(priv->stack), GTK_WIDGET(box));
 }
 
 static void
@@ -499,7 +513,7 @@ my_system_widget_begin_drag (MySystemWidget * self, GdkEventButton * event,
 
     canvas = my_window_get_canvas (MY_WINDOW (toplevel));
 
-    my_canvas_button_press_cb (GOC_CANVAS (canvas), event, self);
+    my_canvas_begin_drag (GOC_CANVAS (canvas), event, self);
 
     return GDK_EVENT_STOP;
 }
@@ -515,7 +529,7 @@ my_system_widget_is_dragged (MySystemWidget * self, GdkEventMotion * event,
 
     canvas = my_window_get_canvas (MY_WINDOW (toplevel));
 
-    my_canvas_motion_notify_cb (GOC_CANVAS (canvas), event, self);
+    my_canvas_is_dragged (GOC_CANVAS (canvas), event, self);
 
     return GDK_EVENT_STOP;
 }
@@ -534,7 +548,7 @@ my_system_widget_end_drag (MySystemWidget * self, GdkEvent * event,
 
     canvas = my_window_get_canvas (MY_WINDOW (toplevel));
 
-    my_canvas_button_release_cb (GOC_CANVAS (canvas), event, self);
+    my_canvas_end_drag (GOC_CANVAS (canvas), event, self);
 
     return GDK_EVENT_STOP;
 }
@@ -579,5 +593,6 @@ my_system_widget_new (void)
     MySystemWidget *self;
 
     self = g_object_new (MY_TYPE_SYSTEM_WIDGET, NULL);
+
     return self;
 }
