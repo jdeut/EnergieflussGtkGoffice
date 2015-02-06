@@ -497,16 +497,9 @@ my_system_widget_begin_drag (MySystemWidget * self, GdkEventButton * event,
 
     toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
 
-    g_print("begin\n");
-
     canvas = my_window_get_canvas (MY_WINDOW (toplevel));
 
-    my_system_widget_translate_to_canvas_coordinates (self, &event->x,
-                                                      &event->y);
-
-    gtk_event_box_set_above_child(GTK_EVENT_BOX(self), TRUE);
-
-    my_canvas_button_press_cb (GOC_CANVAS (canvas), event, NULL);
+    my_canvas_button_press_cb (GOC_CANVAS (canvas), event, self);
 
     return GDK_EVENT_STOP;
 }
@@ -518,19 +511,11 @@ my_system_widget_is_dragged (MySystemWidget * self, GdkEventMotion * event,
     GtkWidget *toplevel;
     MyCanvas *canvas;
 
-    /*if(event->window != gtk_widget_get_window(GTK_WIDGET(self)))*/
-        /*return;*/
-
     toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
 
     canvas = my_window_get_canvas (MY_WINDOW (toplevel));
 
-    g_print("BEFORE ISDRAGGED: x: %f y: %f\n", event->x, event->y); 
-
-    my_system_widget_translate_to_canvas_coordinates (self, &event->x,
-                                                      &event->y);
-
-    my_canvas_motion_notify_cb (GOC_CANVAS (canvas), event, NULL);
+    my_canvas_motion_notify_cb (GOC_CANVAS (canvas), event, self);
 
     return GDK_EVENT_STOP;
 }
@@ -543,18 +528,13 @@ my_system_widget_end_drag (MySystemWidget * self, GdkEvent * event,
     GtkWidget *toplevel;
     MyCanvas *canvas;
 
-    g_print("end\n");
-
     gtk_event_box_set_above_child(GTK_EVENT_BOX(self), FALSE);
 
     toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
 
     canvas = my_window_get_canvas (MY_WINDOW (toplevel));
 
-    my_system_widget_translate_to_canvas_coordinates (self, &event->button.x,
-                                                      &event->button.y);
-
-    my_canvas_button_release_cb (GOC_CANVAS (canvas), event, NULL);
+    my_canvas_button_release_cb (GOC_CANVAS (canvas), event, self);
 
     return GDK_EVENT_STOP;
 }

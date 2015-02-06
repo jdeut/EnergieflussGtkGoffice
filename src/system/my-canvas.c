@@ -271,25 +271,20 @@ my_canvas_button_press_1_cb (GocCanvas * canvas, GdkEventButton * event,
 
     gdouble offsetx, offsety;
     gdouble x_cv, y_cv, dx, dy;
-    gint xr, yr;
 
     /* coordinates on canvas */
-    x_cv = event->x_root;
-    y_cv = event->y_root;
 
-    gdk_window_get_position(gtk_widget_get_window(GTK_WIDGET(canvas)), &xr, &yr);
-
-    x_cv = x_cv - xr;
-    y_cv = y_cv - yr;
+    gdk_window_get_device_position_double (gtk_widget_get_window
+                                           (GTK_WIDGET (canvas)), event->device,
+                                           &x_cv, &y_cv, NULL);
 
     dx = event->x;
     dy = event->y;
 
     my_canvas_transform_coordinate (canvas, &x_cv, &y_cv);
 
-    g_print("xr: %u, yr: %u\n", xr, yr);
-    g_print("x_cv: %f, y_cv: %f\n", x_cv, y_cv);
-    g_print("eventx: %f, eventy: %f\n", event->x, event->y);
+    g_print ("x_cv: %f, y_cv: %f\n", x_cv, y_cv);
+    g_print ("eventx: %f, eventy: %f\n", event->x, event->y);
 
     priv->active_item = goc_canvas_get_item_at (canvas, x_cv, y_cv);
 
@@ -393,22 +388,13 @@ my_canvas_button_release_cb (GocCanvas * canvas, GdkEvent * event,
     MyFlowArrow *arrow;
     GocItem *item;
     gdouble x_cv, y_cv;
-    gint xr, yr;
 
-    /* coordinates on canvas */
-    x_cv = event->button.x_root;
-    y_cv = event->button.y_root;
-
-    gdk_window_get_position(gtk_widget_get_window(GTK_WIDGET(canvas)), &xr, &yr);
-
-    x_cv = x_cv - xr;
-    y_cv = y_cv - yr;
-
-    /*g_print("x: %f y: %f\n", x_cv, y_cv); */
+    gdk_window_get_device_position_double (gtk_widget_get_window
+                                           (GTK_WIDGET (canvas)),
+                                           event->button.device, &x_cv, &y_cv,
+                                           NULL);
 
     my_canvas_transform_coordinate (canvas, &x_cv, &y_cv);
-
-    /*g_print("x: %f y: %f\n", x_cv, y_cv); */
 
     if (priv->add_arrow_mode) {
         priv->add_arrow_mode = FALSE;
@@ -462,34 +448,12 @@ my_canvas_motion_notify_cb (GocCanvas * canvas, GdkEventMotion * event,
 
     gdouble x_cv, y_cv;
 
-    gint xr, yr;
-
-    /* coordinates on canvas */
-    x_cv = event->x_root;
-    y_cv = event->y_root;
-
-    gdk_window_get_position(gtk_widget_get_window(GTK_WIDGET(canvas)), &xr, &yr);
-
-    x_cv = x_cv - xr;
-    y_cv = y_cv - yr;
+    gdk_window_get_device_position_double (gtk_widget_get_window
+                                           (GTK_WIDGET (canvas)), event->device,
+                                           &x_cv, &y_cv, NULL);
 
     if (active_item == NULL)
         return;
-
-    /*if (GOC_IS_WIDGET (active_item)) {*/
-
-        /*gint x, y;*/
-
-        /*g_return_val_if_fail (GTK_IS_WIDGET (data), FALSE);*/
-
-        /*gtk_widget_translate_coordinates (GTK_WIDGET (data),*/
-                                          /*GTK_WIDGET (canvas),*/
-                                          /*event->x, event->y, &x, &y);*/
-
-        /*[> coordinates on canvas <]*/
-        /*x_cv = x;*/
-        /*y_cv = y;*/
-    /*}*/
 
     my_canvas_transform_coordinate (canvas, &x_cv, &y_cv);
 

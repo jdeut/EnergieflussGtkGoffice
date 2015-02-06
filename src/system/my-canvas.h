@@ -4,9 +4,6 @@
 #include <glib-object.h>
 #include <goffice/canvas/goc-canvas.h>
 
-#include "my-flowarrow.h"
-
-
 G_BEGIN_DECLS
 
 #define MY_TYPE_CANVAS             (my_canvas_get_type())
@@ -48,6 +45,7 @@ struct _MyCanvasClass
 };
 
 #include "my-timelinemodel.h"
+#include "my-flowarrow.h"
 
 GType my_canvas_get_type (void);
 
