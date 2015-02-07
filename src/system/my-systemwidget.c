@@ -30,14 +30,14 @@ enum
     N_PROPERTIES
 };
 
+static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
+
 enum
 {
     MODEL_PICTURE_PATH_CHANGED,
     MODEL_LABEL_CHANGED,
     N_MODEL_HANDLER
 };
-
-static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
 
 enum
 {
@@ -53,6 +53,8 @@ struct _MySystemWidgetPrivate
     GtkWidget *label1;
     GtkWidget *button_properties;
     GtkWidget *stack;
+
+    MyIntensityBox *ib;
 
     GdkPixbuf *pixbuf;
 
@@ -416,15 +418,18 @@ my_system_widget_init (MySystemWidget * self)
                               (my_system_widget_button_properties_clicked),
                               self);
 
-    MyIntensityBox *ib;
     GtkWidget *box;
 
-    ib = my_intensity_box_new();
+    priv->ib = my_intensity_box_new();
     box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-    gtk_container_add (GTK_CONTAINER(box), GTK_WIDGET(ib));
+    gtk_widget_set_halign(box, GTK_ALIGN_START);
+    gtk_widget_set_margin_top(box, 10);
+    gtk_widget_set_margin_start(box, 40);
+    gtk_widget_set_margin_bottom(box, 10);
+    gtk_container_add (GTK_CONTAINER(box), GTK_WIDGET(priv->ib));
+    gtk_widget_show_all(box);
 
-    gtk_stack_add_titled(GTK_STACK(priv->stack), GTK_WIDGET(box), "ib", "ib");
-
+    gtk_stack_add_titled(GTK_STACK(priv->stack), GTK_WIDGET(box), "ib", "Niveaus");
     gtk_stack_set_visible_child (GTK_STACK(priv->stack), GTK_WIDGET(box));
 }
 
