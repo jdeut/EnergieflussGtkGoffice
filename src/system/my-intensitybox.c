@@ -19,7 +19,7 @@ static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
 
 struct _MyIntensityBoxPrivate
 {
-    /* private members go here */
+    GtkWidget *popover;
     gint i;
 
     gdouble y_max, y, y_min;
@@ -105,26 +105,54 @@ my_intensity_box_draw (GtkWidget * widget, cairo_t * cr)
 
     gdouble line_width = 2;
 
+    gdouble cur;
+    gdouble incr = 10;
+    gdouble main_tick_length = 10;
+
     x = 0;
     y = 0;
 
     width = gtk_widget_get_allocated_width (widget);
     height = gtk_widget_get_allocated_height (widget);
 
-    cairo_rectangle (cr, width/4, height, width-width/2, - (priv->y/(priv->y_max-priv->y_min)) * height );
-    cairo_set_source_rgba (cr, 1, 0, 0, 0.5);
+    cairo_set_line_width (cr, 0.8);
+    cairo_rectangle (cr, width / 4, height, width - width / 2,
+                     -(priv->y / (priv->y_max - priv->y_min)) * height);
+    cairo_set_source_rgba (cr, 1, 0, 0, 0.8);
+    cairo_stroke_preserve (cr);
+    cairo_set_source_rgba (cr, 1, 0, 0, 0.3);
     cairo_fill (cr);
 
     cairo_set_line_width (cr, line_width);
     cairo_set_source_rgba (cr, 0, 0, 0, 0.8);
-    cairo_move_to (cr, x, height-line_width/2);
+    cairo_move_to (cr, x, height - line_width / 2);
     cairo_rel_line_to (cr, width, 0);
     cairo_stroke (cr);
 
-    /*cairo_set_source_rgba (cr, 0.2, 0.2, 0.2, 0.8);*/
-    /*cairo_move_to (cr, x, height);*/
-    /*cairo_rel_line_to (cr, 0, -height);*/
+    /* popover */
+    /*cairo_save(cr);*/
+    /*cairo_translate(cr, width/2, height-(priv->y / (priv->y_max - priv->y_min)) * height);*/
+    /*cairo_rotate(cr, -G_PI/4);*/
+    /*cairo_move_to(cr, 0, 0);*/
+    /*cairo_rel_line_to(cr, 10, 0);*/
+    /*cairo_rotate(cr, G_PI/4);*/
+    /*cairo_rel_line_to(cr, 15, 0);*/
+    /*cairo_rotate(cr, -G_PI/2);*/
+    /*cairo_rel_line_to(cr, 30, 0);*/
+    /*cairo_rotate(cr, G_PI/2);*/
     /*cairo_stroke (cr);*/
+    /*cairo_restore(cr);*/
+
+    cairo_set_source_rgba (cr, 0.4, 0.4, 0.4, 0.8);
+    cairo_move_to (cr, 0, 0);
+    cairo_rel_line_to (cr, 0, height);
+    cairo_stroke (cr);
+
+    for (cur = 0; cur <= height; cur += incr) {
+        cairo_rectangle (cr, 0, cur, main_tick_length, 1.0);
+    }
+
+    cairo_fill (cr);
 
     return TRUE;
 }
@@ -147,7 +175,9 @@ static void
 my_intensity_box_get_preferred_height (GtkWidget * widget,
                                        gint * minimum_size, gint * natural_size)
 {
+
     /**minimum_size = 1;*/
+
     /**natural_size = 1;*/
 }
 
@@ -169,6 +199,40 @@ my_intensity_box_get_preferred_height_for_width (GtkWidget * widget,
 {
     *minimum_height = 100;
     *natural_height = 150;
+}
+
+static void
+my_intensity_box_realize (GtkWidget * widget)
+{
+
+    MyIntensityBox *self = MY_INTENSITY_BOX (widget);
+    MyIntensityBoxPrivate *priv;
+
+    priv = my_intensity_box_get_instance_private (self);
+
+    GTK_WIDGET_CLASS(my_intensity_box_parent_class)->realize(widget);
+
+    gint width, height;
+
+    GtkWidget *label = gtk_label_new ("test");
+    GdkRectangle rect;
+
+    width = gtk_widget_get_allocated_width (widget);
+    height = gtk_widget_get_allocated_height (widget);
+
+    rect.x = 0;
+    rect.y = height - (priv->y / (priv->y_max - priv->y_min)) * height;
+    rect.height = 0;
+    rect.width = width;
+
+    priv->popover = gtk_popover_new (GTK_WIDGET (self));
+    gtk_popover_set_modal (GTK_POPOVER (priv->popover), FALSE);
+    /*gtk_popover_set_pointing_to (GTK_POPOVER (priv->popover), &rect);*/
+    gtk_popover_set_position (GTK_POPOVER (priv->popover), GTK_POS_TOP);
+    gtk_container_add (GTK_CONTAINER (priv->popover), label);
+    gtk_container_set_border_width (GTK_CONTAINER (priv->popover), 6);
+    gtk_widget_show (label);
+    gtk_widget_set_visible (GTK_WIDGET (priv->popover), TRUE);
 }
 
 static void
@@ -194,6 +258,7 @@ my_intensity_box_class_init (MyIntensityBoxClass * klass)
         my_intensity_box_get_preferred_width_for_height;
     widget_class->get_preferred_height_for_width =
         my_intensity_box_get_preferred_height_for_width;
+    widget_class->realize = my_intensity_box_realize;
 }
 
 static void
@@ -208,6 +273,7 @@ my_intensity_box_init (MyIntensityBox * self)
     priv->y_min = 0.0;
     priv->y_max = 1.0;
     priv->y = 0.5;
+
 }
 
 static void
