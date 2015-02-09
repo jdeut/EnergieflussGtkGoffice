@@ -22,7 +22,10 @@
       <object class="GtkGrid" id="grid1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="margin_top">5</property>
+        <property name="margin_left">20</property>
+        <property name="margin_right">20</property>
+        <property name="margin_top">20</property>
+        <property name="margin_bottom">20</property>
         <child>
           <object class="GtkLabel" id="label1">
             <property name="visible">True</property>
@@ -38,32 +41,19 @@
             </style>
           </object>
           <packing>
-            <property name="left_attach">1</property>
+            <property name="left_attach">0</property>
             <property name="top_attach">0</property>
-            <property name="width">2</property>
+            <property name="width">3</property>
           </packing>
         </child>
         <child>
-          <object class="GtkButton" id="button_properties">
-            <property name="width_request">1</property>
-            <property name="height_request">3</property>
+          <object class="GtkOverlay" id="overlay1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="receives_default">False</property>
-            <property name="halign">start</property>
-            <property name="valign">start</property>
-            <property name="image">pref</property>
-            <style>
-              <class name="EditProperties"/>
-            </style>
-          </object>
-          <packing>
-            <property name="left_attach">2</property>
-            <property name="top_attach">2</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkStack" id="stack">
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+            <child>
+              <object class="GtkStack" id="stack">
             <property name="visible">True</property>
             <!--<property name="can_focus">True</property>-->
             <property name="transition-type">crossfade</property>
@@ -81,52 +71,35 @@
                 </style>
               </object>
               <packing>
-                <property name="name">page1</property>
+                <property name="name">real</property>
                 <property name="title" translatable="yes">Real</property>
               </packing>
             </child>
           </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">1</property>
-            <property name="width">2</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkBox" id="box1">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="halign">end</property>
-            <property name="valign">start</property>
-            <property name="margin_right">5</property>
-            <property name="orientation">vertical</property>
-            <child>
-              <object class="GtkStackSwitcher" id="switcher">
+            </child>
+            <child type="overlay">
+              <object class="GtkButton" id="button_properties">
+                <property name="width_request">1</property>
+                <property name="height_request">3</property>
                 <property name="visible">True</property>
-                <property name="stack">stack</property>
-                <property name="halign">center</property>
-                <property name="vexpand">True</property>
+                <property name="can_focus">False</property>
+                <property name="receives_default">False</property>
+                <property name="halign">end</property>
+                <property name="valign">end</property>
+                <property name="margin_right">5</property>
+                <property name="margin_bottom">5</property>
+                <property name="image">pref</property>
+                <style>
+                  <class name="EditProperties"/>
+                </style>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
             </child>
           </object>
           <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">2</property>
+            <property name="left_attach">0</property>
+            <property name="top_attach">1</property>
+            <property name="width">3</property>
           </packing>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-        <child>
-          <placeholder/>
         </child>
       </object>
     </child>

@@ -2,6 +2,96 @@
 <!-- Generated with glade 3.18.3 -->
 <interface>
   <!--<requires lib="gtk+" version="3.12"/>-->
+  <object class="GtkBox" id="customtitle">
+    <property name="height_request">40</property>
+    <property name="hexpand">True</property>
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="halign">center</property>
+    <property name="valign">fill</property>
+    <property name="vexpand">True</property>
+    <style>
+      <class name="linked"/>
+    </style>
+    <child>
+      <object class="GtkRadioButton" id="radiobutton1">
+        <property name="width_request">100</property>
+        <property name="margin_top">2</property>
+        <property name="margin_bottom">2</property>
+        <property name="visible">True</property>
+        <property name="action_name">win.change-view</property>
+        <property name="action_target">'real'</property>
+        <property name="can_focus">True</property>
+        <property name="receives_default">False</property>
+        <property name="xalign">0</property>
+        <property name="active">True</property>
+        <property name="draw_indicator">False</property>
+        <child>
+          <object class="GtkLabel">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">Real</property>
+          </object>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">True</property>
+        <property name="fill">True</property>
+        <property name="position">0</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkRadioButton" id="radiobutton2">
+        <property name="group">radiobutton1</property>
+        <property name="width_request">100</property>
+        <property name="margin_top">2</property>
+        <property name="margin_bottom">2</property>
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="receives_default">False</property>
+        <property name="xalign">0</property>
+        <property name="active">True</property>
+        <property name="draw_indicator">False</property>
+        <property name="action_name">win.change-view</property>
+        <property name="action_target">'niveaus'</property>
+        <child>
+          <object class="GtkLabel">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">Niveaus</property>
+          </object>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">1</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkRadioButton" id="radiobutton3">
+        <property name="group">radiobutton1</property>
+        <property name="width_request">100</property>
+        <property name="margin_top">2</property>
+        <property name="margin_bottom">2</property>
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="receives_default">False</property>
+        <property name="xalign">0</property>
+        <property name="active">True</property>
+        <property name="draw_indicator">False</property>
+        <property name="action_name">win.change-view</property>
+        <property name="action_target">'energien'</property>
+        <child>
+          <object class="GtkLabel">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">Energien</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
   <object class="GtkMenu" id="CanvasMenu">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
@@ -93,14 +183,10 @@
     <child type="titlebar">
       <object class="GtkHeaderBar" id="headerbar">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="vexpand">False</property>
         <property name="show_close_button">True</property>
         <property name="decoration-layout">menu:maximize,minimize,close</property>
-        <property name="title" translatable="yes">Energiebilanz</property>
         <child>
           <object class="GtkBox" id="undo_redo_box">
-              <property name="visible">True</property>
               <property name="can_focus">False</property>
               <child>
                 <object class="GtkButton" id="button_save">

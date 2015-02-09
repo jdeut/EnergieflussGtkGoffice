@@ -7,6 +7,7 @@
 
 #include "my-application.h"
 #include "my-canvas.h"
+#include "my-systemwidget.h"
 
 G_BEGIN_DECLS
 

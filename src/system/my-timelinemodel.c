@@ -409,6 +409,7 @@ my_timeline_model_add_object (MyTimelineModel * self, gpointer object)
 
         /* add new specific system-data-model of 'object' for every instance of time */
         tl_systems_data_new_models_for_appended_element (priv->tl_systems_data);
+
         /* add new generic system-data-model of 'object' for every instance of time */
         std_systems_data_new_model_for_appended_element (priv->std_systems_data);
 

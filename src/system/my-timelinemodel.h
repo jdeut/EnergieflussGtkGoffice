@@ -70,6 +70,9 @@ my_timeline_model_current_pos_is_state (MyTimelineModel * self);
 MySystem *
 my_timeline_get_system_with_id (MyTimelineModel * self, guint id);
 
+GPtrArray *
+my_timeline_get_systems (MyTimelineModel * self);
+
 G_END_DECLS
 
 #endif /* __MY_TIMELINE_MODEL_H__ */

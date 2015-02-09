@@ -46,6 +46,9 @@ GType my_system_widget_get_type (void);
 /* fill in public functions */
 MySystemWidget *my_system_widget_new (void);
 
+void
+my_system_widget_set_visible_child (MySystemWidget * self, gchar *name);
+
 G_END_DECLS
 
 #endif /* __MY_SYSTEM_WIDGET_H__ */

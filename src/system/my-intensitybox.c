@@ -225,14 +225,14 @@ my_intensity_box_realize (GtkWidget * widget)
     rect.height = 0;
     rect.width = width;
 
-    priv->popover = gtk_popover_new (GTK_WIDGET (self));
-    gtk_popover_set_modal (GTK_POPOVER (priv->popover), FALSE);
+    /*priv->popover = gtk_popover_new (GTK_WIDGET (self));*/
+    /*gtk_popover_set_modal (GTK_POPOVER (priv->popover), FALSE);*/
     /*gtk_popover_set_pointing_to (GTK_POPOVER (priv->popover), &rect);*/
-    gtk_popover_set_position (GTK_POPOVER (priv->popover), GTK_POS_TOP);
-    gtk_container_add (GTK_CONTAINER (priv->popover), label);
-    gtk_container_set_border_width (GTK_CONTAINER (priv->popover), 6);
-    gtk_widget_show (label);
-    gtk_widget_set_visible (GTK_WIDGET (priv->popover), TRUE);
+    /*gtk_popover_set_position (GTK_POPOVER (priv->popover), GTK_POS_TOP);*/
+    /*gtk_container_add (GTK_CONTAINER (priv->popover), label);*/
+    /*gtk_container_set_border_width (GTK_CONTAINER (priv->popover), 6);*/
+    /*gtk_widget_show (label);*/
+    /*gtk_widget_set_visible (GTK_WIDGET (priv->popover), TRUE);*/
 }
 
 static void

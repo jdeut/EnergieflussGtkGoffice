@@ -420,17 +420,18 @@ my_system_widget_init (MySystemWidget * self)
 
     GtkWidget *box;
 
-    priv->ib = my_intensity_box_new();
-    box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-    gtk_widget_set_halign(box, GTK_ALIGN_START);
-    gtk_widget_set_margin_top(box, 10);
-    gtk_widget_set_margin_start(box, 40);
-    gtk_widget_set_margin_bottom(box, 10);
-    gtk_container_add (GTK_CONTAINER(box), GTK_WIDGET(priv->ib));
-    gtk_widget_show_all(box);
+    priv->ib = my_intensity_box_new ();
+    box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_widget_set_halign (box, GTK_ALIGN_START);
+    gtk_widget_set_margin_top (box, 10);
+    gtk_widget_set_margin_start (box, 40);
+    gtk_widget_set_margin_bottom (box, 10);
+    gtk_container_add (GTK_CONTAINER (box), GTK_WIDGET (priv->ib));
+    gtk_widget_show_all (box);
 
-    gtk_stack_add_titled(GTK_STACK(priv->stack), GTK_WIDGET(box), "ib", "Niveaus");
-    gtk_stack_set_visible_child (GTK_STACK(priv->stack), GTK_WIDGET(box));
+    gtk_stack_add_titled (GTK_STACK (priv->stack), GTK_WIDGET (box), "niveaus",
+                          "Niveaus");
+    gtk_stack_set_visible_child_name (GTK_STACK (priv->stack), "niveaus");
 }
 
 static void
@@ -547,7 +548,7 @@ my_system_widget_end_drag (MySystemWidget * self, GdkEvent * event,
     GtkWidget *toplevel;
     MyCanvas *canvas;
 
-    gtk_event_box_set_above_child(GTK_EVENT_BOX(self), FALSE);
+    gtk_event_box_set_above_child (GTK_EVENT_BOX (self), FALSE);
 
     toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
 
@@ -600,4 +601,14 @@ my_system_widget_new (void)
     self = g_object_new (MY_TYPE_SYSTEM_WIDGET, NULL);
 
     return self;
+}
+
+void
+my_system_widget_set_visible_child (MySystemWidget * self, gchar *name)
+{
+    MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
+
+    g_return_if_fail(MY_IS_SYSTEM_WIDGET(self));
+
+    gtk_stack_set_visible_child_name (GTK_STACK (priv->stack), name);
 }
