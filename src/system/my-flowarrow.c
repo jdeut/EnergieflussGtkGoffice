@@ -591,7 +591,7 @@ my_flow_arrow_change_anchor_while_dragging (MyFlowArrow * self,
 {
     MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
-    GtkAllocation from, to;
+    cairo_rectangle_t from, to;
     gdouble x, y;
     MyAnchorType anchor;
     GocCanvas *canvas;
@@ -612,15 +612,7 @@ my_flow_arrow_change_anchor_while_dragging (MyFlowArrow * self,
 
     g_object_get(self, "canvas", &canvas, NULL);
 
-    gtk_widget_get_allocation (GOC_WIDGET (priv->primary_system)->ofbox, &from);
-
-    x = from.x;
-    y = from.y;
-
-    my_canvas_transform_coordinate(canvas, &x, &y);
-
-    from.x = x;
-    from.y = y;
+    my_system_get_allocation (priv->primary_system, &from);
 
     anchor = calculate_anchor (priv->primary_system, to, from);
 

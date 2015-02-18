@@ -51,7 +51,9 @@ enum
 /* fill in public functions */
 
 MyAnchorType
-calculate_anchor (MySystem *self, GtkAllocation from, GtkAllocation to);
+calculate_anchor (MySystem *self, cairo_rectangle_t from, cairo_rectangle_t to);
+void 
+my_system_get_allocation (MySystem * self, cairo_rectangle_t * alloc);
 
 G_END_DECLS
 
