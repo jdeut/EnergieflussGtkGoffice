@@ -67,6 +67,9 @@ my_window_get_timeline (MyWindow * self);
 MyCanvas *
 my_window_get_canvas (MyWindow * self);
 
+GtkWidget *
+my_window_get_change_view_radio_button (MyWindow * self);
+
 G_END_DECLS
 
 #endif /* __MY_WINDOW_H__ */

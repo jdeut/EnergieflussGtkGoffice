@@ -511,9 +511,9 @@ my_window_show_drag_points_state_change (GSimpleAction * action,
     priv = my_window_get_instance_private (data);
 
     if (g_variant_get_boolean (state))
-        my_canvas_show_drag_points_of_all_arrows (priv->canvas);
+        my_canvas_show_all_drag_points (priv->canvas);
     else
-        my_canvas_hide_drag_points_of_all_arrows (priv->canvas);
+        my_canvas_hide_all_drag_points (priv->canvas);
 
     g_simple_action_set_state (action, state);
 }
