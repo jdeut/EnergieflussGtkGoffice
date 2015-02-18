@@ -41,6 +41,7 @@ struct _MyWindowPrivate
     GtkWidget *description;
     GtkWidget *customtitle;
     GtkWidget *headerbar;
+    GtkWidget *radiobutton1;
 
     gdouble zoom_factor;
 
@@ -59,7 +60,8 @@ static GActionEntry win_entries[] = {
     {"zoom-in", my_window_zoom_in, NULL, NULL, NULL},
     {"zoom-out", my_window_zoom_out, NULL, NULL, NULL},
     {"change-view", NULL, "s", "\"real\"", my_window_change_view_state_change},
-    {"show-drag-points", my_window_show_drag_points, NULL, "true", my_window_show_drag_points_state_change},
+    {"show-drag-points", my_window_show_drag_points, NULL, "true",
+     my_window_show_drag_points_state_change},
     {"save", my_window_save, NULL, NULL, NULL},
     {"timeline-add", my_window_timeline_add, NULL, NULL, NULL}
 };
@@ -220,6 +222,8 @@ my_window_class_init (MyWindowClass * klass)
                                                   MyWindow, scale);
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
                                                   MyWindow, headerbar);
+    gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
+                                                  MyWindow, radiobutton1);
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
                                                   MyWindow, customtitle);
 }
@@ -431,7 +435,8 @@ my_window_save (GSimpleAction * simple, GVariant * parameter, gpointer data)
 
 
 void
-my_window_set_visible_child(MyWindow *self, gchar *name)  {
+my_window_set_visible_child (MyWindow * self, gchar * name)
+{
 
     MyWindowPrivate *priv;
     MySystem *system;
@@ -441,18 +446,18 @@ my_window_set_visible_child(MyWindow *self, gchar *name)  {
 
     priv = my_window_get_instance_private (self);
 
-    systems = my_timeline_get_systems(priv->timeline);
+    systems = my_timeline_get_systems (priv->timeline);
 
-    for(i=0; i<systems->len; i++) {
-        system = g_ptr_array_index(systems, i);
+    for (i = 0; i < systems->len; i++) {
+        system = g_ptr_array_index (systems, i);
 
-        g_assert(MY_IS_SYSTEM(system));
+        g_assert (MY_IS_SYSTEM (system));
 
-        g_object_get(system, "widget", &widget, NULL);
+        g_object_get (system, "widget", &widget, NULL);
 
-        g_assert(MY_IS_SYSTEM_WIDGET(widget));
+        g_assert (MY_IS_SYSTEM_WIDGET (widget));
 
-        my_system_widget_set_visible_child(widget, name);
+        my_system_widget_set_visible_child (widget, name);
     }
 
 }
@@ -467,20 +472,20 @@ my_window_change_view_state_change (GSimpleAction * action,
 
     priv = my_window_get_instance_private (data);
 
-    GVariant *st = g_action_get_state(G_ACTION(action));
+    GVariant *st = g_action_get_state (G_ACTION (action));
 
     str = g_variant_dup_string (st, &size);
     requested = g_variant_dup_string (state, &size);
 
-    if(g_str_equal(requested, str))
+    if (g_str_equal (requested, str))
         return;
 
-    my_window_set_visible_child(MY_WINDOW(data), requested);
+    my_window_set_visible_child (MY_WINDOW (data), requested);
 
-    g_simple_action_set_state(action, state);
+    g_simple_action_set_state (action, state);
 
-    g_free(str);
-    g_free(requested);
+    g_free (str);
+    g_free (requested);
 }
 
 void
