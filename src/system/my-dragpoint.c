@@ -76,27 +76,44 @@ my_drag_point_button_pressed (GocItem * item, int button, double x, double y)
 {
     MyDragPointPrivate *priv = my_drag_point_get_instance_private(MY_DRAG_POINT(item));
 
-    GOStyle *style;
-    cairo_surface_t *surf;
-    cairo_t *cr;
-    GOStyledObject *gso = GO_STYLED_OBJECT(item);
-    MyDragPoint *self = MY_DRAG_POINT (item);
-    MyDragPointClass *class = MY_DRAG_POINT_GET_CLASS (self);
-    GocItemClass *parent_class = g_type_class_peek_parent (class);
+    GocItemClass *gi_class = my_drag_point_parent_class;
 
-    parent_class->button_pressed (item, button, x, y);
-
-    style = go_style_dup (go_styled_object_get_style (gso));
-    style->line.width = 2;
-    style->fill.type = GO_STYLE_FILL_PATTERN;
-    style->fill.pattern.pattern = GO_PATTERN_SOLID;
-    style->fill.pattern.back = GO_COLOR_RED;
-    style->fill.pattern.fore = GO_COLOR_RED;
-    go_styled_object_set_style (gso, style);
-
-    g_object_unref (style);
+    gi_class->button_pressed (item, button, x, y);
 
     return FALSE;
+}
+
+static void
+update_control_point_colors (GocItem *item, GtkStateFlags flags)
+{
+	GtkStyleContext *context = goc_item_get_style_context (item);
+	GOStyle *style = go_styled_object_get_style (GO_STYLED_OBJECT (item));
+	GdkRGBA rgba;
+
+    MyDragPointPrivate *priv = my_drag_point_get_instance_private(MY_DRAG_POINT(item));
+
+    if(priv->is_dragged)
+        return;
+
+	gtk_style_context_get_color (context, flags, &rgba);
+	go_color_from_gdk_rgba (&rgba, &style->line.color);
+	gtk_style_context_get_background_color (context, flags, &rgba);
+	go_color_from_gdk_rgba (&rgba, &style->fill.pattern.back);
+	goc_item_invalidate (item);
+}
+
+static gboolean
+my_drag_point_enter_notify (GocItem *item, G_GNUC_UNUSED double x, G_GNUC_UNUSED double y)
+{
+    /*update_control_point_colors (item, GTK_STATE_FLAG_PRELIGHT);*/
+	return TRUE;
+}
+
+static gboolean
+my_drag_point_leave_notify (GocItem *item, G_GNUC_UNUSED double x, G_GNUC_UNUSED double y)
+{
+    /*update_control_point_colors (item, GTK_STATE_FLAG_NORMAL);*/
+	return TRUE;
 }
 
 static void
@@ -125,6 +142,8 @@ my_drag_point_class_init (MyDragPointClass * klass)
                                        N_PROPERTIES, obj_properties);
 
     gi_class->button_pressed = my_drag_point_button_pressed;
+    gi_class->leave_notify = my_drag_point_leave_notify;
+    gi_class->enter_notify = my_drag_point_enter_notify;
 }
 
 static void
@@ -137,14 +156,23 @@ static void
 my_drag_point_init (MyDragPoint * self)
 {
     MyDragPointPrivate *priv = my_drag_point_get_instance_private(self);
+    GOStyle *style;
 
     /* to init any of the private data, do e.g: */
 
     priv->linked_item = NULL;
     priv->is_dragged = FALSE;
 
-    /*g_signal_connect(self, "notify::x", G_CALLBACK(my_drag_point_sync_with_linked_system), NULL);*/
-    /*g_signal_connect(self, "notify::y", G_CALLBACK(my_drag_point_sync_with_linked_system), NULL);*/
+    style = go_style_dup (go_styled_object_get_style (GO_STYLED_OBJECT(self)));
+
+    style->fill.auto_type = FALSE;
+    style->fill.auto_back = FALSE;
+    style->fill.type = GO_STYLE_FILL_PATTERN;
+    style->fill.pattern.pattern = GO_PATTERN_SOLID;
+    style->fill.pattern.back = GO_COLOR_WHITE;
+    go_styled_object_set_style (GO_STYLED_OBJECT(self), style);
+
+    g_object_unref (style);
 }
 
 static void
@@ -166,10 +194,19 @@ void
 my_drag_point_begin_dragging (MyDragPoint * self)
 {
     MyDragPointPrivate *priv = my_drag_point_get_instance_private(self);
+    GOStyle *style;
+
+    GOStyledObject *gso = GO_STYLED_OBJECT(self);
 
     g_return_if_fail(MY_IS_DRAG_POINT(self));
 
     priv->is_dragged = TRUE;
+
+    style = go_style_dup (go_styled_object_get_style (gso));
+    style->fill.pattern.back = GO_COLOR_WHITE;
+    go_styled_object_set_style (gso, style);
+
+    g_object_unref (style);
 
     if(MY_IS_FLOW_ARROW(priv->linked_item)) {
         my_flow_arrow_begin_dragging(MY_FLOW_ARROW(priv->linked_item));
