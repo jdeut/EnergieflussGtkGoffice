@@ -630,7 +630,7 @@ my_system_canvas_changed (MySystem * self, GParamSpec * pspec, gpointer data)
 
     g_object_get (self, "x", &x, "y", &y, NULL);
 
-    group_dragpoints = canvas->group[GROUP_DRAGPOINTS];
+    group_dragpoints = canvas->group[GROUP_SYSTEM_DRAGPOINTS];
 
     g_return_if_fail (GOC_IS_GROUP (group_dragpoints));
 
@@ -665,7 +665,7 @@ my_system_init (MySystem * self)
 
     MySystemPrivate *priv = my_system_get_instance_private (self);
 
-    system_widget = my_system_widget_new ();
+    system_widget = g_object_new (MY_TYPE_SYSTEM_WIDGET, "system", self, NULL);
 
     g_object_bind_property (self, "id", system_widget, "id",
                             G_BINDING_DEFAULT | G_BINDING_SYNC_CREATE);
