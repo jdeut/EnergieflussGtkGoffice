@@ -162,33 +162,17 @@ my_canvas_finalize (GObject * object)
 /* begin public functions */
 
 void
-my_canvas_show_drag_points_of_all_arrows (MyCanvas * self)
+my_canvas_show_all_drag_points (MyCanvas * self)
 {
-    GList *l;
-    GocGroup *group;
-
-    group = self->group[GROUP_ARROWS];
-
-    for (l = group->children; l != NULL; l = l->next) {
-        if (MY_IS_FLOW_ARROW (l->data)) {
-            my_flow_arrow_show_drag_points (MY_FLOW_ARROW (l->data));
-        }
-    }
+    goc_item_show(GOC_ITEM(self->group[GROUP_ARROW_DRAGPOINTS]));
+    goc_item_show(GOC_ITEM(self->group[GROUP_SYSTEM_DRAGPOINTS]));
 }
 
 void
-my_canvas_hide_drag_points_of_all_arrows (MyCanvas * self)
+my_canvas_hide_all_drag_points (MyCanvas * self)
 {
-    GList *l;
-    GocGroup *group;
-
-    group = self->group[GROUP_ARROWS];
-
-    for (l = group->children; l != NULL; l = l->next) {
-        if (MY_IS_FLOW_ARROW (l->data)) {
-            my_flow_arrow_hide_drag_points (MY_FLOW_ARROW (l->data));
-        }
-    }
+    goc_item_hide (GOC_ITEM(self->group[GROUP_ARROW_DRAGPOINTS]));
+    goc_item_hide (GOC_ITEM(self->group[GROUP_SYSTEM_DRAGPOINTS]));
 }
 
 gboolean
@@ -523,7 +507,7 @@ my_canvas_model_current_pos_changed (MyCanvas * self, MyTimelineModel * model)
 
     for (i = 0; i <= N_GROUPS; i++) {
 
-        if (i == GROUP_SYSTEMS) {
+        if (i == GROUP_SYSTEMS || i == GROUP_SYSTEM_DRAGPOINTS) {
             continue;
 
         }

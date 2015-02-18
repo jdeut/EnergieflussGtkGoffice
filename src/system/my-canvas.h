@@ -22,7 +22,8 @@ typedef struct _MyCanvasPrivate MyCanvasPrivate;
 enum {
     GROUP_ARROWS,
     GROUP_SYSTEMS,
-    GROUP_DRAGPOINTS,
+    GROUP_ARROW_DRAGPOINTS,
+    GROUP_SYSTEM_DRAGPOINTS,
     GROUP_LABELS,
     N_GROUPS
 };
@@ -57,7 +58,7 @@ void
 my_canvas_set_add_system_mode (MyCanvas * self);
 
 void
-my_canvas_show_drag_points_of_all_arrows (MyCanvas * self);
+my_canvas_show_all_drag_points (MyCanvas * self);
 
 gboolean
 my_canvas_end_drag (GocCanvas * canvas, GdkEvent * event, gpointer data);
@@ -74,7 +75,7 @@ gboolean
 my_canvas_generate_json_data_stream (MyCanvas * self, gchar ** str, gsize * len);
 
 void
-my_canvas_hide_drag_points_of_all_arrows (MyCanvas * self);
+my_canvas_hide_all_drag_points (MyCanvas * self);
 
 void
 my_canvas_transform_coordinate (GocCanvas * canvas, gdouble * x, gdouble * y);
