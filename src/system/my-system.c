@@ -50,10 +50,32 @@ static void my_system_init (MySystem * self);
 static void my_system_finalize (GObject *);
 static void my_system_dispose (GObject *);
 
+enum
+{
+    DRAG_POINT_NE,
+    DRAG_POINT_NW,
+    DRAG_POINT_SE,
+    DRAG_POINT_SW,
+    N_DRAG_POINTS
+};
+
+enum
+{
+    SYSTEM_CHANGED_X,
+    SYSTEM_CHANGED_Y,
+    DRAG_POINT_NW_CHANGED_X,
+    DRAG_POINT_NW_CHANGED_y,
+    N_HANDLER
+};
+
 typedef struct
 {
     /* private members go here */
     guint id;
+    gboolean is_dragged;
+    MyDragPoint *drag_point[N_DRAG_POINTS];
+
+    gulong handler[N_HANDLER];
 } MySystemPrivate;
 
 
@@ -477,7 +499,8 @@ my_system_coordinates_changed (MySystem * self,
             if (energy_quantity < 0.0) {
 
                 my_system_alloc_get_coordinate_of_anchor (self, primary_alloc,
-                                                    primary_anchor, &x0, &y0);
+                                                          primary_anchor, &x0,
+                                                          &y0);
 
                 if (primary_anchor == MY_ANCHOR_WEST) {
                     x1 = x0 - arrow_len;
@@ -499,8 +522,9 @@ my_system_coordinates_changed (MySystem * self,
             /* if arrow depicts transfer from environment */
             else if (energy_quantity >= 0.0) {
 
-                my_system_alloc_get_coordinate_of_anchor (self, primary_alloc, primary_anchor,
-                                                    &x1, &y1);
+                my_system_alloc_get_coordinate_of_anchor (self, primary_alloc,
+                                                          primary_anchor, &x1,
+                                                          &y1);
 
                 if (primary_anchor == MY_ANCHOR_WEST) {
                     x0 = x1 - arrow_len;
@@ -537,6 +561,104 @@ my_system_coordinates_changed (MySystem * self,
 }
 
 static void
+my_system_drag_point_coordinate_changed (MySystem * self,
+                                         GParamSpec * pspec,
+                                         MyDragPoint * point)
+{
+    gdouble x_dp, y_dp, x_s, y_s, width, height;
+    MySystemPrivate *priv = my_system_get_instance_private (self);
+
+    g_object_get (point, "x", &x_dp, "y", &y_dp, NULL);
+    g_object_get (self, "x", &x_s, "y", &y_s, "width", &width, "height",
+                  &height, NULL);
+
+    g_signal_handler_block (self, priv->handler[SYSTEM_CHANGED_X]);
+    g_signal_handler_block (self, priv->handler[SYSTEM_CHANGED_Y]);
+
+    g_object_set (self, "x", x_dp, "y", y_dp, "width", width + (x_s - x_dp),
+                  "height", height + (y_s - y_dp), NULL);
+
+    g_signal_handler_unblock (self, priv->handler[SYSTEM_CHANGED_X]);
+    g_signal_handler_unblock (self, priv->handler[SYSTEM_CHANGED_Y]);
+}
+
+static void
+my_system_coordinate_changed (MySystem * self,
+                              GParamSpec * pspec, gpointer data)
+{
+    gdouble x_dp, y_dp, x_s, y_s, width, height;
+
+    MySystemPrivate *priv = my_system_get_instance_private (self);
+
+    g_object_get (self, "x", &x_s, "y", &y_s, "width", &width, "height",
+                  &height, NULL);
+
+    g_signal_handler_block (priv->drag_point[DRAG_POINT_NW],
+                            priv->handler[DRAG_POINT_NW_CHANGED_X]);
+    g_signal_handler_block (priv->drag_point[DRAG_POINT_NW],
+                            priv->handler[DRAG_POINT_NW_CHANGED_y]);
+
+    g_object_set (priv->drag_point[DRAG_POINT_NW], "x", x_s, "y", y_s, NULL);
+
+    g_signal_handler_unblock (priv->drag_point[DRAG_POINT_NW],
+                              priv->handler[DRAG_POINT_NW_CHANGED_X]);
+    g_signal_handler_unblock (priv->drag_point[DRAG_POINT_NW],
+                              priv->handler[DRAG_POINT_NW_CHANGED_y]);
+}
+
+static void
+my_system_canvas_changed (MySystem * self, GParamSpec * pspec, gpointer data)
+{
+    MySystemPrivate *priv = my_system_get_instance_private (self);
+
+    MyCanvas *canvas;
+    GocGroup *group_dragpoints;
+
+    gdouble x, y;
+
+    g_return_if_fail (MY_IS_SYSTEM (self));
+
+    priv->is_dragged = FALSE;
+
+    g_object_get (self, "canvas", &canvas, NULL);
+
+    if (!MY_IS_CANVAS (canvas)) {
+        return;
+    }
+
+    g_object_unref (canvas);
+
+    g_object_get (self, "x", &x, "y", &y, NULL);
+
+    group_dragpoints = canvas->group[GROUP_DRAGPOINTS];
+
+    g_return_if_fail (GOC_IS_GROUP (group_dragpoints));
+
+    priv->drag_point[DRAG_POINT_NW] = (MyDragPoint *)
+        goc_item_new (group_dragpoints, MY_TYPE_DRAG_POINT, "x", x, "y", y,
+                      "radius", 10.0, "linked-item", self, NULL);
+
+    priv->handler[DRAG_POINT_NW_CHANGED_X] =
+        g_signal_connect_swapped (priv->drag_point[DRAG_POINT_NW], "notify::x",
+                                  G_CALLBACK
+                                  (my_system_drag_point_coordinate_changed),
+                                  self);
+    priv->handler[DRAG_POINT_NW_CHANGED_y] =
+        g_signal_connect_swapped (priv->drag_point[DRAG_POINT_NW], "notify::y",
+                                  G_CALLBACK
+                                  (my_system_drag_point_coordinate_changed),
+                                  self);
+
+    priv->handler[SYSTEM_CHANGED_X] = g_signal_connect (self, "notify::x",
+                                                        G_CALLBACK
+                                                        (my_system_coordinate_changed),
+                                                        NULL);
+    priv->handler[SYSTEM_CHANGED_Y] =
+        g_signal_connect (self, "notify::y",
+                          G_CALLBACK (my_system_coordinate_changed), NULL);
+}
+
+static void
 my_system_init (MySystem * self)
 {
     MySystemWidget *system_widget;
@@ -556,6 +678,9 @@ my_system_init (MySystem * self)
 
     g_signal_connect (self, "notify::y",
                       G_CALLBACK (my_system_coordinates_changed), NULL);
+
+    g_signal_connect (self, "notify::canvas",
+                      G_CALLBACK (my_system_canvas_changed), NULL);
 }
 
 static void
