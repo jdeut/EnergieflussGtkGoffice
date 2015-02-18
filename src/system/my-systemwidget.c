@@ -431,7 +431,7 @@ my_system_widget_init (MySystemWidget * self)
 
     gtk_stack_add_titled (GTK_STACK (priv->stack), GTK_WIDGET (box), "niveaus",
                           "Niveaus");
-    gtk_stack_set_visible_child_name (GTK_STACK (priv->stack), "niveaus");
+
 }
 
 static void
@@ -559,13 +559,17 @@ my_system_widget_end_drag (MySystemWidget * self, GdkEvent * event,
     return GDK_EVENT_STOP;
 }
 
-
 void
 my_system_widget_realized (MySystemWidget * self, gpointer data)
 {
     MyTimelineModel *timeline;
     GtkWidget *toplevel;
     MySystem *system;
+
+    GVariant *state;
+    gchar *str;
+    GAction *action;
+
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
 
     toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
@@ -591,6 +595,18 @@ my_system_widget_realized (MySystemWidget * self, gpointer data)
                       G_CALLBACK (my_system_widget_is_dragged), NULL);
 
     my_system_widget_timeline_current_index_changed (self, timeline);
+
+
+    /* sync with the current visible stack container */
+    action = g_action_map_lookup_action(G_ACTION_MAP(toplevel), "change-view");
+
+    state = g_action_get_state(action);
+
+    str = g_variant_dup_string (state, NULL);
+
+    gtk_stack_set_visible_child_name (GTK_STACK (priv->stack), str);
+
+    g_free(str);
 }
 
 MySystemWidget *
