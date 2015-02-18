@@ -27,6 +27,7 @@ enum
     PROP_SPECIFIC_MODEL,
     PROP_GENERIC_MODEL,
     PROP_ID,
+    PROP_SYSTEM,
     N_PROPERTIES
 };
 
@@ -56,9 +57,12 @@ struct _MySystemWidgetPrivate
 
     MyIntensityBox *ib;
 
-    GdkPixbuf *pixbuf;
+    GdkPixbuf *pixbuf_orig;
+    GdkPixbuf *pixbuf_scaled;
 
     MySystemModel *model[N_MODEL];
+
+    MySystem *system;
 
     gulong model_handler[N_MODEL][N_MODEL_HANDLER];
 
@@ -93,6 +97,10 @@ my_system_widget_set_property (GObject * object,
             priv->model[MODEL_GENERIC] = g_value_get_object (value);
             break;
 
+        case PROP_SYSTEM:
+            priv->system = g_value_get_object (value);
+            break;
+
         case PROP_ID:
             priv->id = g_value_get_uint (value);
             break;
@@ -121,6 +129,10 @@ my_system_widget_get_property (GObject * object,
 
         case PROP_GENERIC_MODEL:
             g_value_set_object (value, priv->model[MODEL_GENERIC]);
+            break;
+
+        case PROP_SYSTEM:
+            g_value_set_object (value, priv->system);
             break;
 
         case PROP_ID:
@@ -159,6 +171,12 @@ my_system_widget_class_init (MySystemWidgetClass * klass)
                              "generic data model",
                              "data model",
                              MY_TYPE_SYSTEM_MODEL, G_PARAM_READWRITE);
+
+    obj_properties[PROP_SYSTEM] =
+        g_param_spec_object ("system",
+                             "parent system",
+                             "parent system",
+                             MY_TYPE_SYSTEM, G_PARAM_READWRITE);
 
     obj_properties[PROP_ID] =
         g_param_spec_uint ("id",
@@ -209,15 +227,13 @@ my_system_widget_pixbuf_set_proper_size (MySystemWidget * self)
     GtkAllocation alloc;
     gint p_w, p_h, dest_w, dest_h;
 
-    GdkPixbuf *new;
-
     gtk_widget_get_allocation (GTK_WIDGET (self), &alloc);
 
-    alloc.width = ((gfloat) 0.7 * alloc.width);
-    alloc.height = ((gfloat) 0.6 * alloc.height);
+    alloc.width = ((gfloat) 0.8 * alloc.width);
+    alloc.height = ((gfloat) 0.7 * alloc.height);
 
-    p_w = gdk_pixbuf_get_width (priv->pixbuf);
-    p_h = gdk_pixbuf_get_height (priv->pixbuf);
+    p_w = gdk_pixbuf_get_width (priv->pixbuf_orig);
+    p_h = gdk_pixbuf_get_height (priv->pixbuf_orig);
 
     if (((gfloat) alloc.width / alloc.height) >= ((gfloat) p_w / p_h)) {
         dest_h = alloc.height;
@@ -228,15 +244,12 @@ my_system_widget_pixbuf_set_proper_size (MySystemWidget * self)
         dest_w = alloc.width;
     }
 
-    new =
-        gdk_pixbuf_scale_simple (priv->pixbuf, dest_w, dest_h,
-                                 GDK_INTERP_BILINEAR);
+    if(GDK_IS_PIXBUF(priv->pixbuf_scaled))
+        g_object_unref (priv->pixbuf_scaled);
 
-    g_return_if_fail (GDK_IS_PIXBUF (new));
-
-    g_object_unref (priv->pixbuf);
-
-    priv->pixbuf = new;
+     priv->pixbuf_scaled =
+        gdk_pixbuf_scale_simple (priv->pixbuf_orig, dest_w, dest_h,
+                                 GDK_INTERP_HYPER);
 }
 
 void
@@ -286,15 +299,15 @@ model_handler_picture_path_changed (MySystemWidget * self, GParamSpec * pspec,
         return;
     }
 
-    pixbuf_tmp = priv->pixbuf;
+    pixbuf_tmp = priv->pixbuf_orig;
 
-    priv->pixbuf = pixbuf_new;
+    priv->pixbuf_orig = pixbuf_new;
 
     g_object_unref (pixbuf_tmp);
 
     my_system_widget_pixbuf_set_proper_size (self);
 
-    g_object_set (model, "pixbuf", priv->pixbuf, NULL);
+    g_object_set (model, "pixbuf", priv->pixbuf_orig, NULL);
 
     my_system_widget_update (self);
 }
@@ -323,15 +336,17 @@ my_system_widget_set_pixbuf_from_model (MySystemWidget * self,
     g_object_get (model, "pixbuf", &pixbuf, NULL);
 
     if (pixbuf != NULL) {
-        priv->pixbuf = pixbuf;
+        priv->pixbuf_orig = pixbuf;
     }
     else {
-        priv->pixbuf =
+        priv->pixbuf_orig =
             gdk_pixbuf_new_from_resource_at_scale
             ("/org/gtk/myapp/lagerfeuer.png", 200, -1, TRUE, NULL);
     }
 
-    gtk_image_set_from_pixbuf (priv->image, priv->pixbuf);
+    my_system_widget_pixbuf_set_proper_size(self);
+
+    gtk_image_set_from_pixbuf (priv->image, priv->pixbuf_scaled);
 }
 
 void
@@ -386,6 +401,29 @@ my_system_widget_button_properties_clicked (MySystemWidget * self,
     my_system_widget_properties_dialog_show (GTK_WINDOW (toplevel), self);
 }
 
+void
+my_system_widget_system_changed_size (MySystemWidget * self,
+                                      GParamSpec * pspec, gpointer user_data)
+{
+    MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
+
+    my_system_widget_pixbuf_set_proper_size (self);
+
+    gtk_image_set_from_pixbuf(priv->image, priv->pixbuf_scaled);
+}
+
+void
+my_system_widget_system_changed (MySystemWidget * self,
+                                 GParamSpec * pspec, gpointer user_data)
+{
+    MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
+
+    g_signal_connect_swapped (priv->system, "notify::width",
+                      G_CALLBACK (my_system_widget_system_changed_size), self);
+    g_signal_connect_swapped (priv->system, "notify::height",
+                      G_CALLBACK (my_system_widget_system_changed_size), self);
+}
+
 static void
 my_system_widget_init (MySystemWidget * self)
 {
@@ -394,6 +432,8 @@ my_system_widget_init (MySystemWidget * self)
     gulong i, j;
 
     /* to init any of the private data, do e.g: */
+
+    priv->system = NULL;
 
     for (i = 0; i < N_MODEL; i++) {
         for (j = 0; j < N_MODEL_HANDLER; j++) {
@@ -410,6 +450,8 @@ my_system_widget_init (MySystemWidget * self)
                       G_CALLBACK (my_system_leave_event), NULL);
     g_signal_connect (self, "notify::specific-model",
                       G_CALLBACK (my_system_widget_specific_model_added), NULL);
+    g_signal_connect (self, "notify::system",
+                      G_CALLBACK (my_system_widget_system_changed), NULL);
     g_signal_connect (self, "realize", G_CALLBACK (my_system_widget_realized),
                       NULL);
 
@@ -598,15 +640,16 @@ my_system_widget_realized (MySystemWidget * self, gpointer data)
 
 
     /* sync with the current visible stack container */
-    action = g_action_map_lookup_action(G_ACTION_MAP(toplevel), "change-view");
+    action =
+        g_action_map_lookup_action (G_ACTION_MAP (toplevel), "change-view");
 
-    state = g_action_get_state(action);
+    state = g_action_get_state (action);
 
     str = g_variant_dup_string (state, NULL);
 
     gtk_stack_set_visible_child_name (GTK_STACK (priv->stack), str);
 
-    g_free(str);
+    g_free (str);
 }
 
 MySystemWidget *
@@ -620,11 +663,11 @@ my_system_widget_new (void)
 }
 
 void
-my_system_widget_set_visible_child (MySystemWidget * self, gchar *name)
+my_system_widget_set_visible_child (MySystemWidget * self, gchar * name)
 {
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
 
-    g_return_if_fail(MY_IS_SYSTEM_WIDGET(self));
+    g_return_if_fail (MY_IS_SYSTEM_WIDGET (self));
 
     gtk_stack_set_visible_child_name (GTK_STACK (priv->stack), name);
 }
