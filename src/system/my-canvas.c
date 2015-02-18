@@ -25,6 +25,7 @@ struct _MyCanvasPrivate
     GocItem *active_item;
     gdouble offsetx, offsety;
     guint add_arrow_mode;
+    gboolean scrolling;
     guint add_system_mode;
     MyTimelineModel *timeline;
 };
@@ -134,6 +135,7 @@ my_canvas_init (MyCanvas * self)
     priv->active_item = NULL;
     priv->add_arrow_mode = FALSE;
     priv->add_system_mode = FALSE;
+    priv->scrolling = FALSE;
 
     for (i = 0; i <= N_GROUPS; i++) {
         self->group[i] = goc_group_new (root);
@@ -362,6 +364,11 @@ my_canvas_drag_begin_button_1 (GocCanvas * canvas, GdkEventButton * event,
 
         g_object_unref (widget);
     }
+    else if (priv->active_item == NULL) {
+        priv->scrolling = TRUE;
+        dx = x_cv;
+        dy = y_cv;
+    }
 
     priv->offsetx = dx;
     priv->offsety = dy;
@@ -438,6 +445,8 @@ my_canvas_end_drag (GocCanvas * canvas, GdkEvent * event, gpointer data)
     } else if (MY_IS_SYSTEM(priv->active_item)) {
 
         g_object_notify (G_OBJECT (priv->active_item), "x");
+    } else if (priv->active_item == NULL && priv->scrolling == TRUE) {
+        priv->scrolling = FALSE;
     }
 
     priv->active_item = NULL;
@@ -460,8 +469,9 @@ my_canvas_is_dragged (GocCanvas * canvas, GdkEventMotion * event, gpointer data)
                                            (GTK_WIDGET (canvas)), event->device,
                                            &x_cv, &y_cv, NULL);
 
-    if (priv->active_item == NULL)
+    if (priv->active_item == NULL && priv->scrolling == FALSE) {
         return;
+    }
 
     my_canvas_transform_coordinate (canvas, &x_cv, &y_cv);
 
@@ -480,9 +490,14 @@ my_canvas_is_dragged (GocCanvas * canvas, GdkEventMotion * event, gpointer data)
     else if (GOC_IS_CIRCLE (priv->active_item)) {
         goc_item_set (priv->active_item, "x", x_item_new, "y", y_item_new,
                       NULL);
+    } 
+    else if(priv->active_item == NULL && priv->scrolling == TRUE) {
+        goc_canvas_scroll_to(canvas, -x_cv, -y_cv);
     }
 
-    goc_item_invalidate (priv->active_item);
+    if(GOC_IS_ITEM(priv->active_item)) {
+        goc_item_invalidate (priv->active_item);
+    }
 
     gtk_widget_queue_draw (GTK_WIDGET (canvas));
 
