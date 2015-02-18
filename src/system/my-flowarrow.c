@@ -380,8 +380,6 @@ my_flow_arrow_realize (GocItem * item)
 
     /* chaining up */
     parent_class->realize (item);
-
-    /*my_flow_arrow_bind_to_drag_point(self); */
 }
 
 static void
@@ -671,7 +669,7 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
 
     g_object_unref (canvas);
 
-    group_dragpoints = canvas->group[GROUP_DRAGPOINTS];
+    group_dragpoints = canvas->group[GROUP_ARROW_DRAGPOINTS];
 
     g_return_if_fail (GOC_IS_GROUP (group_dragpoints));
 
