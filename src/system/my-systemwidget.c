@@ -249,7 +249,7 @@ my_system_widget_pixbuf_set_proper_size (MySystemWidget * self)
 
      priv->pixbuf_scaled =
         gdk_pixbuf_scale_simple (priv->pixbuf_orig, dest_w, dest_h,
-                                 GDK_INTERP_HYPER);
+                                 GDK_INTERP_BILINEAR);
 }
 
 void
