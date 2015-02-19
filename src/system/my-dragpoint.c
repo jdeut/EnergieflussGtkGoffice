@@ -153,6 +153,32 @@ my_drag_point_sync_with_linked_system (MyDragPoint * self,
 }
 
 static void
+my_drag_point_canvas_changed (MyDragPoint * self, GParamSpec * pspec, gpointer data)
+{
+    GocCanvas *canvas;
+    GtkWidget *window;
+    GAction *action;
+    GVariant *state;
+
+    g_object_get(self, "canvas", &canvas, NULL);
+
+    if(!GOC_IS_CANVAS(canvas)) 
+        return;
+
+    window = gtk_widget_get_toplevel(GTK_WIDGET(canvas));
+
+    action =
+        g_action_map_lookup_action (G_ACTION_MAP (window), "show-drag-points");
+
+    state = g_action_get_state(action);
+
+    if(state == NULL)
+        return;
+
+    goc_item_set_visible(GOC_ITEM(self), g_variant_get_boolean(state));
+}
+
+static void
 my_drag_point_init (MyDragPoint * self)
 {
     MyDragPointPrivate *priv = my_drag_point_get_instance_private(self);
@@ -173,6 +199,8 @@ my_drag_point_init (MyDragPoint * self)
     go_styled_object_set_style (GO_STYLED_OBJECT(self), style);
 
     g_object_unref (style);
+
+    g_signal_connect(self, "notify::canvas", G_CALLBACK(my_drag_point_canvas_changed), NULL);
 }
 
 static void
