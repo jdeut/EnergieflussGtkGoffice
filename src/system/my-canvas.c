@@ -166,15 +166,31 @@ my_canvas_finalize (GObject * object)
 void
 my_canvas_show_all_drag_points (MyCanvas * self)
 {
-    goc_item_show(GOC_ITEM(self->group[GROUP_ARROW_DRAGPOINTS]));
-    goc_item_show(GOC_ITEM(self->group[GROUP_SYSTEM_DRAGPOINTS]));
+    GList *l;
+    GocGroup *group_arrows = self->group[GROUP_ARROW_DRAGPOINTS];
+
+    for (l = group_arrows->children; l != NULL; l = l->next) {
+        goc_item_show(l->data);
+    }
+    group_arrows = self->group[GROUP_SYSTEM_DRAGPOINTS];
+    for (l = group_arrows->children; l != NULL; l = l->next) {
+        goc_item_show(l->data);
+    }
 }
 
 void
 my_canvas_hide_all_drag_points (MyCanvas * self)
 {
-    goc_item_hide (GOC_ITEM(self->group[GROUP_ARROW_DRAGPOINTS]));
-    goc_item_hide (GOC_ITEM(self->group[GROUP_SYSTEM_DRAGPOINTS]));
+    GList *l;
+    GocGroup *group_arrows = self->group[GROUP_ARROW_DRAGPOINTS];
+
+    for (l = group_arrows->children; l != NULL; l = l->next) {
+        goc_item_hide(l->data);
+    }
+    group_arrows = self->group[GROUP_SYSTEM_DRAGPOINTS];
+    for (l = group_arrows->children; l != NULL; l = l->next) {
+        goc_item_hide(l->data);
+    }
 }
 
 gboolean
