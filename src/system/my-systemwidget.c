@@ -244,10 +244,10 @@ my_system_widget_pixbuf_set_proper_size (MySystemWidget * self)
         dest_w = alloc.width;
     }
 
-    if(GDK_IS_PIXBUF(priv->pixbuf_scaled))
+    if (GDK_IS_PIXBUF (priv->pixbuf_scaled))
         g_object_unref (priv->pixbuf_scaled);
 
-     priv->pixbuf_scaled =
+    priv->pixbuf_scaled =
         gdk_pixbuf_scale_simple (priv->pixbuf_orig, dest_w, dest_h,
                                  GDK_INTERP_BILINEAR);
 }
@@ -344,7 +344,7 @@ my_system_widget_set_pixbuf_from_model (MySystemWidget * self,
             ("/org/gtk/myapp/lagerfeuer.png", 200, -1, TRUE, NULL);
     }
 
-    my_system_widget_pixbuf_set_proper_size(self);
+    my_system_widget_pixbuf_set_proper_size (self);
 
     gtk_image_set_from_pixbuf (priv->image, priv->pixbuf_scaled);
 }
@@ -409,7 +409,7 @@ my_system_widget_system_changed_size (MySystemWidget * self,
 
     my_system_widget_pixbuf_set_proper_size (self);
 
-    gtk_image_set_from_pixbuf(priv->image, priv->pixbuf_scaled);
+    gtk_image_set_from_pixbuf (priv->image, priv->pixbuf_scaled);
 }
 
 void
@@ -419,9 +419,11 @@ my_system_widget_system_changed (MySystemWidget * self,
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
 
     g_signal_connect_swapped (priv->system, "notify::width",
-                      G_CALLBACK (my_system_widget_system_changed_size), self);
+                              G_CALLBACK (my_system_widget_system_changed_size),
+                              self);
     g_signal_connect_swapped (priv->system, "notify::height",
-                      G_CALLBACK (my_system_widget_system_changed_size), self);
+                              G_CALLBACK (my_system_widget_system_changed_size),
+                              self);
 }
 
 static void
