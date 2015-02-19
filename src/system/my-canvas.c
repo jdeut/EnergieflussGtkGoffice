@@ -492,7 +492,7 @@ my_canvas_is_dragged (GocCanvas * canvas, GdkEventMotion * event, gpointer data)
                       NULL);
     } 
     else if(priv->active_item == NULL && priv->scrolling == TRUE) {
-        goc_canvas_scroll_to(canvas, -x_cv, -y_cv);
+        goc_canvas_scroll_to(canvas, canvas->scroll_x1 - x_item_new, canvas->scroll_y1 - y_item_new);
     }
 
     if(GOC_IS_ITEM(priv->active_item)) {
