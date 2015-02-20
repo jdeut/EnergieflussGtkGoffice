@@ -136,7 +136,7 @@ my_drag_point_class_init (MyDragPointClass * klass)
         g_param_spec_object ("linked-item",
                              "linked item",
                              "A pointer to the linked item",
-                             MY_TYPE_FLOW_ARROW, G_PARAM_READWRITE);
+                             GOC_TYPE_ITEM, G_PARAM_READWRITE);
 
     g_object_class_install_properties (gobject_class,
                                        N_PROPERTIES, obj_properties);
