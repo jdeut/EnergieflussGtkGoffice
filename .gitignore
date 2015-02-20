@@ -7,9 +7,13 @@
 docs
 app-gresource.c
 app-gresource.h
+**/tags
+GPATH
+GRTAGS
+GSYMS
+GTAGS
 
 # Executables
 **/main
-**/tags
 *.exe
 /tests/json-glib-serialize-my-flow-arrow
