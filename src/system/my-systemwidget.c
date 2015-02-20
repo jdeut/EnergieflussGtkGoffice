@@ -13,12 +13,10 @@ void my_system_widget_specific_model_added (MySystemWidget * self,
 void model_handler_picture_path_changed (MySystemWidget * self,
                                          GParamSpec * pspec,
                                          MySystemModel * model);
-void
-my_system_widget_set_label_from_model (MySystemWidget * self,
+void my_system_widget_set_label_from_model (MySystemWidget * self,
                                        MySystemModel * model);
 void my_system_widget_realized (MySystemWidget * self, gpointer data);
-void
-my_system_widget_set_pixbuf_from_model (MySystemWidget * self,
+void my_system_widget_set_pixbuf_from_model (MySystemWidget * self,
                                         MySystemModel * model);
 
 enum
@@ -224,24 +222,30 @@ my_system_widget_pixbuf_set_proper_size (MySystemWidget * self)
 {
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
 
-    GtkAllocation alloc;
+    cairo_rectangle_t rect;
     gint p_w, p_h, dest_w, dest_h;
 
-    gtk_widget_get_allocation (GTK_WIDGET (self), &alloc);
+    if(!MY_IS_SYSTEM(priv->system)) {
+        return;
+    }
 
-    alloc.width = ((gfloat) 0.8 * alloc.width);
-    alloc.height = ((gfloat) 0.7 * alloc.height);
+    g_object_get(priv->system, "width", &rect.width, "height", &rect.height, NULL);
+
+    rect.width = ((gfloat) 0.8 * rect.width);
+    rect.height = ((gfloat) 0.7 * rect.height);
+
+    g_return_if_fail(GDK_IS_PIXBUF(priv->pixbuf_orig));
 
     p_w = gdk_pixbuf_get_width (priv->pixbuf_orig);
     p_h = gdk_pixbuf_get_height (priv->pixbuf_orig);
 
-    if (((gfloat) alloc.width / alloc.height) >= ((gfloat) p_w / p_h)) {
-        dest_h = alloc.height;
-        dest_w = p_w * alloc.height / p_h;
+    if (((gfloat) rect.width / rect.height) >= ((gfloat) p_w / p_h)) {
+        dest_h = rect.height;
+        dest_w = p_w * rect.height / p_h;
     }
     else {
-        dest_h = p_h * alloc.width / p_w;
-        dest_w = alloc.width;
+        dest_h = p_h * rect.width / p_w;
+        dest_w = rect.width;
     }
 
     if (GDK_IS_PIXBUF (priv->pixbuf_scaled))
