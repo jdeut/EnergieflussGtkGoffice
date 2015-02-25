@@ -79,8 +79,6 @@ my_system_widget_properties_dialog_setup (GtkBuilder * builder,
 
                 gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (widgets[i][j]),
                                              filter);
-                gtk_file_chooser_set_filter (GTK_FILE_CHOOSER (widgets[i][j]),
-                                             filter);
 
                 filter = gtk_file_filter_new ();
 
@@ -88,6 +86,8 @@ my_system_widget_properties_dialog_setup (GtkBuilder * builder,
                 gtk_file_filter_add_pattern (filter, "*");
 
                 gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (widgets[i][j]),
+                                             filter);
+                gtk_file_chooser_set_filter (GTK_FILE_CHOOSER (widgets[i][j]),
                                              filter);
 
                 g_signal_connect (widgets[i][j], "file-set",
