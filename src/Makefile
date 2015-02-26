@@ -20,6 +20,7 @@ SYS:=$(shell uname)
 
 CC=gcc
 PKGS=gtk+-3.0 gmodule-2.0 librsvg-2.0 json-glib-1.0 libspectre
+
 PKGS_LINUX=$(PKGS) libgsf-1
 CFLAGS=-gdwarf-2 -g3 `pkg-config --cflags $(PKGS_LINUX)`
 LDLIBS=-gdwarf-2 -g3 -lm `pkg-config --libs $(PKGS_LINUX)` 
@@ -34,9 +35,9 @@ endif
 # if system is win32 (msys2)
 ifneq (, $(findstring MSYS, $(SYS)))
   # the order matters since libgsf-win32-1 is a static library
-  PKGS:=libgsf-win32-1 $(PKGS)
-  CFLAGS=-ggdb -I../../goffice/ `pkg-config --cflags $(PKGS)`
-  LDLIBS=-mwindows -L../../goffice/goffice -lgoffice-0.10 -L/mingw64/lib `pkg-config --libs $(PKGS)` -lz
+  PKGS:=$(PKGS) libgsf-win32-1 
+  CFLAGS=-ggdb `pkg-config --cflags $(PKGS)`
+  LDLIBS=-mwindows -L/mingw64/lib `pkg-config --libs $(PKGS)` -lz
 endif
 
 main: $(OBJ)
