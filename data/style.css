@@ -35,14 +35,13 @@ GtkLabel.TimelinePosDescription {
     /*width: 200px;*/
 }
 
-GtkEventBox.test {
+GtkEventBox.label {
     font-size: 120%;
     font-weight: 400;
     border-color: #000;
     border-width: 2px;
     border-radius: 5px;
     border-style: solid;
-    background-color: #fff;
     padding: 10px;
     color: #000;
 }
