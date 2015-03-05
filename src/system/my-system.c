@@ -444,12 +444,10 @@ my_system_coordinates_changed (MySystem * self,
 
             my_system_get_allocation (secondary_system, &secondary_alloc);
 
-            g_print("secondary anchor\n");
             secondary_anchor =
                 get_dynamic_coordinate_of_dest
                 (primary_alloc, secondary_alloc, &x1, &y1);
 
-            g_print("primary anchor\n");
             primary_anchor =
                 get_dynamic_coordinate_of_dest
                 (secondary_alloc, primary_alloc, &x0, &y0);
