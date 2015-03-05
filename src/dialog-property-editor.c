@@ -96,6 +96,30 @@ dialog_property_editor (GObject * object, gchar * label, GtkWindow * window)
 
     if (MY_IS_FLOW_ARROW (object)) {
 
+        guint type, n;
+        GtkTreeIter iter;
+        GtkTreeModel *model;
+        gboolean valid;
+
+        model =
+            gtk_combo_box_get_model (GTK_COMBO_BOX (combobox_transfer_type));
+
+        valid = gtk_tree_model_get_iter_first (model, &iter);
+
+        /* sync active iter of combobox with current transfer-type */
+        while (valid) {
+            g_object_get (object, "transfer-type", &type, NULL);
+
+            gtk_tree_model_get (model, &iter, 1, &n, -1);
+
+            if (n == type) {
+                gtk_combo_box_set_active_iter (GTK_COMBO_BOX
+                                               (combobox_transfer_type), &iter);
+                break;
+            }
+            valid = gtk_tree_model_iter_next (model, &iter);
+        }
+
         g_object_bind_property (object, "energy-quantity",
                                 spinbutton_energy_quantity, "value",
                                 G_BINDING_BIDIRECTIONAL |
