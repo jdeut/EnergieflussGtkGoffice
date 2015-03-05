@@ -843,6 +843,13 @@ my_flow_arrow_init (MyFlowArrow * self)
     priv->provider = gtk_css_provider_new ();
     priv->transfer_type = MY_TRANSFER_WORK;
 
+    style = go_style_dup (go_styled_object_get_style (GO_STYLED_OBJECT(self)));
+    style->line.cap = CAIRO_LINE_CAP_ROUND;
+    go_styled_object_set_style (GO_STYLED_OBJECT(self), style);
+
+    g_object_unref (style);
+
+
     for (i = 0; i < N_HANDLER; i++) {
         priv->handler[i] = 0;
     }
