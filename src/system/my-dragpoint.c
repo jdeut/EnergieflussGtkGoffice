@@ -195,7 +195,7 @@ my_drag_point_init (MyDragPoint * self)
     style->fill.auto_back = FALSE;
     style->fill.type = GO_STYLE_FILL_PATTERN;
     style->fill.pattern.pattern = GO_PATTERN_SOLID;
-    style->fill.pattern.back = GO_COLOR_WHITE;
+    style->fill.pattern.back = GO_COLOR_FROM_RGB(0xaa, 0xaa, 0xaa);
     go_styled_object_set_style (GO_STYLED_OBJECT(self), style);
 
     g_object_unref (style);
@@ -255,9 +255,20 @@ void
 my_drag_point_end_dragging (MyDragPoint * self)
 {
     MyDragPointPrivate *priv = my_drag_point_get_instance_private(self);
+    GOStyle *style;
+
+    GOStyledObject *gso = GO_STYLED_OBJECT(self);
 
     g_return_if_fail(MY_IS_DRAG_POINT(self));
-    
+
+    priv->is_dragged = TRUE;
+
+    style = go_style_dup (go_styled_object_get_style (gso));
+    style->fill.pattern.back = GO_COLOR_FROM_RGB(0xaa, 0xaa, 0xaa);
+    go_styled_object_set_style (gso, style);
+
+    g_object_unref (style);
+
     if(MY_IS_FLOW_ARROW(priv->linked_item)) {
         my_flow_arrow_end_dragging(MY_FLOW_ARROW(priv->linked_item));
     }
