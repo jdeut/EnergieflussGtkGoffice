@@ -165,7 +165,7 @@ my_canvas_create_popover_for_arrows (MyCanvas * self)
         gtk_builder_new_from_resource
         ("/org/gtk/myapp/my-flow-arrow-popover-content.ui");
 
-    listbox = (GtkWidget *) gtk_builder_get_object (priv->builder_arrow_popover, "listbox1");
+    listbox = (GtkWidget *) gtk_builder_get_object (priv->builder_arrow_popover, "box1");
 
     g_return_if_fail (listbox != NULL);
 
