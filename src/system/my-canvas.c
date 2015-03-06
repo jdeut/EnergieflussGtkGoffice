@@ -23,6 +23,8 @@ struct _MyCanvasPrivate
 {
     /* private members go here */
     GocItem *active_item;
+    GtkWidget *popover_arrow;
+    GtkBuilder *builder_arrow_popover;
     gdouble offsetx, offsety;
     guint add_arrow_mode;
     gboolean scrolling;
@@ -120,6 +122,66 @@ my_canvas_class_init (MyCanvasClass * klass)
                                        N_PROPERTIES, obj_properties);
 }
 
+GtkWidget *
+my_canvas_get_arrow_popover (MyCanvas * self)
+{
+    MyCanvasPrivate *priv = my_canvas_get_instance_private (self);
+
+    g_return_if_fail (MY_IS_CANVAS (self));
+
+    return priv->popover_arrow;
+}
+
+GtkBuilder *
+my_canvas_get_builder_of_arrow_popover (MyCanvas * self)
+{
+    MyCanvasPrivate *priv = my_canvas_get_instance_private (self);
+
+    g_return_if_fail (MY_IS_CANVAS (self));
+
+    return priv->builder_arrow_popover;
+}
+
+GtkWidget *
+my_canvas_get_toplevel (MyCanvas * self)
+{
+    MyCanvasPrivate *priv = my_canvas_get_instance_private (self);
+
+    g_return_if_fail (MY_IS_CANVAS (self));
+
+    return gtk_widget_get_toplevel (GTK_WIDGET (self));
+}
+
+static void
+my_canvas_create_popover_for_arrows (MyCanvas * self)
+{
+    MyCanvasPrivate *priv = my_canvas_get_instance_private (self);
+
+    GtkBuilder *builder;
+    GtkWidget *toplevel;
+    GtkWidget *listbox;
+
+    priv->builder_arrow_popover =
+        gtk_builder_new_from_resource
+        ("/org/gtk/myapp/my-flow-arrow-popover-content.ui");
+
+    listbox = (GtkWidget *) gtk_builder_get_object (priv->builder_arrow_popover, "listbox1");
+
+    g_return_if_fail (listbox != NULL);
+
+    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
+
+    priv->popover_arrow = gtk_popover_new (GTK_WIDGET (toplevel));
+
+    gtk_popover_set_position (GTK_POPOVER (priv->popover_arrow),
+                              GTK_POS_BOTTOM);
+
+    gtk_container_add (GTK_CONTAINER (priv->popover_arrow), listbox);
+
+    gtk_container_set_border_width (GTK_CONTAINER (priv->popover_arrow), 10);
+    gtk_widget_show_all (listbox);
+}
+
 static void
 my_canvas_init (MyCanvas * self)
 {
@@ -136,6 +198,8 @@ my_canvas_init (MyCanvas * self)
     priv->add_arrow_mode = FALSE;
     priv->add_system_mode = FALSE;
     priv->scrolling = FALSE;
+
+    my_canvas_create_popover_for_arrows (self);
 
     for (i = 0; i <= N_GROUPS; i++) {
         self->group[i] = goc_group_new (root);
@@ -170,11 +234,11 @@ my_canvas_show_all_drag_points (MyCanvas * self)
     GocGroup *group_arrows = self->group[GROUP_ARROW_DRAGPOINTS];
 
     for (l = group_arrows->children; l != NULL; l = l->next) {
-        goc_item_show(l->data);
+        goc_item_show (l->data);
     }
     group_arrows = self->group[GROUP_SYSTEM_DRAGPOINTS];
     for (l = group_arrows->children; l != NULL; l = l->next) {
-        goc_item_show(l->data);
+        goc_item_show (l->data);
     }
 }
 
@@ -185,11 +249,11 @@ my_canvas_hide_all_drag_points (MyCanvas * self)
     GocGroup *group_arrows = self->group[GROUP_ARROW_DRAGPOINTS];
 
     for (l = group_arrows->children; l != NULL; l = l->next) {
-        goc_item_hide(l->data);
+        goc_item_hide (l->data);
     }
     group_arrows = self->group[GROUP_SYSTEM_DRAGPOINTS];
     for (l = group_arrows->children; l != NULL; l = l->next) {
-        goc_item_hide(l->data);
+        goc_item_hide (l->data);
     }
 }
 
@@ -458,10 +522,13 @@ my_canvas_end_drag (GocCanvas * canvas, GdkEvent * event, gpointer data)
 
         my_drag_point_end_dragging (MY_DRAG_POINT (priv->active_item));
 
-    } else if (MY_IS_SYSTEM(priv->active_item)) {
+    }
+    else if (MY_IS_SYSTEM (priv->active_item)) {
 
         g_object_notify (G_OBJECT (priv->active_item), "x");
-    } else if (priv->active_item == NULL && priv->scrolling == TRUE) {
+
+    }
+    else if (priv->active_item == NULL && priv->scrolling == TRUE) {
         priv->scrolling = FALSE;
     }
 
@@ -506,12 +573,13 @@ my_canvas_is_dragged (GocCanvas * canvas, GdkEventMotion * event, gpointer data)
     else if (GOC_IS_CIRCLE (priv->active_item)) {
         goc_item_set (priv->active_item, "x", x_item_new, "y", y_item_new,
                       NULL);
-    } 
-    else if(priv->active_item == NULL && priv->scrolling == TRUE) {
-        goc_canvas_scroll_to(canvas, canvas->scroll_x1 - x_item_new, canvas->scroll_y1 - y_item_new);
+    }
+    else if (priv->active_item == NULL && priv->scrolling == TRUE) {
+        goc_canvas_scroll_to (canvas, canvas->scroll_x1 - x_item_new,
+                              canvas->scroll_y1 - y_item_new);
     }
 
-    if(GOC_IS_ITEM(priv->active_item)) {
+    if (GOC_IS_ITEM (priv->active_item)) {
         goc_item_invalidate (priv->active_item);
     }
 

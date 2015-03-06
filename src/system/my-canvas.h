@@ -83,6 +83,15 @@ my_canvas_transform_coordinate (GocCanvas * canvas, gdouble * x, gdouble * y);
 void
 my_canvas_center_system_bounds (MyCanvas * canvas);
 
+GtkWidget *
+my_canvas_get_arrow_popover (MyCanvas * self);
+
+GtkWidget *
+my_canvas_get_toplevel (MyCanvas * self);
+
+GtkBuilder *
+my_canvas_get_builder_of_arrow_popover (MyCanvas * self);
+
 G_END_DECLS
 
 #endif /* __MY_CANVAS_H__ */
