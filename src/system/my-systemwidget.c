@@ -596,8 +596,6 @@ my_system_widget_end_drag (MySystemWidget * self, GdkEvent * event,
     GtkWidget *toplevel;
     MyCanvas *canvas;
 
-    gtk_event_box_set_above_child (GTK_EVENT_BOX (self), FALSE);
-
     toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
 
     canvas = my_window_get_canvas (MY_WINDOW (toplevel));

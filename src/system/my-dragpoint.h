@@ -42,13 +42,13 @@ GType my_drag_point_get_type (void);
 /* fill in public functions */
 
 void
-my_drag_point_begin_dragging (MyDragPoint * self);
+my_drag_point_begin_drag (MyDragPoint * self);
 
 gboolean
 my_drag_point_is_dragged (MyDragPoint * self);
 
 void
-my_drag_point_end_dragging (MyDragPoint * self);
+my_drag_point_end_drag (MyDragPoint * self);
 
 G_END_DECLS
 

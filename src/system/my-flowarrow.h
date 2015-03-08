@@ -65,22 +65,25 @@ MySystem *
 my_flow_arrow_get_linked_system (MyFlowArrow * self);
 
 void
-my_flow_arrow_show_drag_points (MyFlowArrow * self);
+my_flow_arrow_drag_points_set_visible (MyFlowArrow * self, gboolean visible);
 
 void
-my_flow_arrow_hide_drag_points (MyFlowArrow * self);
+my_flow_arrow_drag_points_show (MyFlowArrow * self);
 
 void
-my_flow_arrow_begin_dragging (MyFlowArrow * self);
+my_flow_arrow_drag_points_hide (MyFlowArrow * self);
+
+MyDragPoint *
+my_flow_arrow_get_drag_point (MyFlowArrow * self);
+
+void
+my_flow_arrow_begin_drag (MyFlowArrow * self);
 
 gboolean
 my_flow_arrow_is_dragged (MyFlowArrow * self);
 
 void
-my_flow_arrow_end_dragging (MyFlowArrow * self);
-
-MyDragPoint *
-my_flow_arrow_get_drag_point (MyFlowArrow * self);
+my_flow_arrow_end_drag (MyFlowArrow * self);
 
 void
 my_flow_arrow_set_coordinate (MyFlowArrow * self, const gchar * first_arg_name, ...);

@@ -13,12 +13,6 @@ enum
 
 static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
 
-/* 'private'/'protected' functions */
-static void my_canvas_class_init (MyCanvasClass * klass);
-static void my_canvas_init (MyCanvas * self);
-static void my_canvas_finalize (GObject *);
-static void my_canvas_dispose (GObject *);
-
 struct _MyCanvasPrivate
 {
     /* private members go here */
@@ -34,8 +28,11 @@ struct _MyCanvasPrivate
 
 /* prototypes of private methods */
 
-void
-my_canvas_group_add_item (MyCanvas * self, GocGroup * group, GocItem * item);
+static void my_canvas_class_init (MyCanvasClass * klass);
+static void my_canvas_init (MyCanvas * self);
+static void my_canvas_finalize (GObject *);
+static void my_canvas_dispose (GObject *);
+void my_canvas_group_add_item (MyCanvas * self, GocGroup * group, GocItem * item);
 
 
 G_DEFINE_TYPE_WITH_PRIVATE (MyCanvas, my_canvas, GOC_TYPE_CANVAS);
@@ -90,16 +87,6 @@ my_canvas_error_quark (void)
     return g_quark_from_static_string ("my-canvas-error-quark");
 }
 
-static gboolean
-my_canvas_drag_drag_point (MyCanvas * self, gdouble x, gdouble y)
-{
-    MyCanvasPrivate *priv = my_canvas_get_instance_private (MY_CANVAS (self));
-
-    g_return_if_fail (MY_IS_DRAG_POINT (priv->active_item));
-
-    goc_item_set (priv->active_item, "x", x, "y", y, NULL);
-}
-
 static void
 my_canvas_class_init (MyCanvasClass * klass)
 {
@@ -133,7 +120,7 @@ my_canvas_get_arrow_popover (MyCanvas * self)
 }
 
 GtkBuilder *
-my_canvas_get_builder_of_arrow_popover (MyCanvas * self)
+my_canvas_get_arrow_popover_builder (MyCanvas * self)
 {
     MyCanvasPrivate *priv = my_canvas_get_instance_private (self);
 
@@ -165,7 +152,9 @@ my_canvas_create_popover_for_arrows (MyCanvas * self)
         gtk_builder_new_from_resource
         ("/org/gtk/myapp/my-flow-arrow-popover-content.ui");
 
-    listbox = (GtkWidget *) gtk_builder_get_object (priv->builder_arrow_popover, "box1");
+    listbox =
+        (GtkWidget *) gtk_builder_get_object (priv->builder_arrow_popover,
+                                              "box1");
 
     g_return_if_fail (listbox != NULL);
 
@@ -228,33 +217,36 @@ my_canvas_finalize (GObject * object)
 /* begin public functions */
 
 void
-my_canvas_show_all_drag_points (MyCanvas * self)
+my_canvas_all_drag_points_set_visible (MyCanvas * self, gboolean visible)
 {
+    g_return_if_fail (MY_IS_CANVAS (self));
+
     GList *l;
     GocGroup *group_arrows = self->group[GROUP_ARROW_DRAGPOINTS];
 
     for (l = group_arrows->children; l != NULL; l = l->next) {
-        goc_item_show (l->data);
+        goc_item_set_visible (l->data, visible);
     }
     group_arrows = self->group[GROUP_SYSTEM_DRAGPOINTS];
     for (l = group_arrows->children; l != NULL; l = l->next) {
-        goc_item_show (l->data);
+        goc_item_set_visible (l->data, visible);
     }
 }
 
 void
-my_canvas_hide_all_drag_points (MyCanvas * self)
+my_canvas_all_drag_points_show (MyCanvas * self)
 {
-    GList *l;
-    GocGroup *group_arrows = self->group[GROUP_ARROW_DRAGPOINTS];
+    g_return_if_fail (MY_IS_CANVAS (self));
 
-    for (l = group_arrows->children; l != NULL; l = l->next) {
-        goc_item_hide (l->data);
-    }
-    group_arrows = self->group[GROUP_SYSTEM_DRAGPOINTS];
-    for (l = group_arrows->children; l != NULL; l = l->next) {
-        goc_item_hide (l->data);
-    }
+    my_canvas_all_drag_points_set_visible (self, TRUE);
+}
+
+void
+my_canvas_all_drag_points_hide (MyCanvas * self)
+{
+    g_return_if_fail (MY_IS_CANVAS (self));
+
+    my_canvas_all_drag_points_set_visible (self, FALSE);
 }
 
 gboolean
@@ -407,7 +399,7 @@ my_canvas_drag_begin_button_1 (GocCanvas * canvas, GdkEventButton * event,
         }
         else {
 
-            my_flow_arrow_show_drag_points (arrow);
+            my_flow_arrow_drag_points_show (arrow);
 
             point = my_flow_arrow_get_drag_point (arrow);
 
@@ -454,7 +446,7 @@ my_canvas_drag_begin_button_1 (GocCanvas * canvas, GdkEventButton * event,
     priv->offsety = dy;
 
     if (MY_IS_DRAG_POINT (priv->active_item)) {
-        my_drag_point_begin_dragging (MY_DRAG_POINT (priv->active_item));
+        my_drag_point_begin_drag (MY_DRAG_POINT (priv->active_item));
     }
 
     return FALSE;
@@ -520,7 +512,7 @@ my_canvas_end_drag (GocCanvas * canvas, GdkEvent * event, gpointer data)
             }
         }
 
-        my_drag_point_end_dragging (MY_DRAG_POINT (priv->active_item));
+        my_drag_point_end_drag (MY_DRAG_POINT (priv->active_item));
 
     }
     else if (MY_IS_SYSTEM (priv->active_item)) {

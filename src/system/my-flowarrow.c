@@ -372,7 +372,7 @@ my_flow_arrow_popover_sync_controls_with_props (MyFlowArrow * self)
     gboolean valid;
 
     builder =
-        my_canvas_get_builder_of_arrow_popover (MY_CANVAS
+        my_canvas_get_arrow_popover_builder (MY_CANVAS
                                                 (GOC_ITEM (self)->canvas));
 
     var_energy_quantity =
@@ -1036,7 +1036,7 @@ my_flow_arrow_finalize (GObject * object)
 /* public methods */
 
 void
-my_flow_arrow_begin_dragging (MyFlowArrow * self)
+my_flow_arrow_begin_drag (MyFlowArrow * self)
 {
     MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
@@ -1056,7 +1056,7 @@ my_flow_arrow_is_dragged (MyFlowArrow * self)
 }
 
 void
-my_flow_arrow_end_dragging (MyFlowArrow * self)
+my_flow_arrow_end_drag (MyFlowArrow * self)
 {
     MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
@@ -1078,27 +1078,31 @@ my_flow_arrow_get_drag_point (MyFlowArrow * self)
 }
 
 void
-my_flow_arrow_show_drag_points (MyFlowArrow * self)
+my_flow_arrow_drag_points_set_visible (MyFlowArrow * self, gboolean visible)
 {
     MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
     if (MY_IS_DRAG_POINT (priv->drag_point)) {
-        goc_item_show (GOC_ITEM (priv->drag_point));
+        goc_item_set_visible (GOC_ITEM (priv->drag_point), visible);
     }
 }
 
 void
-my_flow_arrow_hide_drag_points (MyFlowArrow * self)
+my_flow_arrow_drag_points_show (MyFlowArrow * self)
 {
-    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
-
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
-    if (MY_IS_DRAG_POINT (priv->drag_point)) {
-        goc_item_hide (GOC_ITEM (priv->drag_point));
-    }
+    my_flow_arrow_drag_points_set_visible (self, TRUE);
+}
+
+void
+my_flow_arrow_drag_points_hide (MyFlowArrow * self)
+{
+    g_return_if_fail (MY_IS_FLOW_ARROW (self));
+
+    my_flow_arrow_drag_points_set_visible (self, FALSE);
 }
 
 MySystem *

@@ -219,7 +219,7 @@ my_drag_point_finalize (GObject * object)
 /* begin of public functions */
 
 void
-my_drag_point_begin_dragging (MyDragPoint * self)
+my_drag_point_begin_drag (MyDragPoint * self)
 {
     MyDragPointPrivate *priv = my_drag_point_get_instance_private(self);
     GOStyle *style;
@@ -237,7 +237,7 @@ my_drag_point_begin_dragging (MyDragPoint * self)
     g_object_unref (style);
 
     if(MY_IS_FLOW_ARROW(priv->linked_item)) {
-        my_flow_arrow_begin_dragging(MY_FLOW_ARROW(priv->linked_item));
+        my_flow_arrow_begin_drag(MY_FLOW_ARROW(priv->linked_item));
     }
 }
 
@@ -252,7 +252,7 @@ my_drag_point_is_dragged (MyDragPoint * self)
 }
 
 void
-my_drag_point_end_dragging (MyDragPoint * self)
+my_drag_point_end_drag (MyDragPoint * self)
 {
     MyDragPointPrivate *priv = my_drag_point_get_instance_private(self);
     GOStyle *style;
@@ -270,7 +270,7 @@ my_drag_point_end_dragging (MyDragPoint * self)
     g_object_unref (style);
 
     if(MY_IS_FLOW_ARROW(priv->linked_item)) {
-        my_flow_arrow_end_dragging(MY_FLOW_ARROW(priv->linked_item));
+        my_flow_arrow_end_drag(MY_FLOW_ARROW(priv->linked_item));
     }
 
     priv->is_dragged = FALSE;

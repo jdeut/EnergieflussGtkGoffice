@@ -58,7 +58,13 @@ void
 my_canvas_set_add_system_mode (MyCanvas * self);
 
 void
-my_canvas_show_all_drag_points (MyCanvas * self);
+my_canvas_all_drag_points_set_visible (MyCanvas * self, gboolean visible);
+
+void
+my_canvas_all_drag_points_show (MyCanvas * self);
+
+void
+my_canvas_all_drag_points_hide (MyCanvas * self);
 
 gboolean
 my_canvas_end_drag (GocCanvas * canvas, GdkEvent * event, gpointer data);
@@ -75,22 +81,16 @@ gboolean
 my_canvas_generate_json_data_stream (MyCanvas * self, gchar ** str, gsize * len);
 
 void
-my_canvas_hide_all_drag_points (MyCanvas * self);
-
-void
-my_canvas_transform_coordinate (GocCanvas * canvas, gdouble * x, gdouble * y);
-
-void
 my_canvas_center_system_bounds (MyCanvas * canvas);
-
-GtkWidget *
-my_canvas_get_arrow_popover (MyCanvas * self);
 
 GtkWidget *
 my_canvas_get_toplevel (MyCanvas * self);
 
+GtkWidget *
+my_canvas_get_arrow_popover (MyCanvas * self);
+
 GtkBuilder *
-my_canvas_get_builder_of_arrow_popover (MyCanvas * self);
+my_canvas_get_arrow_popover_builder (MyCanvas * self);
 
 G_END_DECLS
 
