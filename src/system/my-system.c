@@ -417,7 +417,7 @@ my_system_coordinates_changed (MySystem * self,
         MyAnchorType secondary_anchor, primary_anchor;
         cairo_rectangle_t primary_alloc, secondary_alloc;
 
-        gdouble x0, x1, y0, y1, arrow_len;
+        gdouble x0, x1, y0, y1, preferred_width, preferred_height;
 
         if (!MY_IS_FLOW_ARROW (l->data)) {
             continue;
@@ -437,7 +437,6 @@ my_system_coordinates_changed (MySystem * self,
 
         my_system_get_allocation (primary_system, &primary_alloc);
 
-        arrow_len = primary_alloc.width * 0.3;
 
         /* if arrow depicts transfer between primary and secondary system */
         if (MY_IS_SYSTEM (secondary_system)) {
@@ -461,27 +460,29 @@ my_system_coordinates_changed (MySystem * self,
             alloc_get_coordinate_of_anchor (primary_alloc,
                                             primary_anchor, &x0, &y0);
 
+            preferred_width = my_flow_arrow_get_preferred_width(MY_FLOW_ARROW(l->data));
+            preferred_height = my_flow_arrow_get_preferred_height(MY_FLOW_ARROW(l->data));
+
             if (primary_anchor == MY_ANCHOR_WEST) {
-                x1 = x0 - arrow_len;
+                x1 = x0 - preferred_width;
                 y1 = y0;
             }
             else if (primary_anchor == MY_ANCHOR_EAST) {
-                x1 = x0 + arrow_len;
+                x1 = x0 + preferred_width;
                 y1 = y0;
             }
             else if (primary_anchor == MY_ANCHOR_SOUTH) {
                 x1 = x0;
-                y1 = y0 + arrow_len;
+                y1 = y0 + preferred_height;
             }
             else if (primary_anchor == MY_ANCHOR_NORTH) {
                 x1 = x0;
-                y1 = y0 - arrow_len;
+                y1 = y0 - preferred_height;
             }
         }
 
         my_flow_arrow_set_coordinate (MY_FLOW_ARROW (l->data), "x0", x0,
                                       "y0", y0, "x1", x1, "y1", y1, NULL);
-
 
         /*if (MY_IS_SYSTEM (primary_system)) {*/
             /*my_system_draw_energy_flow_distribute_arrows (primary_system,*/

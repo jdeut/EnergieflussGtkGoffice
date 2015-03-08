@@ -87,6 +87,13 @@ my_flow_arrow_end_drag (MyFlowArrow * self);
 
 void
 my_flow_arrow_set_coordinate (MyFlowArrow * self, const gchar * first_arg_name, ...);
+
+gdouble
+my_flow_arrow_get_preferred_width (MyFlowArrow * self);
+
+gdouble
+my_flow_arrow_get_preferred_height (MyFlowArrow * self);
+
 G_END_DECLS
 
 #endif /* __MY_FLOW_ARROW_H__ */

@@ -56,9 +56,10 @@ static void my_flow_arrow_update_label (MyFlowArrow * self,
 static void notify_label_text_changed (MyFlowArrow * self, GParamSpec * pspec,
                                        gpointer data);
 void my_flow_arrow_update (MyFlowArrow * self);
-static void
-my_flow_arrow_coordinate_changed (MyFlowArrow * self,
-                                  GParamSpec * pspec, gpointer data);
+static void my_flow_arrow_coordinate_changed (MyFlowArrow * self,
+                                              GParamSpec * pspec,
+                                              gpointer data);
+gdouble my_flow_arrow_get_preferred_width (MyFlowArrow * self);
 
 
 typedef struct
@@ -373,7 +374,7 @@ my_flow_arrow_popover_sync_controls_with_props (MyFlowArrow * self)
 
     builder =
         my_canvas_get_arrow_popover_builder (MY_CANVAS
-                                                (GOC_ITEM (self)->canvas));
+                                             (GOC_ITEM (self)->canvas));
 
     var_energy_quantity =
         (GtkWidget *) gtk_builder_get_object (builder, "spinbutton1");
@@ -437,7 +438,6 @@ my_flow_arrow_popover_closed (MyFlowArrow * self, GtkPopover * popover)
         g_signal_handler_disconnect (priv->popover_handler_instance[i],
                                      priv->popover_handler[i]);
 }
-
 
 static gboolean
 my_flow_arrow_button_pressed (GocItem * item, int button, double xd, double yd)
@@ -694,6 +694,44 @@ my_flow_arrow_energy_quantity_changed (MyFlowArrow * self,
     g_object_notify (G_OBJECT (self), "x0");
 }
 
+gdouble
+my_flow_arrow_get_preferred_height (MyFlowArrow * self)
+{
+    gdouble height_label, height_arrow_tip;
+
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
+    g_object_get (priv->label, "height", &height_label, NULL);
+
+    if (priv->arrow_end->typ == GO_ARROW_KITE) {
+        height_arrow_tip = priv->arrow_end->a;
+    }
+    else {
+        height_arrow_tip = priv->arrow_start->a;
+    }
+
+    return height_label + height_arrow_tip + 30.0;
+}
+
+gdouble
+my_flow_arrow_get_preferred_width (MyFlowArrow * self)
+{
+    gdouble width_label, width_arrow_tip;
+
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
+    g_object_get (priv->label, "width", &width_label, NULL);
+
+    if (priv->arrow_end->typ == GO_ARROW_KITE) {
+        width_arrow_tip = priv->arrow_end->a;
+    }
+    else {
+        width_arrow_tip = priv->arrow_start->a;
+    }
+
+    return width_label + width_arrow_tip + 30.0;
+}
+
 static void
 notify_label_text_changed (MyFlowArrow * self, GParamSpec * pspec,
                            gpointer data)
@@ -714,6 +752,9 @@ notify_label_text_changed (MyFlowArrow * self, GParamSpec * pspec,
     group_labels = canvas->group[GROUP_LABELS];
 
     if (priv->label_text == NULL)
+        return;
+
+    if (g_utf8_strlen (priv->label_text, -1) == 0)
         return;
 
     if (GOC_IS_ITEM (priv->label))
