@@ -128,7 +128,7 @@
           <object class="GtkEntry" id="entry2">
             <property name="width_request">170</property>
             <property name="visible">True</property>
-            <property name="can_focus">True</property>
+            <property name="can_focus">False</property>
             <property name="valign">center</property>
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
@@ -254,7 +254,7 @@
           <object class="GtkSpinButton" id="spinbutton1">
             <property name="width_request">170</property>
             <property name="visible">True</property>
-            <property name="can_focus">True</property>
+            <property name="can_focus">False</property>
             <property name="valign">center</property>
             <property name="vexpand">True</property>
             <property name="adjustment">adjustment1</property>
