@@ -249,6 +249,17 @@
                 </style>
               </object>
             </child>
+            <child type="overlay">
+              <object class="GtkButton" id="energy_control">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">x</property>
+                <property name="halign">end</property>
+                <property name="valign">end</property>
+                <property name="margin_bottom">10</property>
+                <property name="margin_right">10</property>
+              </object>
+            </child>
           </object>
           <packing>
             <property name="left_attach">0</property>

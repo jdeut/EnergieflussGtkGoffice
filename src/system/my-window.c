@@ -16,6 +16,26 @@ void my_window_change_view_state_change (GSimpleAction * action,
 void my_window_show_drag_points_state_change (GSimpleAction * action,
                                               GVariant * state,
                                               gpointer user_data);
+void
+energy_control_value_changed (MyWindow * self, GtkAdjustment * adj);
+
+enum
+{
+    UNIT_JOULE,
+    UNIT_WATTHOUR,
+    UNIT_CAL,
+    N_UNIT
+};
+
+enum
+{
+    FACTOR_MILLI,
+    FACTOR_ONE,
+    FACTOR_KILO,
+    FACTOR_MEGA,
+    FACTOR_GIGA,
+    N_FACTOR
+};
 
 enum
 {
@@ -42,8 +62,12 @@ struct _MyWindowPrivate
     GtkWidget *customtitle;
     GtkWidget *headerbar;
     GtkWidget *radiobutton1;
+    GtkWidget *energy_control;
+    GtkWidget *popover_energy_control;
+    GtkBuilder *builder_energy_control;
 
     gdouble zoom_factor;
+    gdouble energy;
 
     gulong handler_model[N_MODEL_HANDLER];
 
@@ -245,6 +269,8 @@ my_window_class_init (MyWindowClass * klass)
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
                                                   MyWindow, description);
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
+                                                  MyWindow, energy_control);
+    gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
                                                   MyWindow, scrolledwindow1);
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
                                                   MyWindow, scale);
@@ -315,6 +341,175 @@ my_window_timeline_changed (MyWindow * self, gpointer data)
     timeline_model_handler_current_pos_changed (self, priv->timeline);
 }
 
+void my_window_energy_control_clicked(MyWindow *self, GtkWidget *button) {
+
+    MyWindowPrivate *priv = my_window_get_instance_private (self);
+
+    gtk_widget_show(priv->popover_energy_control);
+}
+
+gdouble
+energy_control_get_factor (MyWindow * self)
+{
+    GtkTreeIter iter;
+    GtkTreeModel *model;
+    GtkWidget *box;
+    guint nr;
+    gdouble energy;
+
+    MyWindowPrivate *priv = my_window_get_instance_private (self);
+
+    box =
+        (GtkWidget *) gtk_builder_get_object (priv->builder_energy_control,
+                                              "factor");
+
+    gtk_combo_box_get_active_iter (GTK_COMBO_BOX (box), &iter);
+    model = gtk_combo_box_get_model (GTK_COMBO_BOX (box));
+
+    gtk_tree_model_get (model, &iter, 1, &nr, -1);
+
+    switch (nr) {
+        case FACTOR_MILLI:
+            return 0.001;
+        case FACTOR_ONE:
+            return 1.0;
+        case FACTOR_KILO:
+            return 1000.0;
+        case FACTOR_MEGA:
+            return 1000.0 * 1000.0;
+        case FACTOR_GIGA:
+            return 1000.0 * 1000.0 * 1000.0;
+        default:
+            break;
+    }
+}
+
+gdouble
+energy_control_get_unit_factor (MyWindow * self)
+{
+
+    GtkTreeIter iter;
+    GtkTreeModel *model;
+    GtkWidget *box;
+    guint nr;
+
+    MyWindowPrivate *priv = my_window_get_instance_private (self);
+
+    box =
+        (GtkWidget *) gtk_builder_get_object (priv->builder_energy_control,
+                                              "unit");
+
+    gtk_combo_box_get_active_iter (GTK_COMBO_BOX (box), &iter);
+    model = gtk_combo_box_get_model (GTK_COMBO_BOX (box));
+
+    gtk_tree_model_get (model, &iter, 1, &nr, -1);
+
+    switch (nr) {
+        case UNIT_JOULE:
+            return 1.0;
+        case UNIT_WATTHOUR:
+            return 3600.0;
+        case UNIT_CAL:
+            return 4.18;
+        default:
+            break;
+    }
+}
+
+
+void
+energy_control_factor_changed (MyWindow * self, GtkWidget * box)
+{
+
+    MyWindowPrivate *priv = my_window_get_instance_private (self);
+
+    gdouble factor, unit_factor;
+    gdouble energy;
+    GtkAdjustment *adjust;
+
+    factor = energy_control_get_factor (self);
+    unit_factor = energy_control_get_unit_factor (self);
+
+    adjust =
+        (GtkAdjustment *) gtk_builder_get_object (priv->builder_energy_control,
+                                                  "energy");
+
+    g_print ("%f %f\n", factor, unit_factor);
+
+    energy = priv->energy / (factor * unit_factor);
+
+    g_print ("%f\n", energy);
+
+    g_signal_handlers_block_by_func(adjust, energy_control_value_changed, self);
+
+    gtk_adjustment_set_value (adjust, energy);
+
+    g_signal_handlers_unblock_by_func(adjust, energy_control_value_changed, self);
+}
+
+void
+energy_control_value_changed (MyWindow * self, GtkAdjustment * adj)
+{
+
+    MyWindowPrivate *priv = my_window_get_instance_private (self);
+    gdouble factor, unit_factor;
+    gdouble energy;
+
+    factor = energy_control_get_factor (self);
+    unit_factor = energy_control_get_unit_factor (self);
+
+    g_print("Energy: %f\n", priv->energy);
+
+    energy = gtk_adjustment_get_value(adj);
+
+    priv->energy = energy * factor * unit_factor;
+
+    g_print("priv->Energy: %f\n", priv->energy);
+}
+
+void my_window_init_energy_control (MyWindow *self) {
+
+    MyWindowPrivate *priv = my_window_get_instance_private (self);
+
+    GtkWidget *popover, *child;
+    GtkWidget *widget, *factor, *unit;
+    GtkAdjustment *adj;
+    GtkBuilder *builder;
+
+    builder =
+        gtk_builder_new_from_resource
+        ("/org/gtk/myapp/my-canvas-energy-control.ui");
+
+    priv->builder_energy_control = builder;
+
+    widget = (GtkWidget *) gtk_builder_get_object (builder, "box1");
+    factor = (GtkWidget *) gtk_builder_get_object (builder, "factor");
+    unit = (GtkWidget *) gtk_builder_get_object (builder, "unit");
+    adj = (GtkAdjustment *) gtk_builder_get_object (builder, "energy");
+
+    popover = gtk_popover_new (priv->energy_control);
+    gtk_popover_set_position (GTK_POPOVER (popover), GTK_POS_TOP);
+    gtk_container_add (GTK_CONTAINER (popover), widget);
+    gtk_container_set_border_width (GTK_CONTAINER (popover), 6);
+    gtk_widget_show (widget);
+
+    priv->popover_energy_control = popover;
+
+    g_signal_connect_swapped (priv->energy_control, "clicked", G_CALLBACK(my_window_energy_control_clicked), self);
+
+    g_signal_connect_swapped (adj, "value-changed",
+                              G_CALLBACK
+                              (energy_control_value_changed), self);
+
+    g_signal_connect_swapped (factor, "changed",
+                              G_CALLBACK
+                              (energy_control_factor_changed), self);
+
+    g_signal_connect_swapped (unit, "changed",
+                              G_CALLBACK
+                              (energy_control_factor_changed), self);
+}
+
 static void
 my_window_init (MyWindow * self)
 {
@@ -325,6 +520,7 @@ my_window_init (MyWindow * self)
 
     priv->timeline = NULL;
     priv->zoom_factor = 1;
+    priv->energy = 1000;
 
     for (i = 0; i < N_MODEL_HANDLER; i++) {
         priv->handler_model[i] = 0;
@@ -338,6 +534,8 @@ my_window_init (MyWindow * self)
 
     g_signal_connect (self, "notify::timeline-model",
                       G_CALLBACK (my_window_timeline_changed), priv->timeline);
+
+    my_window_init_energy_control (self);
 }
 
 static void
