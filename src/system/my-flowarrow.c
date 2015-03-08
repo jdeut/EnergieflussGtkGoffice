@@ -35,6 +35,7 @@ enum
 enum
 {
     CANVAS_CHANGED_ENERGY_QUANTITY,
+    CANVAS_CHANGED_TRANSFER_TYPE,
     CANVAS_CHANGED_LABEL_TEXT,
     FLOW_ARROW_CHANGED_X0,
     FLOW_ARROW_CHANGED_Y0,
@@ -270,7 +271,8 @@ my_flow_arrow_get_property (GObject * object,
 }
 
 void
-my_flow_arrow_update_transfer_type (MyFlowArrow * self)
+notify_transfer_type_changed (MyFlowArrow * self,
+                              GParamSpec * pspec, gpointer data)
 {
 
     MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
@@ -332,8 +334,6 @@ my_flow_arrow_set_transfer_type (MyFlowArrow * self, guint transfer_type)
     else if (transfer_type == MY_TRANSFER_RADIATION) {
         style->line.color = GO_COLOR_FROM_RGBA (220, 220, 0, 255);
     }
-
-    my_flow_arrow_update_transfer_type (self);
 }
 
 void
@@ -345,8 +345,6 @@ my_flow_arrow_combo_transfer_type_row_changed (MyFlowArrow * self,
     guint nr;
 
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
-
-    g_print ("ok\n");
 
     gtk_combo_box_get_active_iter (GTK_COMBO_BOX (box), &iter);
     model = gtk_combo_box_get_model (GTK_COMBO_BOX (box));
@@ -406,6 +404,7 @@ my_flow_arrow_popover_sync_controls_with_props (MyFlowArrow * self)
 
     priv->popover_handler_instance[POPOVER_HANDLER_TRANSFER_TYPE_CHANGED] =
         var_transfer_type;
+
     priv->popover_handler[POPOVER_HANDLER_TRANSFER_TYPE_CHANGED] =
         g_signal_connect_swapped (var_transfer_type, "changed",
                                   G_CALLBACK
@@ -751,14 +750,17 @@ notify_label_text_changed (MyFlowArrow * self, GParamSpec * pspec,
 
     group_labels = canvas->group[GROUP_LABELS];
 
-    if (priv->label_text == NULL)
+    if (priv->label_text == NULL) {
         return;
+    }
 
-    if (g_utf8_strlen (priv->label_text, -1) == 0)
+    if (g_utf8_strlen (priv->label_text, -1) == 0) {
         return;
+    }
 
-    if (GOC_IS_ITEM (priv->label))
+    if (GOC_IS_ITEM (priv->label)) {
         return;
+    }
 
     GtkWidget *widget;
     GtkStyleContext *context;
@@ -831,7 +833,7 @@ my_flow_arrow_update (MyFlowArrow * self)
     }
 
     my_flow_arrow_update_label (self, NULL, NULL);
-    my_flow_arrow_update_transfer_type (self);
+    g_object_notify (G_OBJECT (self), "transfer-type");
 }
 
 static void
@@ -940,6 +942,10 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
         g_signal_connect (self, "notify::label-text",
                           G_CALLBACK (notify_label_text_changed), NULL);
 
+    priv->handler[CANVAS_CHANGED_TRANSFER_TYPE] =
+        g_signal_connect (self, "notify::transfer-type",
+                          G_CALLBACK (notify_transfer_type_changed), NULL);
+
     priv->handler[FLOW_ARROW_CHANGED_X0] =
         g_signal_connect (self, "notify::x0",
                           G_CALLBACK (my_flow_arrow_coordinate_changed), NULL);
@@ -970,8 +976,7 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
 
     g_object_notify (G_OBJECT (self), "energy-quantity");
     g_object_notify (G_OBJECT (self), "label-text");
-
-    my_flow_arrow_update_transfer_type (self);
+    g_object_notify (G_OBJECT (self), "transfer-type");
 }
 
 
