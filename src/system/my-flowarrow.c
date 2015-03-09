@@ -359,32 +359,20 @@ my_flow_arrow_popover_sync_controls_with_props (MyFlowArrow * self)
 {
     MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
-    GtkBuilder *builder;
-    GtkWidget *var_energy_quantity;
-    GtkWidget *var_label_text;
-    GtkWidget *var_button_destroy;
-    GtkWidget *var_transfer_type;
-    GtkListStore *ls_transfer_type;
+    FlowArrowSettings fas;
+
     guint type, n;
     GtkTreeIter iter;
     GtkTreeModel *model;
     gboolean valid;
 
-    builder =
-        my_canvas_get_arrow_popover_builder (MY_CANVAS
-                                             (GOC_ITEM (self)->canvas));
+    GtkWidget *toplevel;
 
-    var_energy_quantity =
-        (GtkWidget *) gtk_builder_get_object (builder, "spinbutton1");
-    var_label_text = (GtkWidget *) gtk_builder_get_object (builder, "entry2");
-    var_button_destroy =
-        (GtkWidget *) gtk_builder_get_object (builder, "button1");
-    ls_transfer_type =
-        (GtkListStore *) gtk_builder_get_object (builder, "liststore1");
-    var_transfer_type =
-        (GtkWidget *) gtk_builder_get_object (builder, "combobox1");
+    toplevel = my_canvas_get_toplevel(MY_CANVAS(GOC_ITEM(self)->canvas));
 
-    model = gtk_combo_box_get_model (GTK_COMBO_BOX (var_transfer_type));
+    fas = my_window_get_flow_arrow_settings (MY_WINDOW(toplevel));
+
+    model = gtk_combo_box_get_model (GTK_COMBO_BOX (fas.transfer_type));
 
     valid = gtk_tree_model_get_iter_first (model, &iter);
 
@@ -396,28 +384,28 @@ my_flow_arrow_popover_sync_controls_with_props (MyFlowArrow * self)
 
         if (n == type) {
             gtk_combo_box_set_active_iter (GTK_COMBO_BOX
-                                           (var_transfer_type), &iter);
+                                           (fas.transfer_type), &iter);
             break;
         }
         valid = gtk_tree_model_iter_next (model, &iter);
     }
 
     priv->popover_handler_instance[POPOVER_HANDLER_TRANSFER_TYPE_CHANGED] =
-        var_transfer_type;
+        fas.transfer_type;
 
     priv->popover_handler[POPOVER_HANDLER_TRANSFER_TYPE_CHANGED] =
-        g_signal_connect_swapped (var_transfer_type, "changed",
+        g_signal_connect_swapped (fas.transfer_type, "changed",
                                   G_CALLBACK
                                   (my_flow_arrow_combo_transfer_type_row_changed),
                                   self);
 
     priv->popover_binding[POPOVER_BINDING_LABEL_TEXT] =
-        g_object_bind_property (self, "label-text", var_label_text, "text",
+        g_object_bind_property (self, "label-text", fas.label, "text",
                                 G_BINDING_BIDIRECTIONAL |
                                 G_BINDING_SYNC_CREATE);
 
     priv->popover_binding[POPOVER_BINDING_ENERGY_QUANTITY] =
-        g_object_bind_property (self, "energy-quantity", var_energy_quantity,
+        g_object_bind_property (self, "energy-quantity", fas.energy_quantity,
                                 "value",
                                 G_BINDING_BIDIRECTIONAL |
                                 G_BINDING_SYNC_CREATE);
@@ -444,6 +432,7 @@ my_flow_arrow_button_pressed (GocItem * item, int button, double xd, double yd)
     MyFlowArrowPrivate *priv =
         my_flow_arrow_get_instance_private (MY_FLOW_ARROW (item));
 
+    FlowArrowSettings fas;
     GtkWidget *toplevel;
     GdkRectangle rect;
     GdkDeviceManager *device_manager;
@@ -472,16 +461,16 @@ my_flow_arrow_button_pressed (GocItem * item, int button, double xd, double yd)
     rect.width = 2;
     rect.height = 2;
 
-    GtkWidget *popover = my_canvas_get_arrow_popover (MY_CANVAS (item->canvas));
+    fas = my_window_get_flow_arrow_settings(MY_WINDOW(toplevel));
 
-    gtk_popover_set_pointing_to (GTK_POPOVER (popover), &rect);
-    gtk_widget_show (popover);
+    gtk_popover_set_pointing_to (GTK_POPOVER (fas.popover), &rect);
+    gtk_widget_show (fas.popover);
 
     my_flow_arrow_popover_sync_controls_with_props (self);
 
-    priv->popover_handler_instance[POPOVER_HANDLER_POPOVER_CLOSED] = popover;
+    priv->popover_handler_instance[POPOVER_HANDLER_POPOVER_CLOSED] = fas.popover;
     priv->popover_handler[POPOVER_HANDLER_POPOVER_CLOSED] =
-        g_signal_connect_swapped (popover, "closed",
+        g_signal_connect_swapped (fas.popover, "closed",
                                   G_CALLBACK (my_flow_arrow_popover_closed),
                                   self);
 

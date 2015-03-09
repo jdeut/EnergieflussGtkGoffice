@@ -20,24 +20,6 @@ void energy_control_value_changed (MyWindow * self, GtkAdjustment * adj);
 
 enum
 {
-    UNIT_JOULE,
-    UNIT_WATTHOUR,
-    UNIT_CAL,
-    N_UNIT
-};
-
-enum
-{
-    FACTOR_MILLI,
-    FACTOR_ONE,
-    FACTOR_KILO,
-    FACTOR_MEGA,
-    FACTOR_GIGA,
-    N_FACTOR
-};
-
-enum
-{
     PROP_0,
     PROP_TIMELINE,
     N_PROPERTIES
@@ -62,7 +44,8 @@ struct _MyWindowPrivate
     GtkWidget *headerbar;
     GtkWidget *radiobutton1;
 
-    EnergyControl ec;
+    EnergySettings es;
+    FlowArrowSettings fas;
 
     gdouble zoom_factor;
     gdouble energy;
@@ -278,36 +261,78 @@ my_window_class_init (MyWindowClass * klass)
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
                                                   MyWindow, customtitle);
 
+    /* bind energy settings widgets to private struct */
+
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "energy_control_button", FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                ec.button));
+                                                                 es.button));
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "energy_control_box", FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                ec.box));
+                                                                 es.box));
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "energy_control_spinbutton",
                                                FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                ec.spinbutton));
+                                                                 es.
+                                                                 spinbutton));
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "energy_control_unit", FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                ec.unit));
+                                                                 es.unit));
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "energy_control_factor", FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                ec.factor));
+                                                                 es.factor));
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "energy_control_energy", FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                ec.adj));
+                                                                 es.adj));
+
+    /* bind flow arrow settings widgets to private struct */
+
+    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
+                                               "flow_arrow_ubertragungsform", FALSE,
+                                               G_PRIVATE_OFFSET (MyWindow,
+                                                                 fas.transfer_type));
+
+    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
+                                               "flow_arrow_box", FALSE,
+                                               G_PRIVATE_OFFSET (MyWindow,
+                                                                 fas.box));
+
+    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
+                                               "flow_arrow_energy_quantity",
+                                               FALSE,
+                                               G_PRIVATE_OFFSET (MyWindow,
+                                                                 fas.
+                                                                 energy_quantity));
+
+    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
+                                               "flow_arrow_label", FALSE,
+                                               G_PRIVATE_OFFSET (MyWindow,
+                                                                 fas.label));
+
+    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
+                                               "flow_arrow_unit", FALSE,
+                                               G_PRIVATE_OFFSET (MyWindow,
+                                                                 fas.unit));
+
+    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
+                                               "flow_arrow_factor", FALSE,
+                                               G_PRIVATE_OFFSET (MyWindow,
+                                                                 fas.factor));
+
+    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
+                                               "flow_arrow_energy", FALSE,
+                                               G_PRIVATE_OFFSET (MyWindow,
+                                                                 fas.adj));
 }
 
 void
@@ -375,7 +400,7 @@ my_window_energy_control_clicked (MyWindow * self, GtkWidget * button)
 
     MyWindowPrivate *priv = my_window_get_instance_private (self);
 
-    gtk_widget_show (priv->ec.popover);
+    gtk_widget_show (priv->es.popover);
 }
 
 gdouble
@@ -387,8 +412,8 @@ energy_control_get_factor (MyWindow * self)
 
     MyWindowPrivate *priv = my_window_get_instance_private (self);
 
-    gtk_combo_box_get_active_iter (GTK_COMBO_BOX (priv->ec.factor), &iter);
-    model = gtk_combo_box_get_model (GTK_COMBO_BOX (priv->ec.factor));
+    gtk_combo_box_get_active_iter (GTK_COMBO_BOX (priv->es.factor), &iter);
+    model = gtk_combo_box_get_model (GTK_COMBO_BOX (priv->es.factor));
 
     gtk_tree_model_get (model, &iter, 1, &nr, -1);
 
@@ -418,8 +443,8 @@ energy_control_get_unit_factor (MyWindow * self)
 
     MyWindowPrivate *priv = my_window_get_instance_private (self);
 
-    gtk_combo_box_get_active_iter (GTK_COMBO_BOX (priv->ec.unit), &iter);
-    model = gtk_combo_box_get_model (GTK_COMBO_BOX (priv->ec.unit));
+    gtk_combo_box_get_active_iter (GTK_COMBO_BOX (priv->es.unit), &iter);
+    model = gtk_combo_box_get_model (GTK_COMBO_BOX (priv->es.unit));
 
     gtk_tree_model_get (model, &iter, 1, &nr, -1);
 
@@ -455,13 +480,13 @@ energy_control_factor_changed (MyWindow * self, GtkWidget * box)
 
     g_print ("%f\n", energy);
 
-    g_signal_handlers_block_by_func (priv->ec.adj, energy_control_value_changed,
+    g_signal_handlers_block_by_func (priv->es.adj, energy_control_value_changed,
                                      self);
 
-    gtk_adjustment_set_value (priv->ec.adj, energy);
+    gtk_adjustment_set_value (priv->es.adj, energy);
 
-    g_signal_handlers_unblock_by_func (priv->ec.adj, energy_control_value_changed,
-                                       self);
+    g_signal_handlers_unblock_by_func (priv->es.adj,
+                                       energy_control_value_changed, self);
 }
 
 void
@@ -477,7 +502,7 @@ energy_control_value_changed (MyWindow * self, GtkAdjustment * adj)
 
     g_print ("Energy: %f\n", priv->energy);
 
-    energy = gtk_adjustment_get_value (priv->ec.adj);
+    energy = gtk_adjustment_get_value (priv->es.adj);
 
     priv->energy = energy * factor * unit_factor;
 
@@ -485,33 +510,60 @@ energy_control_value_changed (MyWindow * self, GtkAdjustment * adj)
 }
 
 void
-my_window_init_energy_control (MyWindow * self)
+my_window_energy_control_init (MyWindow * self)
 {
 
     MyWindowPrivate *priv = my_window_get_instance_private (self);
 
     GtkWidget *popover;
 
-    popover = gtk_popover_new (priv->ec.button);
+    popover = gtk_popover_new (priv->es.button);
     gtk_popover_set_position (GTK_POPOVER (popover), GTK_POS_TOP);
-    gtk_container_add (GTK_CONTAINER (popover), priv->ec.box);
+    gtk_container_add (GTK_CONTAINER (popover), priv->es.box);
     gtk_container_set_border_width (GTK_CONTAINER (popover), 6);
-    gtk_widget_show (priv->ec.box);
+    gtk_widget_show (priv->es.box);
 
-    priv->ec.popover = popover;
+    priv->es.popover = popover;
 
-    g_signal_connect_swapped (priv->ec.button, "clicked",
+    g_signal_connect_swapped (priv->es.button, "clicked",
                               G_CALLBACK (my_window_energy_control_clicked),
                               self);
 
-    g_signal_connect_swapped (priv->ec.adj, "value-changed",
+    g_signal_connect_swapped (priv->es.adj, "value-changed",
                               G_CALLBACK (energy_control_value_changed), self);
 
-    g_signal_connect_swapped (priv->ec.factor, "changed",
+    g_signal_connect_swapped (priv->es.factor, "changed",
                               G_CALLBACK (energy_control_factor_changed), self);
 
-    g_signal_connect_swapped (priv->ec.unit, "changed",
+    g_signal_connect_swapped (priv->es.unit, "changed",
                               G_CALLBACK (energy_control_factor_changed), self);
+}
+
+FlowArrowSettings
+my_window_get_flow_arrow_settings (MyWindow * self)
+{
+
+    MyWindowPrivate *priv = my_window_get_instance_private (self);
+
+    g_return_if_fail (MY_IS_WINDOW (self));
+
+    return priv->fas;
+}
+
+void
+my_window_flow_arrow_settings_init (MyWindow * self)
+{
+
+    MyWindowPrivate *priv = my_window_get_instance_private (self);
+
+    priv->fas.popover = gtk_popover_new (GTK_WIDGET (priv->canvas));
+
+    gtk_popover_set_position (GTK_POPOVER (priv->fas.popover), GTK_POS_BOTTOM);
+
+    gtk_container_add (GTK_CONTAINER (priv->fas.popover), priv->fas.box);
+
+    gtk_container_set_border_width (GTK_CONTAINER (priv->fas.popover), 10);
+    gtk_widget_show_all (priv->fas.box);
 }
 
 static void
@@ -538,8 +590,6 @@ my_window_init (MyWindow * self)
 
     g_signal_connect (self, "notify::timeline-model",
                       G_CALLBACK (my_window_timeline_changed), priv->timeline);
-
-    my_window_init_energy_control (self);
 }
 
 static void
@@ -568,6 +618,8 @@ my_window_new (GtkApplication * app)
     my_window_populate (self);
 
     my_window_style_init (self);
+    my_window_energy_control_init (self);
+    my_window_flow_arrow_settings_init (self);
 
     gtk_application_set_accels_for_action (app, "win.zoom-in", zoom_in_accels);
     gtk_application_set_accels_for_action (app, "win.zoom-out",

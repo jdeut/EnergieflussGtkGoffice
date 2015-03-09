@@ -17,12 +17,10 @@ struct _MyCanvasPrivate
 {
     /* private members go here */
     GocItem *active_item;
-    GtkWidget *popover_arrow;
-    GtkBuilder *builder_arrow_popover;
     gdouble offsetx, offsety;
     guint add_arrow_mode;
-    gboolean scrolling;
     guint add_system_mode;
+    gboolean scrolling;
     MyTimelineModel *timeline;
 };
 
@@ -110,26 +108,6 @@ my_canvas_class_init (MyCanvasClass * klass)
 }
 
 GtkWidget *
-my_canvas_get_arrow_popover (MyCanvas * self)
-{
-    MyCanvasPrivate *priv = my_canvas_get_instance_private (self);
-
-    g_return_if_fail (MY_IS_CANVAS (self));
-
-    return priv->popover_arrow;
-}
-
-GtkBuilder *
-my_canvas_get_arrow_popover_builder (MyCanvas * self)
-{
-    MyCanvasPrivate *priv = my_canvas_get_instance_private (self);
-
-    g_return_if_fail (MY_IS_CANVAS (self));
-
-    return priv->builder_arrow_popover;
-}
-
-GtkWidget *
 my_canvas_get_toplevel (MyCanvas * self)
 {
     MyCanvasPrivate *priv = my_canvas_get_instance_private (self);
@@ -137,38 +115,6 @@ my_canvas_get_toplevel (MyCanvas * self)
     g_return_if_fail (MY_IS_CANVAS (self));
 
     return gtk_widget_get_toplevel (GTK_WIDGET (self));
-}
-
-static void
-my_canvas_create_popover_for_arrows (MyCanvas * self)
-{
-    MyCanvasPrivate *priv = my_canvas_get_instance_private (self);
-
-    GtkBuilder *builder;
-    GtkWidget *toplevel;
-    GtkWidget *listbox;
-
-    priv->builder_arrow_popover =
-        gtk_builder_new_from_resource
-        ("/org/gtk/myapp/my-flow-arrow-popover-content.ui");
-
-    listbox =
-        (GtkWidget *) gtk_builder_get_object (priv->builder_arrow_popover,
-                                              "box1");
-
-    g_return_if_fail (listbox != NULL);
-
-    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
-
-    priv->popover_arrow = gtk_popover_new (GTK_WIDGET (toplevel));
-
-    gtk_popover_set_position (GTK_POPOVER (priv->popover_arrow),
-                              GTK_POS_BOTTOM);
-
-    gtk_container_add (GTK_CONTAINER (priv->popover_arrow), listbox);
-
-    gtk_container_set_border_width (GTK_CONTAINER (priv->popover_arrow), 10);
-    gtk_widget_show_all (listbox);
 }
 
 static void
@@ -187,8 +133,6 @@ my_canvas_init (MyCanvas * self)
     priv->add_arrow_mode = FALSE;
     priv->add_system_mode = FALSE;
     priv->scrolling = FALSE;
-
-    my_canvas_create_popover_for_arrows (self);
 
     for (i = 0; i <= N_GROUPS; i++) {
         self->group[i] = goc_group_new (root);

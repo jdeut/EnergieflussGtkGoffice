@@ -20,6 +20,24 @@ G_BEGIN_DECLS
 
 #define MY_WINDOW_ERROR                (my_window_error_quark ())
 
+enum
+{
+    UNIT_JOULE,
+    UNIT_WATTHOUR,
+    UNIT_CAL,
+    N_UNIT
+};
+
+enum
+{
+    FACTOR_MILLI,
+    FACTOR_ONE,
+    FACTOR_KILO,
+    FACTOR_MEGA,
+    FACTOR_GIGA,
+    N_FACTOR
+};
+
 typedef struct _MyWindow MyWindow;
 typedef struct _MyWindowClass MyWindowClass;
 typedef struct _MyWindowPrivate MyWindowPrivate;
@@ -32,7 +50,18 @@ typedef struct {
     GtkWidget *unit;
     GtkWidget *factor;
     GtkAdjustment *adj;
-} EnergyControl;
+} EnergySettings;
+
+typedef struct {
+    GtkWidget *popover;
+    GtkWidget *transfer_type;
+    GtkWidget *box;
+    GtkWidget *label;
+    GtkWidget *energy_quantity;
+    GtkWidget *unit;
+    GtkWidget *factor;
+    GtkAdjustment *adj;
+} FlowArrowSettings;
 
 struct _MyWindow
 {
@@ -79,6 +108,9 @@ my_window_get_canvas (MyWindow * self);
 
 GtkWidget *
 my_window_get_change_view_radio_button (MyWindow * self);
+
+FlowArrowSettings
+my_window_get_flow_arrow_settings (MyWindow * self);
 
 G_END_DECLS
 

@@ -86,12 +86,6 @@ my_canvas_center_system_bounds (MyCanvas * canvas);
 GtkWidget *
 my_canvas_get_toplevel (MyCanvas * self);
 
-GtkWidget *
-my_canvas_get_arrow_popover (MyCanvas * self);
-
-GtkBuilder *
-my_canvas_get_arrow_popover_builder (MyCanvas * self);
-
 G_END_DECLS
 
 #endif /* __MY_CANVAS_H__ */
