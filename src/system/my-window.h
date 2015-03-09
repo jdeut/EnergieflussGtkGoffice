@@ -47,19 +47,19 @@ typedef struct {
     GtkWidget *popover;
     GtkWidget *box;
     GtkWidget *spinbutton;
-    GtkWidget *unit;
-    GtkWidget *factor;
+    GtkComboBox *unit;
+    GtkComboBox *prefix;
     GtkAdjustment *adj;
 } EnergySettings;
 
 typedef struct {
     GtkWidget *popover;
-    GtkWidget *transfer_type;
     GtkWidget *box;
     GtkWidget *label;
     GtkWidget *energy_quantity;
-    GtkWidget *unit;
-    GtkWidget *factor;
+    GtkComboBox *transfer_type;
+    GtkComboBox *unit;
+    GtkComboBox *prefix;
     GtkAdjustment *adj;
 } FlowArrowSettings;
 
@@ -111,6 +111,9 @@ my_window_get_change_view_radio_button (MyWindow * self);
 
 FlowArrowSettings
 my_window_get_flow_arrow_settings (MyWindow * self);
+
+gdouble
+my_window_get_metric_prefix_factor (MyWindow * self);
 
 G_END_DECLS
 

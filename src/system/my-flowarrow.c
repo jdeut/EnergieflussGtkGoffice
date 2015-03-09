@@ -12,6 +12,7 @@ enum
     PROP_SECONDARY_SYSTEM,
     PROP_PRIMARY_ANCHOR,
     PROP_SECONDARY_ANCHOR,
+    PROP_UNIT,
     PROP_TRANSFER_TYPE,
     N_PROPERTIES
 };
@@ -28,6 +29,7 @@ enum
 enum
 {
     POPOVER_HANDLER_TRANSFER_TYPE_CHANGED,
+    POPOVER_HANDLER_UNIT_CHANGED,
     POPOVER_HANDLER_POPOVER_CLOSED,
     N_POPOVER_HANDLER
 };
@@ -43,6 +45,7 @@ enum
     FLOW_ARROW_CHANGED_Y1,
     DRAG_POINT_NW_CHANGED_X,
     DRAG_POINT_NW_CHANGED_Y,
+    APP_WINDOW_CHANGED_METRIC_PREFIX,
     N_HANDLER
 };
 
@@ -61,6 +64,7 @@ static void my_flow_arrow_coordinate_changed (MyFlowArrow * self,
                                               GParamSpec * pspec,
                                               gpointer data);
 gdouble my_flow_arrow_get_preferred_width (MyFlowArrow * self);
+gdouble my_flow_arrow_get_unit_factor (MyFlowArrow * self);
 
 
 typedef struct
@@ -77,9 +81,14 @@ typedef struct
 
     MySystem *primary_system, *secondary_system;
     gint primary_anchor, secondary_anchor;
+
     gdouble energy_quantity;
+    gdouble prefix_factor;
+
     gchar *label_text;
+
     guint transfer_type;
+    guint unit;
 
     gulong handler[N_HANDLER];
     gulong popover_handler[N_POPOVER_HANDLER];
@@ -215,6 +224,10 @@ my_flow_arrow_set_property (GObject * object,
             priv->secondary_anchor = (MyAnchorType) g_value_get_enum (value);
             break;
 
+        case PROP_UNIT:
+            priv->unit = g_value_get_uint (value);
+            break;
+
         case PROP_TRANSFER_TYPE:
             my_flow_arrow_set_transfer_type (self, g_value_get_uint (value));
             break;
@@ -257,6 +270,10 @@ my_flow_arrow_get_property (GObject * object,
 
         case PROP_SECONDARY_ANCHOR:
             g_value_set_enum (value, priv->secondary_anchor);
+            break;
+
+        case PROP_UNIT:
+            g_value_set_uint (value, priv->unit);
             break;
 
         case PROP_TRANSFER_TYPE:
@@ -337,6 +354,45 @@ my_flow_arrow_set_transfer_type (MyFlowArrow * self, guint transfer_type)
 }
 
 void
+settings_adjust_step_increment_to_unit (MyFlowArrow * self)
+{
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
+    GtkWidget *toplevel;
+    gdouble unit_factor;
+    FlowArrowSettings fas;
+
+    toplevel = my_canvas_get_toplevel (MY_CANVAS (GOC_ITEM (self)->canvas));
+
+    fas = my_window_get_flow_arrow_settings (MY_WINDOW (toplevel));
+
+    unit_factor = my_flow_arrow_get_unit_factor (self);
+
+    gtk_adjustment_set_step_increment (fas.adj, 1.0 / unit_factor);
+}
+
+void
+my_flow_arrow_combo_unit_row_changed (MyFlowArrow * self, GtkWidget * box)
+{
+    GtkTreeIter iter;
+    GtkTreeModel *model;
+    guint nr;
+
+    g_return_if_fail (MY_IS_FLOW_ARROW (self));
+
+    gtk_combo_box_get_active_iter (GTK_COMBO_BOX (box), &iter);
+    model = gtk_combo_box_get_model (GTK_COMBO_BOX (box));
+
+    gtk_tree_model_get (model, &iter, 1, &nr, -1);
+
+    g_object_set (self, "energy-unit", nr, NULL);
+
+    g_object_notify (G_OBJECT (self), "energy-quantity");
+
+    settings_adjust_step_increment_to_unit (self);
+}
+
+void
 my_flow_arrow_combo_transfer_type_row_changed (MyFlowArrow * self,
                                                GtkWidget * box)
 {
@@ -354,6 +410,63 @@ my_flow_arrow_combo_transfer_type_row_changed (MyFlowArrow * self,
     g_object_set (self, "transfer-type", nr, NULL);
 }
 
+gdouble
+my_flow_arrow_get_unit_factor (MyFlowArrow * self)
+{
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
+    g_return_if_fail (MY_IS_FLOW_ARROW (self));
+
+    switch (priv->unit) {
+        case UNIT_JOULE:
+            return 1.0;
+        case UNIT_WATTHOUR:
+            return 3600.0;
+        case UNIT_CAL:
+            return 4.18;
+        default:
+            break;
+    }
+}
+
+gboolean
+binding_energy_quantitiy_transform_to (GBinding * binding,
+                                       const GValue * from_value,
+                                       GValue * to_value, MyFlowArrow * self)
+{
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
+    gdouble energy_quantity;
+
+    energy_quantity = g_value_get_double (from_value);
+
+    energy_quantity /= priv->prefix_factor *
+        my_flow_arrow_get_unit_factor (self);
+
+    g_value_set_double (to_value, energy_quantity);
+
+    return TRUE;
+}
+
+gboolean
+binding_energy_quantitiy_transform_from (GBinding * binding,
+                                         const GValue * from_value,
+                                         GValue * to_value, MyFlowArrow * self)
+{
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
+    gdouble energy_quantity;
+
+    energy_quantity = g_value_get_double (from_value);
+
+    energy_quantity *=
+        priv->prefix_factor * my_flow_arrow_get_unit_factor (self);
+
+    g_value_set_double (to_value, energy_quantity);
+
+    return TRUE;
+}
+
 static void
 my_flow_arrow_popover_sync_controls_with_props (MyFlowArrow * self)
 {
@@ -361,34 +474,67 @@ my_flow_arrow_popover_sync_controls_with_props (MyFlowArrow * self)
 
     FlowArrowSettings fas;
 
-    guint type, n;
+    guint transfer_type, metric_prefix, unit, n;
     GtkTreeIter iter;
     GtkTreeModel *model;
     gboolean valid;
 
     GtkWidget *toplevel;
 
-    toplevel = my_canvas_get_toplevel(MY_CANVAS(GOC_ITEM(self)->canvas));
+    toplevel = my_canvas_get_toplevel (MY_CANVAS (GOC_ITEM (self)->canvas));
 
-    fas = my_window_get_flow_arrow_settings (MY_WINDOW(toplevel));
+    fas = my_window_get_flow_arrow_settings (MY_WINDOW (toplevel));
 
-    model = gtk_combo_box_get_model (GTK_COMBO_BOX (fas.transfer_type));
+    g_object_get (self, "transfer-type", &transfer_type, NULL);
+    g_object_get (self, "energy-unit", &unit, NULL);
+    g_object_get (toplevel, "metric-prefix", &metric_prefix, NULL);
+
+    model = gtk_combo_box_get_model (fas.transfer_type);
 
     valid = gtk_tree_model_get_iter_first (model, &iter);
 
     /* sync active iter of combobox with current transfer-type */
     while (valid) {
-        g_object_get (self, "transfer-type", &type, NULL);
-
         gtk_tree_model_get (model, &iter, 1, &n, -1);
 
-        if (n == type) {
-            gtk_combo_box_set_active_iter (GTK_COMBO_BOX
-                                           (fas.transfer_type), &iter);
+        if (n == transfer_type) {
+            gtk_combo_box_set_active_iter (fas.transfer_type, &iter);
             break;
         }
         valid = gtk_tree_model_iter_next (model, &iter);
     }
+
+    model = gtk_combo_box_get_model (fas.prefix);
+
+    valid = gtk_tree_model_get_iter_first (model, &iter);
+
+    /* sync active iter of combobox with current metric-prefix */
+    while (valid) {
+        gtk_tree_model_get (model, &iter, 1, &n, -1);
+
+        if (n == metric_prefix) {
+            gtk_combo_box_set_active_iter (fas.prefix, &iter);
+            break;
+        }
+        valid = gtk_tree_model_iter_next (model, &iter);
+    }
+
+    model = gtk_combo_box_get_model (fas.unit);
+
+    valid = gtk_tree_model_get_iter_first (model, &iter);
+
+    /* sync active iter of combobox with current unit */
+    while (valid) {
+        gtk_tree_model_get (model, &iter, 1, &n, -1);
+
+        if (n == unit) {
+            gtk_combo_box_set_active_iter (fas.unit, &iter);
+            break;
+        }
+        valid = gtk_tree_model_iter_next (model, &iter);
+    }
+
+    settings_adjust_step_increment_to_unit (self);
 
     priv->popover_handler_instance[POPOVER_HANDLER_TRANSFER_TYPE_CHANGED] =
         fas.transfer_type;
@@ -399,16 +545,28 @@ my_flow_arrow_popover_sync_controls_with_props (MyFlowArrow * self)
                                   (my_flow_arrow_combo_transfer_type_row_changed),
                                   self);
 
+    priv->popover_handler_instance[POPOVER_HANDLER_UNIT_CHANGED] = fas.unit;
+
+    priv->popover_handler[POPOVER_HANDLER_UNIT_CHANGED] =
+        g_signal_connect_swapped (fas.unit, "changed",
+                                  G_CALLBACK
+                                  (my_flow_arrow_combo_unit_row_changed), self);
+
     priv->popover_binding[POPOVER_BINDING_LABEL_TEXT] =
         g_object_bind_property (self, "label-text", fas.label, "text",
                                 G_BINDING_BIDIRECTIONAL |
                                 G_BINDING_SYNC_CREATE);
 
     priv->popover_binding[POPOVER_BINDING_ENERGY_QUANTITY] =
-        g_object_bind_property (self, "energy-quantity", fas.energy_quantity,
-                                "value",
-                                G_BINDING_BIDIRECTIONAL |
-                                G_BINDING_SYNC_CREATE);
+        g_object_bind_property_full (self, "energy-quantity", fas.adj,
+                                     "value",
+                                     G_BINDING_BIDIRECTIONAL |
+                                     G_BINDING_SYNC_CREATE,
+                                     (GBindingTransformFunc)
+                                     binding_energy_quantitiy_transform_to,
+                                     (GBindingTransformFunc)
+                                     binding_energy_quantitiy_transform_from,
+                                     self, NULL);
 }
 
 void
@@ -461,14 +619,15 @@ my_flow_arrow_button_pressed (GocItem * item, int button, double xd, double yd)
     rect.width = 2;
     rect.height = 2;
 
-    fas = my_window_get_flow_arrow_settings(MY_WINDOW(toplevel));
+    fas = my_window_get_flow_arrow_settings (MY_WINDOW (toplevel));
 
     gtk_popover_set_pointing_to (GTK_POPOVER (fas.popover), &rect);
     gtk_widget_show (fas.popover);
 
     my_flow_arrow_popover_sync_controls_with_props (self);
 
-    priv->popover_handler_instance[POPOVER_HANDLER_POPOVER_CLOSED] = fas.popover;
+    priv->popover_handler_instance[POPOVER_HANDLER_POPOVER_CLOSED] =
+        fas.popover;
     priv->popover_handler[POPOVER_HANDLER_POPOVER_CLOSED] =
         g_signal_connect_swapped (fas.popover, "closed",
                                   G_CALLBACK (my_flow_arrow_popover_closed),
@@ -620,6 +779,13 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
                            0, G_MAXUINT, 0,
                            G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
+    obj_properties[PROP_UNIT] =
+        g_param_spec_uint ("energy-unit",
+                           "energy-unit",
+                           "energy-unit",
+                           0, G_MAXUINT, UNIT_JOULE,
+                           G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
+
     g_object_class_install_properties (gobject_class,
                                        N_PROPERTIES, obj_properties);
 
@@ -659,7 +825,9 @@ my_flow_arrow_energy_quantity_changed (MyFlowArrow * self,
 
     g_object_get (G_OBJECT (self), "style", &style, NULL);
 
-    style->line.width = ABS (priv->energy_quantity);
+    /* factor 1/4 scales 250pixels to 1000 */
+    style->line.width =
+        ABS (1.0 / 4.0 * priv->energy_quantity / priv->prefix_factor);
 
     if (priv->energy_quantity < 0) {
         tmp = priv->arrow_end;
@@ -680,6 +848,7 @@ my_flow_arrow_energy_quantity_changed (MyFlowArrow * self,
                   priv->arrow_start, NULL);
 
     g_object_notify (G_OBJECT (self), "x0");
+    g_object_notify (G_OBJECT (self), "label-text");
 }
 
 gdouble
@@ -720,11 +889,54 @@ my_flow_arrow_get_preferred_width (MyFlowArrow * self)
     return width_label + width_arrow_tip + 30.0;
 }
 
+GtkWidget *
+init_label_widget (MyFlowArrow * self)
+{
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
+    GtkWidget *label, *box, *label_energy;
+    GtkWidget *eventbox;
+    GtkStyleContext *context;
+    PangoAttrList *attrs;
+
+    eventbox = gtk_event_box_new ();
+
+    context = gtk_widget_get_style_context (eventbox);
+    gtk_style_context_add_class (context, "label");
+
+    box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+
+    label_energy = gtk_label_new( g_strdup_printf("%.2f", priv->energy_quantity));
+
+    label = gtk_label_new (NULL);
+
+    attrs = pango_attr_list_new ();
+
+    pango_attr_list_insert (attrs,
+                            pango_attr_weight_new (PANGO_WEIGHT_SEMIBOLD));
+
+    pango_attr_list_insert (attrs, pango_attr_scale_new (1.4));
+
+    gtk_label_set_attributes (GTK_LABEL (label), attrs);
+    gtk_label_set_markup (GTK_LABEL (label), priv->label_text);
+
+    gtk_box_pack_start (GTK_BOX (box), label, FALSE, FALSE, 5);
+    gtk_box_pack_start (GTK_BOX (box), label_energy, FALSE, FALSE, 5);
+
+    gtk_container_add (GTK_CONTAINER (eventbox), box);
+
+    gtk_widget_show_all (eventbox);
+
+    return eventbox;
+}
+
 static void
 notify_label_text_changed (MyFlowArrow * self, GParamSpec * pspec,
                            gpointer data)
 {
     MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
+    gint width, height;
 
     if (GOC_IS_ITEM (priv->label)) {
         goc_item_destroy (priv->label);
@@ -751,39 +963,16 @@ notify_label_text_changed (MyFlowArrow * self, GParamSpec * pspec,
         return;
     }
 
-    GtkWidget *widget;
-    GtkStyleContext *context;
-    PangoAttrList *attrs;
+    priv->eventbox = init_label_widget (self);
 
-    gint width, height;
-
-    priv->eventbox = gtk_event_box_new ();
-
-    context = gtk_widget_get_style_context (priv->eventbox);
-    gtk_style_context_add_class (context, "label");
-
-    widget = gtk_label_new (NULL);
-
-    attrs = pango_attr_list_new ();
-
-    pango_attr_list_insert (attrs,
-                            pango_attr_weight_new (PANGO_WEIGHT_SEMIBOLD));
-
-    pango_attr_list_insert (attrs, pango_attr_scale_new (1.4));
-
-    gtk_label_set_attributes (GTK_LABEL (widget), attrs);
-    gtk_label_set_markup (GTK_LABEL (widget), priv->label_text);
-    gtk_container_add (GTK_CONTAINER (priv->eventbox), widget);
-    gtk_widget_set_visible (widget, TRUE);
-
-    gtk_widget_get_preferred_width (widget, NULL, &width);
-    gtk_widget_get_preferred_height (widget, NULL, &height);
+    gtk_widget_get_preferred_width (priv->eventbox, NULL, &width);
+    gtk_widget_get_preferred_height (priv->eventbox, NULL, &height);
 
     priv->label =
         goc_item_new (canvas->group[GROUP_LABELS], GOC_TYPE_WIDGET,
                       "widget", priv->eventbox, "width",
                       ((gdouble) width) + 30.0, "height",
-                      ((gdouble) height) + 30.0, NULL);
+                      ((gdouble) height), NULL);
 
     goc_item_raise_to_top (priv->label);
 
@@ -887,6 +1076,26 @@ my_flow_arrow_drag_point_coordinate_changed (MyFlowArrow * self,
 }
 
 static void
+my_flow_arrow_app_window_changed_metric_prefix (MyFlowArrow * self,
+                                                GParamSpec * pspec,
+                                                MyWindow * window)
+{
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
+    gdouble factor;
+
+    factor = my_window_get_metric_prefix_factor (window);
+
+    priv->energy_quantity *= factor / priv->prefix_factor;
+
+    priv->prefix_factor = factor;
+
+    g_object_notify (G_OBJECT (self), "energy-quantity");
+
+
+}
+
+static void
 my_flow_arrow_canvas_changed (MyFlowArrow * self,
                               GParamSpec * pspec, gpointer data)
 {
@@ -894,6 +1103,7 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
 
     MyCanvas *canvas;
     GocGroup *group_dragpoints;
+    MyWindow *app_window;
     guint i;
 
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
@@ -907,6 +1117,8 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
     }
 
     g_object_unref (canvas);
+
+    app_window = (MyWindow *) my_canvas_get_toplevel (canvas);
 
     group_dragpoints = canvas->group[GROUP_ARROW_DRAGPOINTS];
 
@@ -961,6 +1173,12 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
         g_signal_connect_swapped (priv->drag_point, "notify::y",
                                   G_CALLBACK
                                   (my_flow_arrow_drag_point_coordinate_changed),
+                                  self);
+
+    priv->handler[APP_WINDOW_CHANGED_METRIC_PREFIX] =
+        g_signal_connect_swapped (app_window, "notify::metric-prefix",
+                                  G_CALLBACK
+                                  (my_flow_arrow_app_window_changed_metric_prefix),
                                   self);
 
     g_object_notify (G_OBJECT (self), "energy-quantity");
@@ -1023,7 +1241,9 @@ my_flow_arrow_init (MyFlowArrow * self)
     priv->arrow_start = g_new0 (GOArrow, 1);
     priv->arrow_end = g_new0 (GOArrow, 1);
     priv->provider = gtk_css_provider_new ();
+    priv->prefix_factor = 1.0;
     priv->transfer_type = MY_TRANSFER_WORK;
+    priv->unit = UNIT_JOULE;
 
     style = go_style_dup (go_styled_object_get_style (GO_STYLED_OBJECT (self)));
     style->line.cap = CAIRO_LINE_CAP_ROUND;

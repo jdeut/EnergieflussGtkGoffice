@@ -22,6 +22,7 @@ enum
 {
     PROP_0,
     PROP_TIMELINE,
+    PROP_PREFIX,
     N_PROPERTIES
 };
 
@@ -49,6 +50,8 @@ struct _MyWindowPrivate
 
     gdouble zoom_factor;
     gdouble energy;
+
+    guint prefix;
 
     gulong handler_model[N_MODEL_HANDLER];
 
@@ -93,6 +96,10 @@ my_window_set_property (GObject * object,
             }
             break;
 
+        case PROP_PREFIX:
+            priv->prefix = g_value_get_uint (value);
+            break;
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
@@ -111,6 +118,10 @@ my_window_get_property (GObject * object,
 
         case PROP_TIMELINE:
             g_value_set_object (value, priv->timeline);
+            break;
+
+        case PROP_PREFIX:
+            g_value_set_uint (value, priv->prefix);
             break;
 
         default:
@@ -240,6 +251,13 @@ my_window_class_init (MyWindowClass * klass)
                              "timeline model",
                              MY_TYPE_TIMELINE_MODEL, G_PARAM_READWRITE);
 
+    obj_properties[PROP_PREFIX] =
+        g_param_spec_uint ("metric-prefix",
+                           "metric-prefix",
+                           "",
+                           0, G_MAXUINT, FACTOR_ONE,
+                           G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
+
     g_object_class_install_properties (gobject_class,
                                        N_PROPERTIES, obj_properties);
 
@@ -274,33 +292,18 @@ my_window_class_init (MyWindowClass * klass)
                                                                  es.box));
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
-                                               "energy_control_spinbutton",
-                                               FALSE,
-                                               G_PRIVATE_OFFSET (MyWindow,
-                                                                 es.
-                                                                 spinbutton));
-
-    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
-                                               "energy_control_unit", FALSE,
-                                               G_PRIVATE_OFFSET (MyWindow,
-                                                                 es.unit));
-
-    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "energy_control_factor", FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                 es.factor));
-
-    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
-                                               "energy_control_energy", FALSE,
-                                               G_PRIVATE_OFFSET (MyWindow,
-                                                                 es.adj));
+                                                                 es.prefix));
 
     /* bind flow arrow settings widgets to private struct */
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
-                                               "flow_arrow_ubertragungsform", FALSE,
+                                               "flow_arrow_ubertragungsform",
+                                               FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                 fas.transfer_type));
+                                                                 fas.
+                                                                 transfer_type));
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "flow_arrow_box", FALSE,
@@ -311,8 +314,7 @@ my_window_class_init (MyWindowClass * klass)
                                                "flow_arrow_energy_quantity",
                                                FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                 fas.
-                                                                 energy_quantity));
+                                                                 fas.energy_quantity));
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "flow_arrow_label", FALSE,
@@ -327,7 +329,7 @@ my_window_class_init (MyWindowClass * klass)
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "flow_arrow_factor", FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                 fas.factor));
+                                                                 fas.prefix));
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "flow_arrow_energy", FALSE,
@@ -403,21 +405,41 @@ my_window_energy_control_clicked (MyWindow * self, GtkWidget * button)
     gtk_widget_show (priv->es.popover);
 }
 
-gdouble
-energy_control_get_factor (MyWindow * self)
+guint
+factor_combobox_get_active_prefix (GtkComboBox * box)
 {
     GtkTreeIter iter;
     GtkTreeModel *model;
     guint nr;
 
-    MyWindowPrivate *priv = my_window_get_instance_private (self);
-
-    gtk_combo_box_get_active_iter (GTK_COMBO_BOX (priv->es.factor), &iter);
-    model = gtk_combo_box_get_model (GTK_COMBO_BOX (priv->es.factor));
+    gtk_combo_box_get_active_iter (box, &iter);
+    model = gtk_combo_box_get_model (box);
 
     gtk_tree_model_get (model, &iter, 1, &nr, -1);
 
-    switch (nr) {
+    return nr;
+}
+
+
+guint
+my_window_get_metric_prefix (MyWindow * self)
+{
+    MyWindowPrivate *priv = my_window_get_instance_private (self);
+
+    g_return_if_fail (MY_IS_WINDOW (self));
+
+    return priv->prefix;
+}
+
+gdouble
+my_window_get_metric_prefix_factor (MyWindow * self)
+{
+
+    MyWindowPrivate *priv = my_window_get_instance_private (self);
+
+    g_return_if_fail (MY_IS_WINDOW (self));
+
+    switch (priv->prefix) {
         case FACTOR_MILLI:
             return 0.001;
         case FACTOR_ONE:
@@ -429,34 +451,7 @@ energy_control_get_factor (MyWindow * self)
         case FACTOR_GIGA:
             return 1000.0 * 1000.0 * 1000.0;
         default:
-            break;
-    }
-}
-
-gdouble
-energy_control_get_unit_factor (MyWindow * self)
-{
-
-    GtkTreeIter iter;
-    GtkTreeModel *model;
-    guint nr;
-
-    MyWindowPrivate *priv = my_window_get_instance_private (self);
-
-    gtk_combo_box_get_active_iter (GTK_COMBO_BOX (priv->es.unit), &iter);
-    model = gtk_combo_box_get_model (GTK_COMBO_BOX (priv->es.unit));
-
-    gtk_tree_model_get (model, &iter, 1, &nr, -1);
-
-    switch (nr) {
-        case UNIT_JOULE:
-            return 1.0;
-        case UNIT_WATTHOUR:
-            return 3600.0;
-        case UNIT_CAL:
-            return 4.18;
-        default:
-            break;
+            return -1.0;
     }
 }
 
@@ -467,46 +462,29 @@ energy_control_factor_changed (MyWindow * self, GtkWidget * box)
 
     MyWindowPrivate *priv = my_window_get_instance_private (self);
 
-    gdouble factor, unit_factor;
-    gdouble energy;
-    GtkAdjustment *adjust;
+    /*gdouble factor, unit_factor; */
+    /*gdouble energy; */
+    /*GtkAdjustment *adjust; */
 
-    factor = energy_control_get_factor (self);
-    unit_factor = energy_control_get_unit_factor (self);
+    priv->prefix = factor_combobox_get_active_prefix (priv->es.prefix);
 
-    g_print ("%f %f\n", factor, unit_factor);
+    g_object_notify (G_OBJECT (self), "metric-prefix");
 
-    energy = priv->energy / (factor * unit_factor);
+    /*unit_factor = unit_factor_combobox_get_active_unit_factor (priv->es.unit); */
 
-    g_print ("%f\n", energy);
+    /*g_print ("%f %f\n", factor, unit_factor); */
 
-    g_signal_handlers_block_by_func (priv->es.adj, energy_control_value_changed,
-                                     self);
+    /*energy = priv->energy / (factor * unit_factor); */
 
-    gtk_adjustment_set_value (priv->es.adj, energy);
+    /*g_print ("%f\n", energy); */
 
-    g_signal_handlers_unblock_by_func (priv->es.adj,
-                                       energy_control_value_changed, self);
-}
+    /*g_signal_handlers_block_by_func (priv->es.adj, energy_control_value_changed, */
+    /*self); */
 
-void
-energy_control_value_changed (MyWindow * self, GtkAdjustment * adj)
-{
+    /*gtk_adjustment_set_value (priv->es.adj, energy); */
 
-    MyWindowPrivate *priv = my_window_get_instance_private (self);
-    gdouble factor, unit_factor;
-    gdouble energy;
-
-    factor = energy_control_get_factor (self);
-    unit_factor = energy_control_get_unit_factor (self);
-
-    g_print ("Energy: %f\n", priv->energy);
-
-    energy = gtk_adjustment_get_value (priv->es.adj);
-
-    priv->energy = energy * factor * unit_factor;
-
-    g_print ("priv->Energy: %f\n", priv->energy);
+    /*g_signal_handlers_unblock_by_func (priv->es.adj, */
+    /*energy_control_value_changed, self); */
 }
 
 void
@@ -529,13 +507,7 @@ my_window_energy_control_init (MyWindow * self)
                               G_CALLBACK (my_window_energy_control_clicked),
                               self);
 
-    g_signal_connect_swapped (priv->es.adj, "value-changed",
-                              G_CALLBACK (energy_control_value_changed), self);
-
-    g_signal_connect_swapped (priv->es.factor, "changed",
-                              G_CALLBACK (energy_control_factor_changed), self);
-
-    g_signal_connect_swapped (priv->es.unit, "changed",
+    g_signal_connect_swapped (priv->es.prefix, "changed",
                               G_CALLBACK (energy_control_factor_changed), self);
 }
 

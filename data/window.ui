@@ -59,12 +59,6 @@
     Energy Settings UI definitions
 
   -->
-  <object class="GtkAdjustment" id="energy_control_energy">
-    <property name="upper">9999999999</property>
-    <property name="value">1</property>
-    <property name="step_increment">1</property>
-    <property name="page_increment">10</property>
-  </object>
   <object class="GtkBox" id="energy_control_box">
     <property name="width_request">100</property>
     <property name="height_request">100</property>
@@ -92,67 +86,22 @@
       </packing>
     </child>
     <child>
-      <object class="GtkSpinButton" id="energy_control_spinbutton">
+      <object class="GtkComboBox" id="energy_control_factor">
         <property name="visible">True</property>
-        <property name="can_focus">True</property>
-        <property name="adjustment">energy_control_energy</property>
-        <property name="digits">5</property>
+        <property name="can_focus">False</property>
+        <property name="model">ls_factor</property>
+        <property name="active">1</property>
+        <child>
+          <object class="GtkCellRendererText"/>
+          <attributes>
+            <attribute name="text">0</attribute>
+          </attributes>
+        </child>
       </object>
       <packing>
         <property name="expand">False</property>
         <property name="fill">True</property>
         <property name="position">1</property>
-      </packing>
-    </child>
-    <child>
-      <object class="GtkBox">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="spacing">4</property>
-        <property name="homogeneous">True</property>
-        <child>
-          <object class="GtkComboBox" id="energy_control_factor">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="model">ls_factor</property>
-            <property name="active">1</property>
-            <child>
-              <object class="GtkCellRendererText"/>
-              <attributes>
-                <attribute name="text">0</attribute>
-              </attributes>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">0</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkComboBox" id="energy_control_unit">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="model">ls_unit</property>
-            <property name="active">0</property>
-            <child>
-              <object class="GtkCellRendererText"/>
-              <attributes>
-                <attribute name="text">0</attribute>
-              </attributes>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-      </object>
-      <packing>
-        <property name="expand">False</property>
-        <property name="fill">True</property>
-        <property name="position">2</property>
       </packing>
     </child>
   </object>
@@ -162,8 +111,8 @@
 
   -->
   <object class="GtkAdjustment" id="flow_arrow_energy">
-    <property name="lower">-100</property>
-    <property name="upper">100</property>
+    <property name="lower">-1000000</property>
+    <property name="upper">1000000</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
   </object>
@@ -303,7 +252,7 @@
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">3</property>
+            <property name="top_attach">4</property>
           </packing>
         </child>
         <child>
@@ -322,7 +271,7 @@
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">3</property>
+            <property name="top_attach">4</property>
           </packing>
         </child>
         <child>
@@ -335,13 +284,14 @@
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">4</property>
+            <property name="top_attach">3</property>
           </packing>
         </child>
         <child>
           <object class="GtkComboBox" id="flow_arrow_factor">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="sensitive">False</property>
             <property name="valign">center</property>
             <property name="model">ls_factor</property>
             <property name="active">1</property>
@@ -354,7 +304,7 @@
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">4</property>
+            <property name="top_attach">3</property>
           </packing>
         </child>
         <child>
@@ -365,6 +315,7 @@
             <property name="valign">center</property>
             <property name="vexpand">True</property>
             <property name="adjustment">flow_arrow_energy</property>
+            <property name="digits">5</property>
           </object>
           <packing>
             <property name="left_attach">1</property>
