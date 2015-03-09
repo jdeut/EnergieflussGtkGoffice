@@ -16,8 +16,7 @@ void my_window_change_view_state_change (GSimpleAction * action,
 void my_window_show_drag_points_state_change (GSimpleAction * action,
                                               GVariant * state,
                                               gpointer user_data);
-void
-energy_control_value_changed (MyWindow * self, GtkAdjustment * adj);
+void energy_control_value_changed (MyWindow * self, GtkAdjustment * adj);
 
 enum
 {
@@ -62,9 +61,8 @@ struct _MyWindowPrivate
     GtkWidget *customtitle;
     GtkWidget *headerbar;
     GtkWidget *radiobutton1;
-    GtkWidget *energy_control;
-    GtkWidget *popover_energy_control;
-    GtkBuilder *builder_energy_control;
+
+    EnergyControl ec;
 
     gdouble zoom_factor;
     gdouble energy;
@@ -184,13 +182,14 @@ my_window_populate_canvas (MyWindow * self)
 
     my_timeline_model_add_object (priv->timeline, item1);
 
-    g_object_get(priv->timeline, "adjustment", &adjust, NULL);
+    g_object_get (priv->timeline, "adjustment", &adjust, NULL);
 
-    gtk_adjustment_set_value(adjust, 2);
+    gtk_adjustment_set_value (adjust, 2);
 
     item =
         g_object_new (MY_TYPE_FLOW_ARROW, "primary-system", item,
-                      "secondary-system", item1, "label-text", "TEST", "energy-quantity", -100.0,  NULL);
+                      "secondary-system", item1, "label-text", "TEST",
+                      "energy-quantity", -100.0, NULL);
 
     my_timeline_model_add_object (priv->timeline, item);
 
@@ -269,8 +268,6 @@ my_window_class_init (MyWindowClass * klass)
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
                                                   MyWindow, description);
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
-                                                  MyWindow, energy_control);
-    gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
                                                   MyWindow, scrolledwindow1);
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
                                                   MyWindow, scale);
@@ -280,6 +277,37 @@ my_window_class_init (MyWindowClass * klass)
                                                   MyWindow, radiobutton1);
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
                                                   MyWindow, customtitle);
+
+    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
+                                               "energy_control_button", FALSE,
+                                               G_PRIVATE_OFFSET (MyWindow,
+                                                                ec.button));
+
+    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
+                                               "energy_control_box", FALSE,
+                                               G_PRIVATE_OFFSET (MyWindow,
+                                                                ec.box));
+
+    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
+                                               "energy_control_spinbutton",
+                                               FALSE,
+                                               G_PRIVATE_OFFSET (MyWindow,
+                                                                ec.spinbutton));
+
+    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
+                                               "energy_control_unit", FALSE,
+                                               G_PRIVATE_OFFSET (MyWindow,
+                                                                ec.unit));
+
+    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
+                                               "energy_control_factor", FALSE,
+                                               G_PRIVATE_OFFSET (MyWindow,
+                                                                ec.factor));
+
+    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
+                                               "energy_control_energy", FALSE,
+                                               G_PRIVATE_OFFSET (MyWindow,
+                                                                ec.adj));
 }
 
 void
@@ -341,11 +369,13 @@ my_window_timeline_changed (MyWindow * self, gpointer data)
     timeline_model_handler_current_pos_changed (self, priv->timeline);
 }
 
-void my_window_energy_control_clicked(MyWindow *self, GtkWidget *button) {
+void
+my_window_energy_control_clicked (MyWindow * self, GtkWidget * button)
+{
 
     MyWindowPrivate *priv = my_window_get_instance_private (self);
 
-    gtk_widget_show(priv->popover_energy_control);
+    gtk_widget_show (priv->ec.popover);
 }
 
 gdouble
@@ -353,18 +383,12 @@ energy_control_get_factor (MyWindow * self)
 {
     GtkTreeIter iter;
     GtkTreeModel *model;
-    GtkWidget *box;
     guint nr;
-    gdouble energy;
 
     MyWindowPrivate *priv = my_window_get_instance_private (self);
 
-    box =
-        (GtkWidget *) gtk_builder_get_object (priv->builder_energy_control,
-                                              "factor");
-
-    gtk_combo_box_get_active_iter (GTK_COMBO_BOX (box), &iter);
-    model = gtk_combo_box_get_model (GTK_COMBO_BOX (box));
+    gtk_combo_box_get_active_iter (GTK_COMBO_BOX (priv->ec.factor), &iter);
+    model = gtk_combo_box_get_model (GTK_COMBO_BOX (priv->ec.factor));
 
     gtk_tree_model_get (model, &iter, 1, &nr, -1);
 
@@ -390,17 +414,12 @@ energy_control_get_unit_factor (MyWindow * self)
 
     GtkTreeIter iter;
     GtkTreeModel *model;
-    GtkWidget *box;
     guint nr;
 
     MyWindowPrivate *priv = my_window_get_instance_private (self);
 
-    box =
-        (GtkWidget *) gtk_builder_get_object (priv->builder_energy_control,
-                                              "unit");
-
-    gtk_combo_box_get_active_iter (GTK_COMBO_BOX (box), &iter);
-    model = gtk_combo_box_get_model (GTK_COMBO_BOX (box));
+    gtk_combo_box_get_active_iter (GTK_COMBO_BOX (priv->ec.unit), &iter);
+    model = gtk_combo_box_get_model (GTK_COMBO_BOX (priv->ec.unit));
 
     gtk_tree_model_get (model, &iter, 1, &nr, -1);
 
@@ -430,21 +449,19 @@ energy_control_factor_changed (MyWindow * self, GtkWidget * box)
     factor = energy_control_get_factor (self);
     unit_factor = energy_control_get_unit_factor (self);
 
-    adjust =
-        (GtkAdjustment *) gtk_builder_get_object (priv->builder_energy_control,
-                                                  "energy");
-
     g_print ("%f %f\n", factor, unit_factor);
 
     energy = priv->energy / (factor * unit_factor);
 
     g_print ("%f\n", energy);
 
-    g_signal_handlers_block_by_func(adjust, energy_control_value_changed, self);
+    g_signal_handlers_block_by_func (priv->ec.adj, energy_control_value_changed,
+                                     self);
 
-    gtk_adjustment_set_value (adjust, energy);
+    gtk_adjustment_set_value (priv->ec.adj, energy);
 
-    g_signal_handlers_unblock_by_func(adjust, energy_control_value_changed, self);
+    g_signal_handlers_unblock_by_func (priv->ec.adj, energy_control_value_changed,
+                                       self);
 }
 
 void
@@ -458,56 +475,43 @@ energy_control_value_changed (MyWindow * self, GtkAdjustment * adj)
     factor = energy_control_get_factor (self);
     unit_factor = energy_control_get_unit_factor (self);
 
-    g_print("Energy: %f\n", priv->energy);
+    g_print ("Energy: %f\n", priv->energy);
 
-    energy = gtk_adjustment_get_value(adj);
+    energy = gtk_adjustment_get_value (priv->ec.adj);
 
     priv->energy = energy * factor * unit_factor;
 
-    g_print("priv->Energy: %f\n", priv->energy);
+    g_print ("priv->Energy: %f\n", priv->energy);
 }
 
-void my_window_init_energy_control (MyWindow *self) {
+void
+my_window_init_energy_control (MyWindow * self)
+{
 
     MyWindowPrivate *priv = my_window_get_instance_private (self);
 
-    GtkWidget *popover, *child;
-    GtkWidget *widget, *factor, *unit;
-    GtkAdjustment *adj;
-    GtkBuilder *builder;
+    GtkWidget *popover;
 
-    builder =
-        gtk_builder_new_from_resource
-        ("/org/gtk/myapp/my-canvas-energy-control.ui");
-
-    priv->builder_energy_control = builder;
-
-    widget = (GtkWidget *) gtk_builder_get_object (builder, "box1");
-    factor = (GtkWidget *) gtk_builder_get_object (builder, "factor");
-    unit = (GtkWidget *) gtk_builder_get_object (builder, "unit");
-    adj = (GtkAdjustment *) gtk_builder_get_object (builder, "energy");
-
-    popover = gtk_popover_new (priv->energy_control);
+    popover = gtk_popover_new (priv->ec.button);
     gtk_popover_set_position (GTK_POPOVER (popover), GTK_POS_TOP);
-    gtk_container_add (GTK_CONTAINER (popover), widget);
+    gtk_container_add (GTK_CONTAINER (popover), priv->ec.box);
     gtk_container_set_border_width (GTK_CONTAINER (popover), 6);
-    gtk_widget_show (widget);
+    gtk_widget_show (priv->ec.box);
 
-    priv->popover_energy_control = popover;
+    priv->ec.popover = popover;
 
-    g_signal_connect_swapped (priv->energy_control, "clicked", G_CALLBACK(my_window_energy_control_clicked), self);
+    g_signal_connect_swapped (priv->ec.button, "clicked",
+                              G_CALLBACK (my_window_energy_control_clicked),
+                              self);
 
-    g_signal_connect_swapped (adj, "value-changed",
-                              G_CALLBACK
-                              (energy_control_value_changed), self);
+    g_signal_connect_swapped (priv->ec.adj, "value-changed",
+                              G_CALLBACK (energy_control_value_changed), self);
 
-    g_signal_connect_swapped (factor, "changed",
-                              G_CALLBACK
-                              (energy_control_factor_changed), self);
+    g_signal_connect_swapped (priv->ec.factor, "changed",
+                              G_CALLBACK (energy_control_factor_changed), self);
 
-    g_signal_connect_swapped (unit, "changed",
-                              G_CALLBACK
-                              (energy_control_factor_changed), self);
+    g_signal_connect_swapped (priv->ec.unit, "changed",
+                              G_CALLBACK (energy_control_factor_changed), self);
 }
 
 static void

@@ -24,6 +24,16 @@ typedef struct _MyWindow MyWindow;
 typedef struct _MyWindowClass MyWindowClass;
 typedef struct _MyWindowPrivate MyWindowPrivate;
 
+typedef struct {
+    GtkWidget *button;
+    GtkWidget *popover;
+    GtkWidget *box;
+    GtkWidget *spinbutton;
+    GtkWidget *unit;
+    GtkWidget *factor;
+    GtkAdjustment *adj;
+} EnergyControl;
+
 struct _MyWindow
 {
     GtkApplicationWindow parent;
