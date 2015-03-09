@@ -5,7 +5,6 @@
         <file preprocess="xml-stripblanks">my-system-widget.ui</file>
         <file preprocess="xml-stripblanks">my-flow-arrow-popover-content.ui</file>
         <file preprocess="xml-stripblanks">my-system-widget-properties.ui</file>
-        <file preprocess="xml-stripblanks">my-canvas-energy-control.ui</file>
         <file>lagerfeuer.png</file>
         <file>style.css</file>
     </gresource>
