@@ -59,30 +59,25 @@
     Energy Settings UI definitions
 
   -->
-  <object class="GtkBox" id="energy_control_box">
-    <property name="width_request">100</property>
-    <property name="height_request">100</property>
+  <object class="GtkGrid" id="energy_control_box">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="margin_left">5</property>
-    <property name="margin_right">5</property>
-    <property name="margin_top">5</property>
-    <property name="margin_bottom">5</property>
-    <property name="orientation">vertical</property>
-    <property name="spacing">5</property>
+    <property name="row_spacing">5</property>
+    <property name="column_spacing">10</property>
+    <property name="column_homogeneous">True</property>
     <child>
       <object class="GtkLabel">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="halign">start</property>
         <property name="label" translatable="yes">Wahl der Einheit</property>
         <attributes>
           <attribute name="weight" value="bold"/>
         </attributes>
       </object>
       <packing>
-        <property name="expand">False</property>
-        <property name="fill">True</property>
-        <property name="position">0</property>
+        <property name="left_attach">0</property>
+        <property name="top_attach">0</property>
       </packing>
     </child>
     <child>
@@ -99,9 +94,65 @@
         </child>
       </object>
       <packing>
-        <property name="expand">False</property>
-        <property name="fill">True</property>
-        <property name="position">1</property>
+        <property name="left_attach">1</property>
+        <property name="top_attach">0</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkLabel">
+        <property name="visible">True</property>
+        <property name="halign">start</property>
+        <property name="can_focus">False</property>
+        <property name="label" translatable="yes">Zeige Zugpunkte</property>
+        <attributes>
+          <attribute name="weight" value="bold"/>
+        </attributes>
+      </object>
+      <packing>
+        <property name="left_attach">0</property>
+        <property name="top_attach">1</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkSwitch">
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="receives_default">True</property>
+        <property name="halign">start</property>
+        <property name="action_name">win.show-drag-points</property>
+      </object>
+      <packing>
+        <property name="left_attach">1</property>
+        <property name="top_attach">1</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkLabel">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="halign">start</property>
+        <property name="label" translatable="yes">Zeige Energiemengen</property>
+        <attributes>
+          <attribute name="weight" value="bold"/>
+        </attributes>
+      </object>
+      <packing>
+        <property name="left_attach">0</property>
+        <property name="top_attach">2</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkSwitch">
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="receives_default">True</property>
+        <property name="halign">start</property>
+        <property name="action_name">win.show-energy-amount-of-flow-arrows</property>
+        <!--<property name="image">image4</property>-->
+      </object>
+      <packing>
+        <property name="left_attach">1</property>
+        <property name="top_attach">2</property>
       </packing>
     </child>
   </object>
@@ -861,82 +912,6 @@
                 <property name="expand">False</property>
                 <property name="fill">True</property>
                 <property name="position">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkBox" id="box4">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <child>
-                  <object class="GtkSwitch">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">True</property>
-                    <property name="halign">start</property>
-                    <property name="action_name">win.show-drag-points</property>
-                    <!--<property name="image">image4</property>-->
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="label3">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Drag Points</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">3</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkBox">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <child>
-                  <object class="GtkSwitch">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">True</property>
-                    <property name="halign">start</property>
-                    <property name="action_name">win.show-energy-amount-of-flow-arrows</property>
-                    <!--<property name="image">image4</property>-->
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Show Energy Amount</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
-                  </packing>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">3</property>
               </packing>
             </child>
           </object>
