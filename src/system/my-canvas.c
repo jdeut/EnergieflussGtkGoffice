@@ -592,7 +592,6 @@ my_canvas_group_add_item (MyCanvas * self, GocGroup * group, GocItem * item)
     g_return_if_fail (GOC_IS_ITEM (item));
 
     goc_group_add_child (group, item);
-    goc_item_invalidate (item);
 }
 
 void
