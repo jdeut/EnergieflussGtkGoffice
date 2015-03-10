@@ -310,8 +310,8 @@ my_flow_arrow_transfer_type_changed (MyFlowArrow * self,
 
     str =
         g_strdup_printf
-        (".label { background-color: rgba(%.1f%%, %.1f%%, %.1f%%, 1); }",
-         130 * rgba.red, 130 * rgba.green, 130 * rgba.blue);
+        (".label { background-color: rgba(%.0f, %.0f, %.0f, 1); }",
+         255 * 1.2 * rgba.red, 255 * 1.2 * rgba.green, 255 * 1.2 * rgba.blue);
 
     gtk_css_provider_load_from_data (GTK_CSS_PROVIDER (priv->provider), str, -1,
                                      NULL);
