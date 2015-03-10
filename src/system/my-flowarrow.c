@@ -763,9 +763,6 @@ my_flow_arrow_init_style (G_GNUC_UNUSED GocStyledItem * item, GOStyle * style)
         style->line.dash_type = GO_LINE_SOLID;
     if (style->line.auto_fore)
         style->line.fore = 0;
-
-    my_flow_arrow_set_transfer_type (self, priv->transfer_type);
-
 }
 
 void
@@ -1007,7 +1004,7 @@ init_label_widget (MyFlowArrow * self)
         prefix = my_flow_arrow_prefix_get_name (self);
         unit = my_flow_arrow_unit_get_name (self);
 
-        str_energy = g_strdup_printf ("%.2f %s%s", energy_quantity, prefix, unit);
+        str_energy = g_strdup_printf ("%.3f %s%s", energy_quantity, prefix, unit);
 
         g_free(prefix);
         g_free(unit);
@@ -1022,6 +1019,12 @@ init_label_widget (MyFlowArrow * self)
     gtk_container_add (GTK_CONTAINER (eventbox), box);
 
     gtk_widget_show_all (eventbox);
+
+    gtk_event_box_set_visible_window (GTK_EVENT_BOX(eventbox), TRUE);
+
+    gtk_event_box_set_above_child (GTK_EVENT_BOX(eventbox), TRUE);
+
+    gtk_widget_set_events (eventbox, GDK_POINTER_MOTION_MASK | GDK_BUTTON_MOTION_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON2_MOTION_MASK | GDK_BUTTON3_MOTION_MASK);
 
     return eventbox;
 }
@@ -1070,13 +1073,11 @@ my_flow_arrow_label_text_changed (MyFlowArrow * self, GParamSpec * pspec,
                       ((gdouble) width) + 30.0, "height",
                       ((gdouble) height), NULL);
 
-    goc_item_raise_to_top (priv->label);
-
     my_flow_arrow_update (self);
 }
 
 void
-my_flow_arrow_update_is_dragged (MyFlowArrow * self)
+my_flow_arrow_update_while_dragged (MyFlowArrow * self)
 {
     MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
@@ -1175,7 +1176,7 @@ my_flow_arrow_update (MyFlowArrow * self)
     MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
     if (priv->is_dragged) {
-        my_flow_arrow_update_is_dragged (self);
+        my_flow_arrow_update_while_dragged (self);
     }
     else {
         my_flow_arrow_sync_with_associated_systems (self);
@@ -1322,8 +1323,6 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
     guint i;
 
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
-
-    priv->is_dragged = FALSE;
 
     g_object_get (self, "canvas", &canvas, NULL);
 
