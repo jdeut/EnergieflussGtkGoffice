@@ -428,6 +428,71 @@ my_flow_arrow_get_unit_factor (MyFlowArrow * self)
     }
 }
 
+gdouble
+my_flow_arrow_energy_quantity_transform_to_metric_and_unit (MyFlowArrow * self)
+{
+
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
+    return priv->energy_quantity / (priv->prefix_factor *
+                                    my_flow_arrow_get_unit_factor (self));
+}
+
+gchar *
+my_flow_arrow_unit_get_name (MyFlowArrow * self)
+{
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
+    gchar *str;
+
+    switch (priv->unit) {
+        case UNIT_JOULE:
+            str = g_strdup_printf ("%s", "J");
+            break;
+        case UNIT_WATTHOUR:
+            str = g_strdup_printf ("%s", "Wh");
+            break;
+        case UNIT_CAL:
+            str = g_strdup_printf ("%s", "cal");
+            break;
+    }
+
+    return str;
+}
+
+gchar *
+my_flow_arrow_prefix_get_name (MyFlowArrow * self)
+{
+
+    GtkWidget *toplevel;
+    gchar *str;
+    guint factor;
+
+
+    toplevel = my_canvas_get_toplevel (MY_CANVAS (GOC_ITEM (self)->canvas));
+    factor = my_window_get_metric_prefix (MY_WINDOW (toplevel));
+
+    switch (factor) {
+        case FACTOR_MILLI:
+            str = g_strdup_printf ("%s", "m");
+            break;
+        case FACTOR_ONE:
+            str = g_strdup_printf ("%s", "");
+            break;
+        case FACTOR_KILO:
+            str = g_strdup_printf ("%s", "k");
+            break;
+        case FACTOR_MEGA:
+            str = g_strdup_printf ("%s", "M");
+            break;
+        case FACTOR_GIGA:
+            str = g_strdup_printf ("%s", "G");
+            break;
+    }
+
+    return str;
+}
+
 gboolean
 binding_energy_quantitiy_transform_to (GBinding * binding,
                                        const GValue * from_value,
@@ -914,25 +979,38 @@ init_label_widget (MyFlowArrow * self)
 
     box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
 
-    if (g_utf8_strlen (priv->label_text, -1) > 0) {
-        label = gtk_label_new (NULL);
+    if (priv->label_text != NULL) {
+        if (g_utf8_strlen (priv->label_text, -1) > 0) {
+            label = gtk_label_new (NULL);
 
-        attrs = pango_attr_list_new ();
+            attrs = pango_attr_list_new ();
 
-        pango_attr_list_insert (attrs,
-                                pango_attr_weight_new (PANGO_WEIGHT_SEMIBOLD));
+            pango_attr_list_insert (attrs,
+                                    pango_attr_weight_new
+                                    (PANGO_WEIGHT_SEMIBOLD));
 
-        pango_attr_list_insert (attrs, pango_attr_scale_new (1.4));
+            pango_attr_list_insert (attrs, pango_attr_scale_new (1.4));
 
-        gtk_label_set_attributes (GTK_LABEL (label), attrs);
-        gtk_label_set_markup (GTK_LABEL (label), priv->label_text);
+            gtk_label_set_attributes (GTK_LABEL (label), attrs);
+            gtk_label_set_markup (GTK_LABEL (label), priv->label_text);
 
-        gtk_box_pack_start (GTK_BOX (box), label, FALSE, FALSE, 5);
+            gtk_box_pack_start (GTK_BOX (box), label, FALSE, FALSE, 5);
+        }
     }
 
     if (my_flow_arrow_is_energy_amount_visible (self)) {
 
-        str_energy = g_strdup_printf ("%.2f", priv->energy_quantity);
+        gdouble energy_quantity;
+        gchar *prefix, *unit;
+
+        energy_quantity = ABS(my_flow_arrow_energy_quantity_transform_to_metric_and_unit (self));
+        prefix = my_flow_arrow_prefix_get_name (self);
+        unit = my_flow_arrow_unit_get_name (self);
+
+        str_energy = g_strdup_printf ("%.2f %s%s", energy_quantity, prefix, unit);
+
+        g_free(prefix);
+        g_free(unit);
 
         label_energy = gtk_label_new (str_energy);
 
