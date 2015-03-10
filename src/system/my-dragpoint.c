@@ -21,6 +21,7 @@ struct _MyDragPointPrivate
 {
     GocItem *linked_item;
     gboolean is_dragged;
+    GOColor normal, selected;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (MyDragPoint, my_drag_point, GOC_TYPE_CIRCLE);
@@ -155,8 +156,13 @@ my_drag_point_sync_with_linked_system (MyDragPoint * self,
 static void
 my_drag_point_canvas_changed (MyDragPoint * self, GParamSpec * pspec, gpointer data)
 {
+    MyDragPointPrivate *priv = my_drag_point_get_instance_private(self);
+
     GocCanvas *canvas;
     GtkWidget *window;
+    GtkStyleContext *context;
+    GdkRGBA bg;
+    GOStyle *style;
     GAction *action;
     GVariant *state;
 
@@ -166,6 +172,26 @@ my_drag_point_canvas_changed (MyDragPoint * self, GParamSpec * pspec, gpointer d
         return;
 
     window = gtk_widget_get_toplevel(GTK_WIDGET(canvas));
+
+    context = gtk_widget_get_style_context(window);
+
+    gtk_style_context_get_background_color(context, GTK_STATE_FLAG_NORMAL, &bg);
+
+    go_color_from_gdk_rgba(&bg, &(priv->selected));
+
+    priv->normal = GO_COLOR_CHANGE_A(priv->selected, 180);
+
+    style = go_style_dup (go_styled_object_get_style (GO_STYLED_OBJECT(self)));
+
+    style->line.width = 2.0;
+    style->fill.auto_type = FALSE;
+    style->fill.auto_back = FALSE;
+    style->fill.type = GO_STYLE_FILL_PATTERN;
+    style->fill.pattern.pattern = GO_PATTERN_SOLID;
+    style->fill.pattern.back =  priv->normal;
+    go_styled_object_set_style (GO_STYLED_OBJECT(self), style);
+
+    g_object_unref (style);
 
     action =
         g_action_map_lookup_action (G_ACTION_MAP (window), "show-drag-points");
@@ -182,23 +208,11 @@ static void
 my_drag_point_init (MyDragPoint * self)
 {
     MyDragPointPrivate *priv = my_drag_point_get_instance_private(self);
-    GOStyle *style;
 
     /* to init any of the private data, do e.g: */
 
     priv->linked_item = NULL;
     priv->is_dragged = FALSE;
-
-    style = go_style_dup (go_styled_object_get_style (GO_STYLED_OBJECT(self)));
-
-    style->fill.auto_type = FALSE;
-    style->fill.auto_back = FALSE;
-    style->fill.type = GO_STYLE_FILL_PATTERN;
-    style->fill.pattern.pattern = GO_PATTERN_SOLID;
-    style->fill.pattern.back = GO_COLOR_FROM_RGB(0xaa, 0xaa, 0xaa);
-    go_styled_object_set_style (GO_STYLED_OBJECT(self), style);
-
-    g_object_unref (style);
 
     g_signal_connect(self, "notify::canvas", G_CALLBACK(my_drag_point_canvas_changed), NULL);
 }
@@ -231,7 +245,7 @@ my_drag_point_begin_drag (MyDragPoint * self)
     priv->is_dragged = TRUE;
 
     style = go_style_dup (go_styled_object_get_style (gso));
-    style->fill.pattern.back = GO_COLOR_WHITE;
+    style->fill.pattern.back = priv->selected;
     go_styled_object_set_style (gso, style);
 
     g_object_unref (style);
@@ -264,7 +278,7 @@ my_drag_point_end_drag (MyDragPoint * self)
     priv->is_dragged = TRUE;
 
     style = go_style_dup (go_styled_object_get_style (gso));
-    style->fill.pattern.back = GO_COLOR_FROM_RGB(0xaa, 0xaa, 0xaa);
+    style->fill.pattern.back = priv->normal;
     go_styled_object_set_style (gso, style);
 
     g_object_unref (style);
