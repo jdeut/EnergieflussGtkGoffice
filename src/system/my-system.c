@@ -414,10 +414,6 @@ my_system_coordinates_changed (MySystem * self,
     for (l = group_arrows->children; l != NULL; l = l->next) {
 
         MySystem *secondary_system, *primary_system;
-        MyAnchorType secondary_anchor, primary_anchor;
-        cairo_rectangle_t primary_alloc, secondary_alloc;
-
-        gdouble x0, x1, y0, y1, preferred_width, preferred_height;
 
         if (!MY_IS_FLOW_ARROW (l->data)) {
             continue;
@@ -430,59 +426,8 @@ my_system_coordinates_changed (MySystem * self,
         if (primary_system != self && secondary_system != self) {
             continue;
         }
-
-        g_object_get (l->data, "primary-anchor", &primary_anchor, NULL);
-
-        /* draw arrow */
-
-        my_system_get_allocation (primary_system, &primary_alloc);
-
-
-        /* if arrow depicts transfer between primary and secondary system */
-        if (MY_IS_SYSTEM (secondary_system)) {
-
-            my_system_get_allocation (secondary_system, &secondary_alloc);
-
-            secondary_anchor =
-                get_dynamic_coordinate_of_dest
-                (primary_alloc, secondary_alloc, &x1, &y1);
-
-            primary_anchor =
-                get_dynamic_coordinate_of_dest
-                (secondary_alloc, primary_alloc, &x0, &y0);
-
-            g_object_set (l->data, "primary-anchor", primary_anchor,
-                          "secondary-anchor", secondary_anchor, NULL);
-        }
-        /* if arrow depicts transfer between primary system and the environment */
-        else {
-            /* if arrow depicts transfer to environment */
-            alloc_get_coordinate_of_anchor (primary_alloc,
-                                            primary_anchor, &x0, &y0);
-
-            preferred_width = my_flow_arrow_get_preferred_width(MY_FLOW_ARROW(l->data));
-            preferred_height = my_flow_arrow_get_preferred_height(MY_FLOW_ARROW(l->data));
-
-            if (primary_anchor == MY_ANCHOR_WEST) {
-                x1 = x0 - preferred_width;
-                y1 = y0;
-            }
-            else if (primary_anchor == MY_ANCHOR_EAST) {
-                x1 = x0 + preferred_width;
-                y1 = y0;
-            }
-            else if (primary_anchor == MY_ANCHOR_SOUTH) {
-                x1 = x0;
-                y1 = y0 + preferred_height;
-            }
-            else if (primary_anchor == MY_ANCHOR_NORTH) {
-                x1 = x0;
-                y1 = y0 - preferred_height;
-            }
-        }
-
-        my_flow_arrow_set_coordinate (MY_FLOW_ARROW (l->data), "x0", x0,
-                                      "y0", y0, "x1", x1, "y1", y1, NULL);
+        
+        my_flow_arrow_update(l->data);
 
         /*if (MY_IS_SYSTEM (primary_system)) {*/
             /*my_system_draw_energy_flow_distribute_arrows (primary_system,*/

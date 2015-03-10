@@ -16,6 +16,13 @@ void my_window_change_view_state_change (GSimpleAction * action,
 void my_window_show_drag_points_state_change (GSimpleAction * action,
                                               GVariant * state,
                                               gpointer user_data);
+void my_window_show_energy_amount_of_flow_arrows (GSimpleAction * action,
+                                             GVariant * parameter,
+                                             gpointer data);
+void my_window_show_energy_amount_of_flow_arrows_state_change (GSimpleAction *
+                                                          action,
+                                                          GVariant * state,
+                                                          gpointer data);
 void energy_control_value_changed (MyWindow * self, GtkAdjustment * adj);
 
 enum
@@ -70,6 +77,9 @@ static GActionEntry win_entries[] = {
     {"change-view", NULL, "s", "\"real\"", my_window_change_view_state_change},
     {"show-drag-points", my_window_show_drag_points, NULL, "true",
      my_window_show_drag_points_state_change},
+    {"show-energy-amount-of-flow-arrows",
+     my_window_show_energy_amount_of_flow_arrows, NULL, "true",
+     my_window_show_energy_amount_of_flow_arrows_state_change},
     {"save", my_window_save, NULL, NULL, NULL},
     {"timeline-add", my_window_timeline_add, NULL, NULL, NULL}
 };
@@ -302,8 +312,7 @@ my_window_class_init (MyWindowClass * klass)
                                                "flow_arrow_ubertragungsform",
                                                FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                 fas.
-                                                                 transfer_type));
+                                                                 fas.transfer_type));
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "flow_arrow_box", FALSE,
@@ -314,7 +323,8 @@ my_window_class_init (MyWindowClass * klass)
                                                "flow_arrow_energy_quantity",
                                                FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                 fas.energy_quantity));
+                                                                 fas.
+                                                                 energy_quantity));
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "flow_arrow_label", FALSE,
@@ -769,6 +779,30 @@ my_window_show_drag_points_state_change (GSimpleAction * action,
     else
         my_canvas_all_drag_points_hide (priv->canvas);
 
+    g_simple_action_set_state (action, state);
+}
+
+void
+my_window_show_energy_amount_of_flow_arrows (GSimpleAction * action,
+                                             GVariant * parameter,
+                                             gpointer data)
+{
+    GVariant *state;
+
+    state = g_action_get_state (G_ACTION (action));
+
+    g_action_change_state (G_ACTION (action),
+                           g_variant_new_boolean (!g_variant_get_boolean
+                                                  (state)));
+    g_variant_unref (state);
+}
+
+void
+my_window_show_energy_amount_of_flow_arrows_state_change (GSimpleAction *
+                                                          action,
+                                                          GVariant * state,
+                                                          gpointer data)
+{
     g_simple_action_set_state (action, state);
 }
 

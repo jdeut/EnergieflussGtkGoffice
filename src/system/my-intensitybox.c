@@ -8,35 +8,35 @@ static void my_intensity_box_dispose (GObject *);
 
 enum
 {
-    PROP_0,
-    PROP_Y_MAX,
-    PROP_Y_MIN,
-    PROP_Y,
-    N_PROPERTIES
+PROP_0,
+PROP_Y_MAX,
+PROP_Y_MIN,
+PROP_Y,
+N_PROPERTIES
 };
 
 static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
 
 struct _MyIntensityBoxPrivate
 {
-    GtkWidget *popover;
-    gint i;
+GtkWidget *popover;
+gint i;
 
-    gdouble y_max, y, y_min;
+gdouble y_max, y, y_min;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (MyIntensityBox, my_intensity_box,
-                            GTK_TYPE_DRAWING_AREA);
+                        GTK_TYPE_DRAWING_AREA);
 
 GQuark
 my_intensity_box_error_quark (void)
 {
-    return g_quark_from_static_string ("my-intensity-box-error-quark");
+return g_quark_from_static_string ("my-intensity-box-error-quark");
 }
 
 static void
 my_intensity_box_set_property (GObject * object,
-                               guint property_id,
+                           guint property_id,
                                const GValue * value, GParamSpec * pspec)
 {
     MyIntensityBox *self = MY_INTENSITY_BOX (object);

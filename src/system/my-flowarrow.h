@@ -59,12 +59,6 @@ GType my_flow_arrow_get_type (void);
 
 /* fill in public functions */
 void
-my_flow_arrow_set_linked_system (MyFlowArrow * self, MySystem * system);
-
-MySystem *
-my_flow_arrow_get_linked_system (MyFlowArrow * self);
-
-void
 my_flow_arrow_drag_points_set_visible (MyFlowArrow * self, gboolean visible);
 
 void
