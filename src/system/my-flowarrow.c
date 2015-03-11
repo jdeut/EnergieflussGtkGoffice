@@ -93,6 +93,8 @@ typedef struct
     guint unit;
 
     gulong handler[N_HANDLER];
+    gpointer handler_instance[N_HANDLER];
+
     gulong popover_handler[N_POPOVER_HANDLER];
     gpointer popover_handler_instance[N_POPOVER_HANDLER];
     GBinding *popover_binding[N_POPOVER_BINDING];
@@ -1157,16 +1159,16 @@ my_flow_arrow_sync_with_associated_systems (MyFlowArrow * self)
         }
     }
 
-    g_signal_handler_block (self, priv->handler[FLOW_ARROW_CHANGED_X1]);
-    g_signal_handler_block (self, priv->handler[FLOW_ARROW_CHANGED_Y1]);
+    g_signal_handler_block (priv->handler_instance[FLOW_ARROW_CHANGED_X1], priv->handler[FLOW_ARROW_CHANGED_X1]);
+    g_signal_handler_block (priv->handler_instance[FLOW_ARROW_CHANGED_Y1], priv->handler[FLOW_ARROW_CHANGED_Y1]);
 
     my_flow_arrow_set_coordinate (self, "x0", x0,
                                   "y0", y0, "x1", x1, "y1", y1, NULL);
 
     g_object_set (priv->drag_point, "x", x1, "y", y1, NULL);
 
-    g_signal_handler_unblock (self, priv->handler[FLOW_ARROW_CHANGED_X1]);
-    g_signal_handler_unblock (self, priv->handler[FLOW_ARROW_CHANGED_Y1]);
+    g_signal_handler_unblock (priv->handler_instance[FLOW_ARROW_CHANGED_X1], priv->handler[FLOW_ARROW_CHANGED_X1]);
+    g_signal_handler_unblock (priv->handler_instance[FLOW_ARROW_CHANGED_Y1], priv->handler[FLOW_ARROW_CHANGED_Y1]);
 }
 
 void
@@ -1205,7 +1207,7 @@ my_flow_arrow_sync_coordinate_with_drag_point_coordinate (MyFlowArrow * self,
 
     for (n = 0; n < sizeof (handler) / sizeof (handler[0]); n++) {
         if (priv->handler[handler[n]] != 0)
-            g_signal_handler_block (priv->drag_point,
+            g_signal_handler_block (priv->handler_instance[handler[n]],
                                     priv->handler[handler[n]]);
     }
 
@@ -1215,7 +1217,7 @@ my_flow_arrow_sync_coordinate_with_drag_point_coordinate (MyFlowArrow * self,
 
     for (n = 0; n < sizeof (handler) / sizeof (handler[0]); n++) {
         if (priv->handler[handler[n]] != 0)
-            g_signal_handler_unblock (priv->drag_point,
+            g_signal_handler_unblock (priv->handler_instance[handler[n]],
                                       priv->handler[handler[n]]);
     }
 }
@@ -1232,30 +1234,20 @@ my_flow_arrow_sync_drag_point_coordinate_with_self_coordinate (MyFlowArrow *
 
     gdouble x_dp, y_dp;
 
-    guint handler[] = { FLOW_ARROW_CHANGED_Y1, FLOW_ARROW_CHANGED_X1 };
+    guint handler[] = { FLOW_ARROW_CHANGED_Y1, DRAG_POINT_NW_CHANGED_X, DRAG_POINT_NW_CHANGED_Y, FLOW_ARROW_CHANGED_X1 };
     guint n;
 
     g_object_get (point, "x", &x_dp, "y", &y_dp, NULL);
 
     for (n = 0; n < sizeof (handler) / sizeof (handler[0]); n++)
-        g_signal_handler_block (self, priv->handler[handler[n]]);
-
-    g_signal_handler_block (priv->drag_point,
-                            priv->handler[DRAG_POINT_NW_CHANGED_X]);
-    g_signal_handler_block (priv->drag_point,
-                            priv->handler[DRAG_POINT_NW_CHANGED_Y]);
+        g_signal_handler_block (priv->handler_instance[handler[n]], priv->handler[handler[n]]);
 
     g_object_set (self, "x1", x_dp, "y1", y_dp, NULL);
 
     my_flow_arrow_update (self);
 
-    g_signal_handler_unblock (priv->drag_point,
-                              priv->handler[DRAG_POINT_NW_CHANGED_X]);
-    g_signal_handler_unblock (priv->drag_point,
-                              priv->handler[DRAG_POINT_NW_CHANGED_Y]);
-
     for (n = 0; n < sizeof (handler) / sizeof (handler[0]); n++)
-        g_signal_handler_unblock (self, priv->handler[handler[n]]);
+        g_signal_handler_unblock (priv->handler_instance[handler[n]], priv->handler[handler[n]]);
 }
 
 static gboolean
@@ -1324,6 +1316,14 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
 
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
+    for (i = 0; i < N_HANDLER; i++) {
+        if (priv->handler[i] != 0 && G_IS_OBJECT(priv->handler_instance[i])) {
+            if (g_signal_handler_is_connected (priv->handler_instance[i], priv->handler[i])) {
+                g_signal_handler_disconnect (priv->handler_instance[i], priv->handler[i]);
+            }
+        }
+    }
+
     g_object_get (self, "canvas", &canvas, NULL);
 
     if (!MY_IS_CANVAS (canvas)) {
@@ -1342,60 +1342,65 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
 
     g_return_if_fail (GOC_IS_GROUP (group_dragpoints));
 
-    for (i = 0; i < N_HANDLER; i++) {
-        if (priv->handler[i] != 0) {
-            g_signal_handler_disconnect (self, priv->handler[i]);
-        }
+    if(!MY_IS_DRAG_POINT(priv->drag_point)) {
+        priv->drag_point = (MyDragPoint *)
+            goc_item_new (group_dragpoints, MY_TYPE_DRAG_POINT, "radius", 10.0,
+                          "linked-item", self, NULL);
     }
 
-    priv->drag_point = (MyDragPoint *)
-        goc_item_new (group_dragpoints, MY_TYPE_DRAG_POINT, "radius", 10.0,
-                      "linked-item", self, NULL);
-
+    priv->handler_instance[CANVAS_CHANGED_ENERGY_QUANTITY] = self;
     priv->handler[CANVAS_CHANGED_ENERGY_QUANTITY] =
         g_signal_connect (self, "notify::energy-quantity",
                           G_CALLBACK (my_flow_arrow_energy_quantity_changed),
                           NULL);
 
+    priv->handler_instance[CANVAS_CHANGED_LABEL_TEXT] = self;
     priv->handler[CANVAS_CHANGED_LABEL_TEXT] =
         g_signal_connect (self, "notify::label-text",
                           G_CALLBACK (my_flow_arrow_label_text_changed), NULL);
 
+    priv->handler_instance[CANVAS_CHANGED_TRANSFER_TYPE] = self;
     priv->handler[CANVAS_CHANGED_TRANSFER_TYPE] =
         g_signal_connect (self, "notify::transfer-type",
                           G_CALLBACK (my_flow_arrow_transfer_type_changed),
                           NULL);
 
+    priv->handler_instance[FLOW_ARROW_CHANGED_X1] = self;
     priv->handler[FLOW_ARROW_CHANGED_X1] =
         g_signal_connect (self, "notify::x1",
                           G_CALLBACK
                           (my_flow_arrow_sync_coordinate_with_drag_point_coordinate),
                           NULL);
 
+    priv->handler_instance[FLOW_ARROW_CHANGED_Y1] = self;
     priv->handler[FLOW_ARROW_CHANGED_Y1] =
         g_signal_connect (self, "notify::y1",
                           G_CALLBACK
                           (my_flow_arrow_sync_coordinate_with_drag_point_coordinate),
                           NULL);
 
+    priv->handler_instance[DRAG_POINT_NW_CHANGED_X] = priv->drag_point;
     priv->handler[DRAG_POINT_NW_CHANGED_X] =
         g_signal_connect_swapped (priv->drag_point, "notify::x",
                                   G_CALLBACK
                                   (my_flow_arrow_sync_drag_point_coordinate_with_self_coordinate),
                                   self);
 
+    priv->handler_instance[DRAG_POINT_NW_CHANGED_Y] = priv->drag_point;
     priv->handler[DRAG_POINT_NW_CHANGED_Y] =
         g_signal_connect_swapped (priv->drag_point, "notify::y",
                                   G_CALLBACK
                                   (my_flow_arrow_sync_drag_point_coordinate_with_self_coordinate),
                                   self);
 
+    priv->handler_instance[APP_WINDOW_CHANGED_METRIC_PREFIX] = app_window;
     priv->handler[APP_WINDOW_CHANGED_METRIC_PREFIX] =
         g_signal_connect_swapped (app_window, "notify::metric-prefix",
                                   G_CALLBACK
                                   (my_flow_arrow_app_window_changed_metric_prefix),
                                   self);
 
+    priv->handler_instance[ACTION_SHOW_ENERGY_AMOUNT_STATE_CHANGED] = show_energy_amount;
     priv->handler[ACTION_SHOW_ENERGY_AMOUNT_STATE_CHANGED] =
         g_signal_connect_swapped (show_energy_amount, "change-state",
                                   G_CALLBACK
