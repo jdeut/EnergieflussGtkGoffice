@@ -548,6 +548,9 @@ my_canvas_model_current_pos_changed (MyCanvas * self, MyTimelineModel * model)
             continue;
 
         }
+        else if (i == GROUP_ARROW_DRAGPOINTS) {
+            continue;
+        }
         else if (i == GROUP_ARROWS && GOC_IS_GROUP (self->group[i])) {
 
             l = self->group[i]->children;
