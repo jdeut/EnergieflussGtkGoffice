@@ -8,35 +8,33 @@ static void my_intensity_box_dispose (GObject *);
 
 enum
 {
-PROP_0,
-PROP_Y_MAX,
-PROP_Y_MIN,
-PROP_Y,
-N_PROPERTIES
+    PROP_0,
+    PROP_DELTA_ENERGY,
+    N_PROPERTIES
 };
 
 static GParamSpec *obj_properties[N_PROPERTIES] = { NULL, };
 
 struct _MyIntensityBoxPrivate
 {
-GtkWidget *popover;
-gint i;
+    GtkWidget *popover;
+    gint i;
 
-gdouble y_max, y, y_min;
+    gdouble delta_e;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (MyIntensityBox, my_intensity_box,
-                        GTK_TYPE_DRAWING_AREA);
+                            GTK_TYPE_DRAWING_AREA);
 
 GQuark
 my_intensity_box_error_quark (void)
 {
-return g_quark_from_static_string ("my-intensity-box-error-quark");
+    return g_quark_from_static_string ("my-intensity-box-error-quark");
 }
 
 static void
 my_intensity_box_set_property (GObject * object,
-                           guint property_id,
+                               guint property_id,
                                const GValue * value, GParamSpec * pspec)
 {
     MyIntensityBox *self = MY_INTENSITY_BOX (object);
@@ -45,16 +43,8 @@ my_intensity_box_set_property (GObject * object,
 
     switch (property_id) {
 
-        case PROP_Y_MAX:
-            priv->y = g_value_get_double (value);
-            break;
-
-        case PROP_Y_MIN:
-            priv->y = g_value_get_double (value);
-            break;
-
-        case PROP_Y:
-            priv->y = g_value_get_double (value);
+        case PROP_DELTA_ENERGY:
+            priv->delta_e = g_value_get_double (value);
             break;
 
         default:
@@ -74,16 +64,8 @@ my_intensity_box_get_property (GObject * object,
 
     switch (property_id) {
 
-        case PROP_Y:
-            g_value_set_double (value, priv->y);
-            break;
-
-        case PROP_Y_MIN:
-            g_value_set_double (value, priv->y_max);
-            break;
-
-        case PROP_Y_MAX:
-            g_value_set_double (value, priv->y_min);
+        case PROP_DELTA_ENERGY:
+            g_value_set_double (value, priv->delta_e);
             break;
 
         default:
@@ -100,59 +82,62 @@ my_intensity_box_draw (GtkWidget * widget, cairo_t * cr)
 
     MyIntensityBoxPrivate *priv = my_intensity_box_get_instance_private (self);
 
-    gint x, y;
-    gint width, height;
+    gint x, y, xc, yc;
+    gint width, height, arrow_h, arrow_w, arrow_tip_w, arrow_tip_h;
 
     gdouble line_width = 2;
 
     gdouble cur;
+    gdouble delta_e;
     gdouble incr = 10;
     gdouble main_tick_length = 10;
-
-    x = 0;
-    y = 0;
 
     width = gtk_widget_get_allocated_width (widget);
     height = gtk_widget_get_allocated_height (widget);
 
-    cairo_set_line_width (cr, 0.8);
-    cairo_rectangle (cr, width / 4, height, width - width / 2,
-                     -(priv->y / (priv->y_max - priv->y_min)) * height);
-    cairo_set_source_rgba (cr, 1, 0, 0, 0.8);
-    cairo_stroke_preserve (cr);
-    cairo_set_source_rgba (cr, 1, 0, 0, 0.3);
-    cairo_fill (cr);
+    xc = width / 2;
+    yc = height / 2;
 
-    cairo_set_line_width (cr, line_width);
-    cairo_set_source_rgba (cr, 0, 0, 0, 0.8);
-    cairo_move_to (cr, x, height - line_width / 2);
-    cairo_rel_line_to (cr, width, 0);
-    cairo_stroke (cr);
+    arrow_h = height * 0.4;
+    delta_e = priv->delta_e;
+    arrow_w = ABS (delta_e);
+    arrow_tip_w = arrow_w + 20;
+    arrow_tip_h = 30;
 
-    /* popover */
-    /*cairo_save(cr);*/
-    /*cairo_translate(cr, width/2, height-(priv->y / (priv->y_max - priv->y_min)) * height);*/
-    /*cairo_rotate(cr, -G_PI/4);*/
-    /*cairo_move_to(cr, 0, 0);*/
-    /*cairo_rel_line_to(cr, 10, 0);*/
-    /*cairo_rotate(cr, G_PI/4);*/
-    /*cairo_rel_line_to(cr, 15, 0);*/
-    /*cairo_rotate(cr, -G_PI/2);*/
-    /*cairo_rel_line_to(cr, 30, 0);*/
-    /*cairo_rotate(cr, G_PI/2);*/
-    /*cairo_stroke (cr);*/
-    /*cairo_restore(cr);*/
+    /*cairo_rectangle (cr, 0 , 0, width, */
+    /*height); */
+    /*cairo_set_source_rgba (cr, 1, 0, 0, 0.3); */
+    /*cairo_fill (cr); */
 
-    cairo_set_source_rgba (cr, 0.4, 0.4, 0.4, 0.8);
-    cairo_move_to (cr, 0, 0);
-    cairo_rel_line_to (cr, 0, height);
-    cairo_stroke (cr);
-
-    for (cur = 0; cur <= height; cur += incr) {
-        cairo_rectangle (cr, 0, cur, main_tick_length, 1.0);
+    if (delta_e > 0) {
+        /* arrow points upwards */
+        cairo_move_to (cr, xc - arrow_w / 2, yc + arrow_h / 2);
+        cairo_rel_line_to (cr, 0, -arrow_h);
+        cairo_rel_line_to (cr, -(arrow_tip_w - arrow_w) / 2, 0);
+        cairo_rel_line_to (cr, arrow_tip_w / 2, -arrow_tip_h);
+        cairo_rel_line_to (cr, arrow_tip_w / 2, arrow_tip_h);
+        cairo_rel_line_to (cr, -(arrow_tip_w - arrow_w) / 2, 0);
+        cairo_rel_line_to (cr, 0, arrow_h);
+    }
+    else if (delta_e < 0) {
+        /* arrow points downwards */
+        cairo_move_to (cr, xc - arrow_w / 2, yc + arrow_h / 2);
+        cairo_rel_line_to (cr, 0, -arrow_h);
+        cairo_rel_line_to (cr, arrow_w, 0);
+        cairo_rel_line_to (cr, 0, arrow_h);
+        cairo_rel_line_to (cr, (arrow_tip_w - arrow_w) / 2, 0);
+        cairo_rel_line_to (cr, -arrow_tip_w / 2, arrow_tip_h);
+        cairo_rel_line_to (cr, -arrow_tip_w / 2, -arrow_tip_h);
+        cairo_rel_line_to (cr, (arrow_tip_w - arrow_w) / 2, 0);
     }
 
-    cairo_fill (cr);
+    if (delta_e != 0) {
+        cairo_set_source_rgba (cr, 0, 0, 0, 0.6);
+        cairo_close_path (cr);
+        cairo_fill_preserve (cr);
+        cairo_set_source_rgba (cr, 0, 0, 0, 1);
+        cairo_stroke (cr);
+    }
 
     return TRUE;
 }
@@ -210,29 +195,35 @@ my_intensity_box_realize (GtkWidget * widget)
 
     priv = my_intensity_box_get_instance_private (self);
 
-    GTK_WIDGET_CLASS(my_intensity_box_parent_class)->realize(widget);
+    GTK_WIDGET_CLASS (my_intensity_box_parent_class)->realize (widget);
 
     gint width, height;
 
-    GtkWidget *label = gtk_label_new ("test");
     GdkRectangle rect;
 
     width = gtk_widget_get_allocated_width (widget);
     height = gtk_widget_get_allocated_height (widget);
 
-    rect.x = 0;
-    rect.y = height - (priv->y / (priv->y_max - priv->y_min)) * height;
-    rect.height = 0;
-    rect.width = width;
+    /*rect.x = 0; */
+    /*rect.y = height - (priv->y / (priv->y_max - priv->y_min)) * height; */
+    /*rect.height = 0; */
+    /*rect.width = width; */
 
-    /*priv->popover = gtk_popover_new (GTK_WIDGET (self));*/
-    /*gtk_popover_set_modal (GTK_POPOVER (priv->popover), FALSE);*/
-    /*gtk_popover_set_pointing_to (GTK_POPOVER (priv->popover), &rect);*/
-    /*gtk_popover_set_position (GTK_POPOVER (priv->popover), GTK_POS_TOP);*/
-    /*gtk_container_add (GTK_CONTAINER (priv->popover), label);*/
-    /*gtk_container_set_border_width (GTK_CONTAINER (priv->popover), 6);*/
-    /*gtk_widget_show (label);*/
-    /*gtk_widget_set_visible (GTK_WIDGET (priv->popover), TRUE);*/
+    /*priv->popover = gtk_popover_new (GTK_WIDGET (self)); */
+    /*gtk_popover_set_modal (GTK_POPOVER (priv->popover), FALSE); */
+    /*gtk_popover_set_pointing_to (GTK_POPOVER (priv->popover), &rect); */
+    /*gtk_popover_set_position (GTK_POPOVER (priv->popover), GTK_POS_TOP); */
+    /*gtk_container_add (GTK_CONTAINER (priv->popover), label); */
+    /*gtk_container_set_border_width (GTK_CONTAINER (priv->popover), 6); */
+    /*gtk_widget_show (label); */
+    /*gtk_widget_set_visible (GTK_WIDGET (priv->popover), TRUE); */
+}
+
+static void
+my_intensity_box_delta_energy_changed (MyIntensityBox * self,
+                                       GParamSpec * pspec, gpointer data)
+{
+    gtk_widget_queue_draw(GTK_WIDGET(self));
 }
 
 static void
@@ -259,6 +250,16 @@ my_intensity_box_class_init (MyIntensityBoxClass * klass)
     widget_class->get_preferred_height_for_width =
         my_intensity_box_get_preferred_height_for_width;
     widget_class->realize = my_intensity_box_realize;
+
+    obj_properties[PROP_DELTA_ENERGY] =
+        g_param_spec_double ("delta-energy",
+                           "id",
+                           "unique identifier of system",
+                           -G_MAXDOUBLE, G_MAXDOUBLE, 10.0,
+                           G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
+
+    g_object_class_install_properties (gobject_class,
+                                       N_PROPERTIES, obj_properties);
 }
 
 static void
@@ -270,9 +271,11 @@ my_intensity_box_init (MyIntensityBox * self)
 
     /* to init any of the private data, do e.g: */
 
-    priv->y_min = 0.0;
-    priv->y_max = 1.0;
-    priv->y = 0.5;
+    g_signal_connect (self, "notify::delta-energy",
+                      G_CALLBACK (my_intensity_box_delta_energy_changed), NULL);
+
+    gtk_widget_set_hexpand (GTK_WIDGET (self), TRUE);
+    gtk_widget_set_halign (GTK_WIDGET (self), GTK_ALIGN_FILL);
 
 }
 

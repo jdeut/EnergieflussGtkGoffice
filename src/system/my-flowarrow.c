@@ -2,6 +2,8 @@
 
 #include <json-glib/json-glib.h>
 
+#define ENERGY_FACTOR 1./4.
+
 enum
 {
     PROP_0,
@@ -37,6 +39,7 @@ enum
 enum
 {
     CANVAS_CHANGED_ENERGY_QUANTITY,
+    CANVAS_CHANGED_ENERGY_QUANTITY_UPDATE_INTENSITY_BOX,
     CANVAS_CHANGED_TRANSFER_TYPE,
     CANVAS_CHANGED_LABEL_TEXT,
     FLOW_ARROW_CHANGED_X1,
@@ -877,6 +880,64 @@ my_flow_arrow_set_coordinate (MyFlowArrow * self, const gchar * first_arg_name,
 }
 
 static void
+my_flow_arrow_update_intensity_box_of_associated_systems (MyFlowArrow * self,
+                                                          GParamSpec * pspec,
+                                                          gpointer data)
+{
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
+    MyIntensityBox *ib;
+    GtkWidget *widget;
+    gdouble energy_sum_primary=0, energy_sum_secondary=0;
+
+    MyCanvas *canvas;
+    GList *l;
+
+    g_object_get(GOC_ITEM(self), "canvas", &canvas, NULL);
+
+    GocGroup *group_arrows = canvas->group[GROUP_ARROWS];
+
+    for (l = group_arrows->children; l != NULL; l = l->next) {
+        MySystem *primary, *secondary;
+        gdouble energy;
+
+        g_object_get(l->data, "primary-system", &primary, "secondary-system", &secondary, "energy-quantity", &energy, NULL);
+
+        if(MY_SYSTEM(primary) == MY_SYSTEM(priv->primary_system)) {
+            energy_sum_primary += energy;
+        }
+        else if(MY_SYSTEM(secondary) == MY_SYSTEM(priv->primary_system)) {
+            energy_sum_primary -= energy;
+        }
+
+        if(MY_IS_SYSTEM(priv->secondary_system))  {
+            if(MY_SYSTEM(primary) == MY_SYSTEM(priv->secondary_system)) {
+                energy_sum_secondary += energy;
+            }
+            else if(MY_SYSTEM(secondary) == MY_SYSTEM(priv->secondary_system)) {
+                energy_sum_secondary -= energy;
+            }
+        }
+    }
+
+    g_object_get(priv->primary_system, "widget", &widget, NULL);
+
+    ib = my_system_widget_get_intensity_box(MY_SYSTEM_WIDGET(widget));
+
+    g_object_set(ib, "delta-energy", ENERGY_FACTOR*energy_sum_primary, NULL);
+    g_object_unref(widget);
+
+    if(MY_IS_SYSTEM(priv->secondary_system)) {
+        g_object_get(priv->secondary_system, "widget", &widget, NULL);
+
+        ib = my_system_widget_get_intensity_box(MY_SYSTEM_WIDGET(widget));
+
+        g_object_set(ib, "delta-energy", ENERGY_FACTOR*energy_sum_secondary, NULL);
+        g_object_unref(widget);
+    }
+}
+
+static void
 my_flow_arrow_energy_quantity_changed (MyFlowArrow * self,
                                        GParamSpec * pspec, gpointer data)
 {
@@ -892,7 +953,7 @@ my_flow_arrow_energy_quantity_changed (MyFlowArrow * self,
 
     /* factor 1/4 scales 250pixels to 1000 */
     style->line.width =
-        ABS (1.0 / 4.0 * priv->energy_quantity / priv->prefix_factor);
+        ABS (ENERGY_FACTOR * priv->energy_quantity / priv->prefix_factor);
 
     if (priv->energy_quantity < 0) {
         tmp = priv->arrow_end;
@@ -1002,14 +1063,17 @@ init_label_widget (MyFlowArrow * self)
         gdouble energy_quantity;
         gchar *prefix, *unit;
 
-        energy_quantity = ABS(my_flow_arrow_energy_quantity_transform_to_metric_and_unit (self));
+        energy_quantity =
+            ABS (my_flow_arrow_energy_quantity_transform_to_metric_and_unit
+                 (self));
         prefix = my_flow_arrow_prefix_get_name (self);
         unit = my_flow_arrow_unit_get_name (self);
 
-        str_energy = g_strdup_printf ("%.3f %s%s", energy_quantity, prefix, unit);
+        str_energy =
+            g_strdup_printf ("%.3f %s%s", energy_quantity, prefix, unit);
 
-        g_free(prefix);
-        g_free(unit);
+        g_free (prefix);
+        g_free (unit);
 
         label_energy = gtk_label_new (str_energy);
 
@@ -1022,11 +1086,14 @@ init_label_widget (MyFlowArrow * self)
 
     gtk_widget_show_all (eventbox);
 
-    gtk_event_box_set_visible_window (GTK_EVENT_BOX(eventbox), TRUE);
+    gtk_event_box_set_visible_window (GTK_EVENT_BOX (eventbox), TRUE);
 
-    gtk_event_box_set_above_child (GTK_EVENT_BOX(eventbox), TRUE);
+    gtk_event_box_set_above_child (GTK_EVENT_BOX (eventbox), TRUE);
 
-    gtk_widget_set_events (eventbox, GDK_POINTER_MOTION_MASK | GDK_BUTTON_MOTION_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON2_MOTION_MASK | GDK_BUTTON3_MOTION_MASK);
+    gtk_widget_set_events (eventbox,
+                           GDK_POINTER_MOTION_MASK | GDK_BUTTON_MOTION_MASK |
+                           GDK_BUTTON1_MOTION_MASK | GDK_BUTTON2_MOTION_MASK |
+                           GDK_BUTTON3_MOTION_MASK);
 
     return eventbox;
 }
@@ -1159,16 +1226,20 @@ my_flow_arrow_sync_with_associated_systems (MyFlowArrow * self)
         }
     }
 
-    g_signal_handler_block (priv->handler_instance[FLOW_ARROW_CHANGED_X1], priv->handler[FLOW_ARROW_CHANGED_X1]);
-    g_signal_handler_block (priv->handler_instance[FLOW_ARROW_CHANGED_Y1], priv->handler[FLOW_ARROW_CHANGED_Y1]);
+    g_signal_handler_block (priv->handler_instance[FLOW_ARROW_CHANGED_X1],
+                            priv->handler[FLOW_ARROW_CHANGED_X1]);
+    g_signal_handler_block (priv->handler_instance[FLOW_ARROW_CHANGED_Y1],
+                            priv->handler[FLOW_ARROW_CHANGED_Y1]);
 
     my_flow_arrow_set_coordinate (self, "x0", x0,
                                   "y0", y0, "x1", x1, "y1", y1, NULL);
 
     g_object_set (priv->drag_point, "x", x1, "y", y1, NULL);
 
-    g_signal_handler_unblock (priv->handler_instance[FLOW_ARROW_CHANGED_X1], priv->handler[FLOW_ARROW_CHANGED_X1]);
-    g_signal_handler_unblock (priv->handler_instance[FLOW_ARROW_CHANGED_Y1], priv->handler[FLOW_ARROW_CHANGED_Y1]);
+    g_signal_handler_unblock (priv->handler_instance[FLOW_ARROW_CHANGED_X1],
+                              priv->handler[FLOW_ARROW_CHANGED_X1]);
+    g_signal_handler_unblock (priv->handler_instance[FLOW_ARROW_CHANGED_Y1],
+                              priv->handler[FLOW_ARROW_CHANGED_Y1]);
 }
 
 void
@@ -1234,20 +1305,24 @@ my_flow_arrow_sync_drag_point_coordinate_with_self_coordinate (MyFlowArrow *
 
     gdouble x_dp, y_dp;
 
-    guint handler[] = { FLOW_ARROW_CHANGED_Y1, DRAG_POINT_NW_CHANGED_X, DRAG_POINT_NW_CHANGED_Y, FLOW_ARROW_CHANGED_X1 };
+    guint handler[] =
+        { FLOW_ARROW_CHANGED_Y1, DRAG_POINT_NW_CHANGED_X,
+    DRAG_POINT_NW_CHANGED_Y, FLOW_ARROW_CHANGED_X1 };
     guint n;
 
     g_object_get (point, "x", &x_dp, "y", &y_dp, NULL);
 
     for (n = 0; n < sizeof (handler) / sizeof (handler[0]); n++)
-        g_signal_handler_block (priv->handler_instance[handler[n]], priv->handler[handler[n]]);
+        g_signal_handler_block (priv->handler_instance[handler[n]],
+                                priv->handler[handler[n]]);
 
     g_object_set (self, "x1", x_dp, "y1", y_dp, NULL);
 
     my_flow_arrow_update (self);
 
     for (n = 0; n < sizeof (handler) / sizeof (handler[0]); n++)
-        g_signal_handler_unblock (priv->handler_instance[handler[n]], priv->handler[handler[n]]);
+        g_signal_handler_unblock (priv->handler_instance[handler[n]],
+                                  priv->handler[handler[n]]);
 }
 
 static gboolean
@@ -1317,9 +1392,11 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
     for (i = 0; i < N_HANDLER; i++) {
-        if (priv->handler[i] != 0 && G_IS_OBJECT(priv->handler_instance[i])) {
-            if (g_signal_handler_is_connected (priv->handler_instance[i], priv->handler[i])) {
-                g_signal_handler_disconnect (priv->handler_instance[i], priv->handler[i]);
+        if (priv->handler[i] != 0 && G_IS_OBJECT (priv->handler_instance[i])) {
+            if (g_signal_handler_is_connected
+                (priv->handler_instance[i], priv->handler[i])) {
+                g_signal_handler_disconnect (priv->handler_instance[i],
+                                             priv->handler[i]);
             }
         }
     }
@@ -1342,11 +1419,20 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
 
     g_return_if_fail (GOC_IS_GROUP (group_dragpoints));
 
-    if(!MY_IS_DRAG_POINT(priv->drag_point)) {
+    if (!MY_IS_DRAG_POINT (priv->drag_point)) {
         priv->drag_point = (MyDragPoint *)
             goc_item_new (group_dragpoints, MY_TYPE_DRAG_POINT, "radius", 10.0,
                           "linked-item", self, NULL);
     }
+
+    priv->
+        handler_instance[CANVAS_CHANGED_ENERGY_QUANTITY_UPDATE_INTENSITY_BOX] =
+        self;
+    priv->handler[CANVAS_CHANGED_ENERGY_QUANTITY_UPDATE_INTENSITY_BOX] =
+        g_signal_connect (self, "notify::energy-quantity",
+                          G_CALLBACK
+                          (my_flow_arrow_update_intensity_box_of_associated_systems),
+                          NULL);
 
     priv->handler_instance[CANVAS_CHANGED_ENERGY_QUANTITY] = self;
     priv->handler[CANVAS_CHANGED_ENERGY_QUANTITY] =
@@ -1400,7 +1486,8 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
                                   (my_flow_arrow_app_window_changed_metric_prefix),
                                   self);
 
-    priv->handler_instance[ACTION_SHOW_ENERGY_AMOUNT_STATE_CHANGED] = show_energy_amount;
+    priv->handler_instance[ACTION_SHOW_ENERGY_AMOUNT_STATE_CHANGED] =
+        show_energy_amount;
     priv->handler[ACTION_SHOW_ENERGY_AMOUNT_STATE_CHANGED] =
         g_signal_connect_swapped (show_energy_amount, "change-state",
                                   G_CALLBACK

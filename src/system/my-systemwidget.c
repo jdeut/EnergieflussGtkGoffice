@@ -14,10 +14,10 @@ void model_handler_picture_path_changed (MySystemWidget * self,
                                          GParamSpec * pspec,
                                          MySystemModel * model);
 void my_system_widget_set_label_from_model (MySystemWidget * self,
-                                       MySystemModel * model);
+                                            MySystemModel * model);
 void my_system_widget_realized (MySystemWidget * self, gpointer data);
 void my_system_widget_set_pixbuf_from_model (MySystemWidget * self,
-                                        MySystemModel * model);
+                                             MySystemModel * model);
 
 enum
 {
@@ -225,16 +225,17 @@ my_system_widget_pixbuf_set_proper_size (MySystemWidget * self)
     cairo_rectangle_t rect;
     gint p_w, p_h, dest_w, dest_h;
 
-    if(!MY_IS_SYSTEM(priv->system)) {
+    if (!MY_IS_SYSTEM (priv->system)) {
         return;
     }
 
-    g_object_get(priv->system, "width", &rect.width, "height", &rect.height, NULL);
+    g_object_get (priv->system, "width", &rect.width, "height", &rect.height,
+                  NULL);
 
     rect.width = ((gfloat) 0.8 * rect.width);
     rect.height = ((gfloat) 0.7 * rect.height);
 
-    g_return_if_fail(GDK_IS_PIXBUF(priv->pixbuf_orig));
+    g_return_if_fail (GDK_IS_PIXBUF (priv->pixbuf_orig));
 
     p_w = gdk_pixbuf_get_width (priv->pixbuf_orig);
     p_h = gdk_pixbuf_get_height (priv->pixbuf_orig);
@@ -470,10 +471,10 @@ my_system_widget_init (MySystemWidget * self)
 
     priv->ib = my_intensity_box_new ();
     box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
-    gtk_widget_set_halign (box, GTK_ALIGN_START);
     gtk_widget_set_margin_top (box, 10);
     gtk_widget_set_margin_start (box, 40);
-    gtk_widget_set_margin_bottom (box, 10);
+    gtk_widget_set_margin_end (box, 40);
+    gtk_widget_set_margin_bottom (box, 20);
     gtk_container_add (GTK_CONTAINER (box), GTK_WIDGET (priv->ib));
     gtk_widget_show_all (box);
 
@@ -674,4 +675,14 @@ my_system_widget_set_visible_child (MySystemWidget * self, gchar * name)
     g_return_if_fail (MY_IS_SYSTEM_WIDGET (self));
 
     gtk_stack_set_visible_child_name (GTK_STACK (priv->stack), name);
+}
+
+MyIntensityBox *
+my_system_widget_get_intensity_box (MySystemWidget * self)
+{
+    MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
+
+    g_return_if_fail (MY_IS_SYSTEM_WIDGET (self));
+
+    return priv->ib;
 }
