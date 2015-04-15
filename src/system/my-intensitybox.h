@@ -35,6 +35,8 @@ struct _MyIntensityBoxClass
 
 };
 
+#include "my-window.h"
+
 GType my_intensity_box_get_type (void);
 
 /* fill in public functions */

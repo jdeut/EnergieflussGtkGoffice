@@ -223,6 +223,21 @@ static void
 my_intensity_box_delta_energy_changed (MyIntensityBox * self,
                                        GParamSpec * pspec, gpointer data)
 {
+    MyIntensityBoxPrivate *priv;
+    gdouble factor;
+    MyWindow *window;
+
+    priv = my_intensity_box_get_instance_private (self);
+
+    window = (MyWindow *) gtk_widget_get_toplevel (GTK_WIDGET (self));
+    
+    if(!MY_IS_WINDOW(window))
+        return;
+
+    factor = my_window_get_metric_prefix_factor (window);
+
+    priv->delta_e /= factor;
+
     gtk_widget_queue_draw(GTK_WIDGET(self));
 }
 
@@ -255,7 +270,7 @@ my_intensity_box_class_init (MyIntensityBoxClass * klass)
         g_param_spec_double ("delta-energy",
                            "id",
                            "unique identifier of system",
-                           -G_MAXDOUBLE, G_MAXDOUBLE, 10.0,
+                           -G_MAXDOUBLE, G_MAXDOUBLE, 0.0,
                            G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
     g_object_class_install_properties (gobject_class,
