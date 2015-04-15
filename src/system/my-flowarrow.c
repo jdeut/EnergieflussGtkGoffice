@@ -40,6 +40,8 @@ enum
 {
     CANVAS_CHANGED_ENERGY_QUANTITY,
     CANVAS_CHANGED_ENERGY_QUANTITY_UPDATE_INTENSITY_BOX,
+    CANVAS_CHANGED_PRIMARY_SYSTEM_UPDATE_INTENSITY_BOX,
+    CANVAS_CHANGED_SECONDARY_SYSTEM_UPDATE_INTENSITY_BOX,
     CANVAS_CHANGED_TRANSFER_TYPE,
     CANVAS_CHANGED_LABEL_TEXT,
     FLOW_ARROW_CHANGED_X1,
@@ -888,51 +890,40 @@ my_flow_arrow_update_intensity_box_of_associated_systems (MyFlowArrow * self,
 
     MyIntensityBox *ib;
     GtkWidget *widget;
-    gdouble energy_sum_primary=0, energy_sum_secondary=0;
 
     MyCanvas *canvas;
-    GList *l;
+    GList *la, *ls;
 
     g_object_get(GOC_ITEM(self), "canvas", &canvas, NULL);
 
     GocGroup *group_arrows = canvas->group[GROUP_ARROWS];
+    GocGroup *group_systems = canvas->group[GROUP_SYSTEMS];
 
-    for (l = group_arrows->children; l != NULL; l = l->next) {
-        MySystem *primary, *secondary;
-        gdouble energy;
+    for (ls = group_systems->children; ls != NULL; ls = ls->next) {
 
-        g_object_get(l->data, "primary-system", &primary, "secondary-system", &secondary, "energy-quantity", &energy, NULL);
+        gdouble energy_sum=0;
 
-        if(MY_SYSTEM(primary) == MY_SYSTEM(priv->primary_system)) {
-            energy_sum_primary += energy;
-        }
-        else if(MY_SYSTEM(secondary) == MY_SYSTEM(priv->primary_system)) {
-            energy_sum_primary -= energy;
-        }
+        for (la = group_arrows->children; la != NULL; la = la->next) {
 
-        if(MY_IS_SYSTEM(priv->secondary_system))  {
-            if(MY_SYSTEM(primary) == MY_SYSTEM(priv->secondary_system)) {
-                energy_sum_secondary += energy;
+            MySystem *primary, *secondary;
+            gdouble energy;
+
+            g_object_get(la->data, "primary-system", &primary, "secondary-system", &secondary, "energy-quantity", &energy, NULL);
+
+            if(MY_SYSTEM(ls->data) == MY_SYSTEM(primary)) {
+                energy_sum += energy;
             }
-            else if(MY_SYSTEM(secondary) == MY_SYSTEM(priv->secondary_system)) {
-                energy_sum_secondary -= energy;
+            else if(MY_SYSTEM(ls->data) == MY_SYSTEM(secondary)) {
+                energy_sum -= energy;
             }
         }
-    }
 
-    g_object_get(priv->primary_system, "widget", &widget, NULL);
-
-    ib = my_system_widget_get_intensity_box(MY_SYSTEM_WIDGET(widget));
-
-    g_object_set(ib, "delta-energy", ENERGY_FACTOR*energy_sum_primary, NULL);
-    g_object_unref(widget);
-
-    if(MY_IS_SYSTEM(priv->secondary_system)) {
-        g_object_get(priv->secondary_system, "widget", &widget, NULL);
+        g_object_get(ls->data, "widget", &widget, NULL);
 
         ib = my_system_widget_get_intensity_box(MY_SYSTEM_WIDGET(widget));
 
-        g_object_set(ib, "delta-energy", ENERGY_FACTOR*energy_sum_secondary, NULL);
+        g_object_set(ib, "delta-energy", ENERGY_FACTOR*energy_sum, NULL);
+
         g_object_unref(widget);
     }
 }
@@ -1430,6 +1421,24 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
         self;
     priv->handler[CANVAS_CHANGED_ENERGY_QUANTITY_UPDATE_INTENSITY_BOX] =
         g_signal_connect (self, "notify::energy-quantity",
+                          G_CALLBACK
+                          (my_flow_arrow_update_intensity_box_of_associated_systems),
+                          NULL);
+
+    priv->
+        handler_instance[CANVAS_CHANGED_PRIMARY_SYSTEM_UPDATE_INTENSITY_BOX] =
+        self;
+    priv->handler[CANVAS_CHANGED_PRIMARY_SYSTEM_UPDATE_INTENSITY_BOX] =
+        g_signal_connect (self, "notify::primary-system",
+                          G_CALLBACK
+                          (my_flow_arrow_update_intensity_box_of_associated_systems),
+                          NULL);
+
+    priv->
+        handler_instance[CANVAS_CHANGED_SECONDARY_SYSTEM_UPDATE_INTENSITY_BOX] =
+        self;
+    priv->handler[CANVAS_CHANGED_SECONDARY_SYSTEM_UPDATE_INTENSITY_BOX] =
+        g_signal_connect (self, "notify::secondary-system",
                           G_CALLBACK
                           (my_flow_arrow_update_intensity_box_of_associated_systems),
                           NULL);
