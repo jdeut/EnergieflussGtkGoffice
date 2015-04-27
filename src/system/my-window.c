@@ -46,7 +46,7 @@ struct _MyWindowPrivate
     /* private members go here */
     GtkStatusbar *statusbar1;
     GtkWidget *scrolledwindow1;
-    GtkWidget *scale;
+    /*GtkWidget *scale;*/
     GtkWidget *description;
     GtkWidget *customtitle;
     GtkWidget *headerbar;
@@ -74,7 +74,7 @@ static GActionEntry win_entries[] = {
     {"add-system", my_window_add_system, NULL, NULL, NULL},
     {"zoom-in", my_window_zoom_in, NULL, NULL, NULL},
     {"zoom-out", my_window_zoom_out, NULL, NULL, NULL},
-    {"change-view", NULL, "s", "\"real\"", my_window_change_view_state_change},
+    {"change-view", NULL, "s", "\"niveaus\"", my_window_change_view_state_change},
     {"show-drag-points", my_window_show_drag_points, NULL, "true",
      my_window_show_drag_points_state_change},
     {"show-energy-amount-of-flow-arrows",
@@ -227,12 +227,12 @@ my_window_populate (MyWindow * self)
     my_timeline_model_append_to_timeline (timeline);
     my_timeline_model_append_to_timeline (timeline);
 
-    if (GTK_IS_SCALE (priv->scale)) {
-        g_object_bind_property (timeline, "adjustment", priv->scale,
-                                "adjustment",
-                                G_BINDING_SYNC_CREATE |
-                                G_BINDING_BIDIRECTIONAL);
-    }
+    /*if (GTK_IS_SCALE (priv->scale)) {*/
+        /*g_object_bind_property (timeline, "adjustment", priv->scale,*/
+                                /*"adjustment",*/
+                                /*G_BINDING_SYNC_CREATE |*/
+                                /*G_BINDING_BIDIRECTIONAL);*/
+    /*}*/
 
     my_canvas_set_timeline (priv->canvas, timeline);
 
@@ -274,14 +274,14 @@ my_window_class_init (MyWindowClass * klass)
     gtk_widget_class_set_template_from_resource (GTK_WIDGET_CLASS (klass),
                                                  "/org/gtk/myapp/window.ui");
 
-    gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
-                                                  MyWindow, statusbar1);
+    /*gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),*/
+                                                  /*MyWindow, statusbar1);*/
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
                                                   MyWindow, description);
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
                                                   MyWindow, scrolledwindow1);
-    gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
-                                                  MyWindow, scale);
+    /*gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),*/
+                                                  /*MyWindow, scale);*/
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
                                                   MyWindow, headerbar);
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
@@ -355,27 +355,27 @@ timeline_model_handler_current_pos_changed (MyWindow * self,
     guint pos;
     gchar *str;
 
-    priv = my_window_get_instance_private (self);
+    /*priv = my_window_get_instance_private (self);*/
 
-    g_return_if_fail (MY_IS_TIMELINE_MODEL (model));
-    g_return_if_fail (MY_IS_WINDOW (self));
+    /*g_return_if_fail (MY_IS_TIMELINE_MODEL (model));*/
+    /*g_return_if_fail (MY_IS_WINDOW (self));*/
 
-    priv = my_window_get_instance_private (self);
+    /*priv = my_window_get_instance_private (self);*/
 
-    pos = my_timeline_model_get_current_pos (model);
+    /*pos = my_timeline_model_get_current_pos (model);*/
 
-    if (my_timeline_model_current_pos_is_state (model)) {
-        str = g_strdup_printf ("Zustand %u", pos / 2 + 1);
-    }
-    else {
-        str =
-            g_strdup_printf ("Übergang: Zustand %u → %u", (pos / 2),
-                             (pos / 2) + 1);
-    }
+    /*if (my_timeline_model_current_pos_is_state (model)) {*/
+        /*str = g_strdup_printf ("Zustand %u", pos / 2 + 1);*/
+    /*}*/
+    /*else {*/
+        /*str =*/
+            /*g_strdup_printf ("Übergang: Zustand %u → %u", (pos / 2),*/
+                             /*(pos / 2) + 1);*/
+    /*}*/
 
-    gtk_label_set_text (GTK_LABEL (priv->description), str);
+    /*gtk_label_set_text (GTK_LABEL (priv->description), str);*/
 
-    g_free (str);
+    /*g_free (str);*/
 }
 
 void
@@ -622,8 +622,8 @@ my_window_add_arrow (GSimpleAction * simple,
     gchar *msg = {
         "Click the system to which you want to add an energy flow"
     };
-    contextid = gtk_statusbar_get_context_id (priv->statusbar1, msg);
-    gtk_statusbar_push (priv->statusbar1, contextid, msg);
+    /*contextid = gtk_statusbar_get_context_id (priv->statusbar1, msg);*/
+    /*gtk_statusbar_push (priv->statusbar1, contextid, msg);*/
     my_canvas_set_add_arrow_mode (priv->canvas);
 }
 
