@@ -21,14 +21,19 @@ MySystemWidget:active {
     border-width: 8px;
 }
 
+GtkFrame.Environment {
+    background-image: url('/org/gtk/myapp/cloud.png');
+    background-position: bottom;
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
 GtkLabel.TimelinePosDescription {
     font-size: 160%;
     font-variant: small-caps;
     font-weight: 600;
     color: #000;
     /*background-color: #000;*/
-    background-image: url('/org/gtk/myapp/cloud.png');
-    background-size: contain;
     padding: 10px;
     /*border-style: solid;*/
     /*border-width: 1.5px;*/
