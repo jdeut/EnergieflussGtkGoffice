@@ -47,11 +47,13 @@ struct _MyWindowPrivate
     GtkStatusbar *statusbar1;
     GtkWidget *scrolledwindow1;
     /*GtkWidget *scale;*/
-    GtkWidget *description;
+    /*GtkWidget *description;*/
     GtkWidget *customtitle;
     GtkWidget *headerbar;
     GtkWidget *radiobutton1;
+    GtkWidget *environment;
 
+    MyIntensityBox *box;
     EnergySettings es;
     FlowArrowSettings fas;
 
@@ -276,8 +278,10 @@ my_window_class_init (MyWindowClass * klass)
 
     /*gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),*/
                                                   /*MyWindow, statusbar1);*/
+    /*gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),*/
+                                                  /*MyWindow, description);*/
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
-                                                  MyWindow, description);
+                                                  MyWindow, environment);
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
                                                   MyWindow, scrolledwindow1);
     /*gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),*/
@@ -498,9 +502,19 @@ energy_control_factor_changed (MyWindow * self, GtkWidget * box)
 }
 
 void
+my_window_environment_init (MyWindow * self) {
+    MyWindowPrivate *priv = my_window_get_instance_private (self);
+
+    priv->box = my_intensity_box_new();
+
+    gtk_container_add(GTK_CONTAINER(priv->environment), GTK_WIDGET(priv->box));
+
+    g_object_set(priv->box, "delta-energy", 10.0, NULL);
+}
+
+void
 my_window_energy_control_init (MyWindow * self)
 {
-
     MyWindowPrivate *priv = my_window_get_instance_private (self);
 
     GtkWidget *popover;
@@ -600,6 +614,7 @@ my_window_new (GtkApplication * app)
     my_window_populate (self);
 
     my_window_style_init (self);
+    my_window_environment_init(self);
     my_window_energy_control_init (self);
     my_window_flow_arrow_settings_init (self);
 

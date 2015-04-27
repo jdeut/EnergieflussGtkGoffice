@@ -5,10 +5,6 @@
 
 #include <gtk/gtk.h>
 
-#include "my-application.h"
-#include "my-canvas.h"
-#include "my-systemwidget.h"
-
 G_BEGIN_DECLS
 
 #define MY_TYPE_WINDOW             (my_window_get_type())
@@ -79,6 +75,11 @@ struct _MyWindowClass
 };
 
 GType my_window_get_type (void);
+
+#include "my-application.h"
+#include "my-canvas.h"
+#include "my-systemwidget.h"
+#include "my-intensitybox.h"
 
 /* fill in public functions */
 MyWindow *my_window_new (GtkApplication *app);
