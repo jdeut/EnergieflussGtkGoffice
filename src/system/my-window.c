@@ -17,12 +17,12 @@ void my_window_show_drag_points_state_change (GSimpleAction * action,
                                               GVariant * state,
                                               gpointer user_data);
 void my_window_show_energy_amount_of_flow_arrows (GSimpleAction * action,
-                                             GVariant * parameter,
-                                             gpointer data);
+                                                  GVariant * parameter,
+                                                  gpointer data);
 void my_window_show_energy_amount_of_flow_arrows_state_change (GSimpleAction *
-                                                          action,
-                                                          GVariant * state,
-                                                          gpointer data);
+                                                               action,
+                                                               GVariant * state,
+                                                               gpointer data);
 void energy_control_value_changed (MyWindow * self, GtkAdjustment * adj);
 
 enum
@@ -46,8 +46,8 @@ struct _MyWindowPrivate
     /* private members go here */
     GtkStatusbar *statusbar1;
     GtkWidget *scrolledwindow1;
-    /*GtkWidget *scale;*/
-    /*GtkWidget *description;*/
+    /*GtkWidget *scale; */
+    /*GtkWidget *description; */
     GtkWidget *customtitle;
     GtkWidget *headerbar;
     GtkWidget *radiobutton1;
@@ -56,6 +56,7 @@ struct _MyWindowPrivate
     MyIntensityBox *box;
     EnergySettings es;
     FlowArrowSettings fas;
+    SystemSettings ss;
 
     gdouble zoom_factor;
     gdouble energy;
@@ -76,7 +77,8 @@ static GActionEntry win_entries[] = {
     {"add-system", my_window_add_system, NULL, NULL, NULL},
     {"zoom-in", my_window_zoom_in, NULL, NULL, NULL},
     {"zoom-out", my_window_zoom_out, NULL, NULL, NULL},
-    {"change-view", NULL, "s", "\"niveaus\"", my_window_change_view_state_change},
+    {"change-view", NULL, "s", "\"niveaus\"",
+     my_window_change_view_state_change},
     {"show-drag-points", my_window_show_drag_points, NULL, "true",
      my_window_show_drag_points_state_change},
     {"show-energy-amount-of-flow-arrows",
@@ -229,12 +231,12 @@ my_window_populate (MyWindow * self)
     my_timeline_model_append_to_timeline (timeline);
     my_timeline_model_append_to_timeline (timeline);
 
-    /*if (GTK_IS_SCALE (priv->scale)) {*/
-        /*g_object_bind_property (timeline, "adjustment", priv->scale,*/
-                                /*"adjustment",*/
-                                /*G_BINDING_SYNC_CREATE |*/
-                                /*G_BINDING_BIDIRECTIONAL);*/
-    /*}*/
+    /*if (GTK_IS_SCALE (priv->scale)) { */
+    /*g_object_bind_property (timeline, "adjustment", priv->scale, */
+    /*"adjustment", */
+    /*G_BINDING_SYNC_CREATE | */
+    /*G_BINDING_BIDIRECTIONAL); */
+    /*} */
 
     my_canvas_set_timeline (priv->canvas, timeline);
 
@@ -276,16 +278,16 @@ my_window_class_init (MyWindowClass * klass)
     gtk_widget_class_set_template_from_resource (GTK_WIDGET_CLASS (klass),
                                                  "/org/gtk/myapp/window.ui");
 
-    /*gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),*/
-                                                  /*MyWindow, statusbar1);*/
-    /*gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),*/
-                                                  /*MyWindow, description);*/
+    /*gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass), */
+    /*MyWindow, statusbar1); */
+    /*gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass), */
+    /*MyWindow, description); */
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
                                                   MyWindow, environment);
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
                                                   MyWindow, scrolledwindow1);
-    /*gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),*/
-                                                  /*MyWindow, scale);*/
+    /*gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass), */
+    /*MyWindow, scale); */
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
                                                   MyWindow, headerbar);
     gtk_widget_class_bind_template_child_private (GTK_WIDGET_CLASS (klass),
@@ -310,13 +312,29 @@ my_window_class_init (MyWindowClass * klass)
                                                G_PRIVATE_OFFSET (MyWindow,
                                                                  es.prefix));
 
+    /* bind system settings widgets to private struct */
+
+    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
+                                               "filechooserbutton",
+                                               FALSE,
+                                               G_PRIVATE_OFFSET (MyWindow,
+                                                                 ss.
+                                                                 filechooserbutton));
+
+    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
+                                               "system_settings_box",
+                                               FALSE,
+                                               G_PRIVATE_OFFSET (MyWindow,
+                                                                 ss.box));
+
     /* bind flow arrow settings widgets to private struct */
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "flow_arrow_ubertragungsform",
                                                FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                 fas.transfer_type));
+                                                                 fas.
+                                                                 transfer_type));
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "flow_arrow_box", FALSE,
@@ -327,8 +345,7 @@ my_window_class_init (MyWindowClass * klass)
                                                "flow_arrow_energy_quantity",
                                                FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                 fas.
-                                                                 energy_quantity));
+                                                                 fas.energy_quantity));
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "flow_arrow_label", FALSE,
@@ -359,27 +376,27 @@ timeline_model_handler_current_pos_changed (MyWindow * self,
     guint pos;
     gchar *str;
 
-    /*priv = my_window_get_instance_private (self);*/
+    /*priv = my_window_get_instance_private (self); */
 
-    /*g_return_if_fail (MY_IS_TIMELINE_MODEL (model));*/
-    /*g_return_if_fail (MY_IS_WINDOW (self));*/
+    /*g_return_if_fail (MY_IS_TIMELINE_MODEL (model)); */
+    /*g_return_if_fail (MY_IS_WINDOW (self)); */
 
-    /*priv = my_window_get_instance_private (self);*/
+    /*priv = my_window_get_instance_private (self); */
 
-    /*pos = my_timeline_model_get_current_pos (model);*/
+    /*pos = my_timeline_model_get_current_pos (model); */
 
-    /*if (my_timeline_model_current_pos_is_state (model)) {*/
-        /*str = g_strdup_printf ("Zustand %u", pos / 2 + 1);*/
-    /*}*/
-    /*else {*/
-        /*str =*/
-            /*g_strdup_printf ("Übergang: Zustand %u → %u", (pos / 2),*/
-                             /*(pos / 2) + 1);*/
-    /*}*/
+    /*if (my_timeline_model_current_pos_is_state (model)) { */
+    /*str = g_strdup_printf ("Zustand %u", pos / 2 + 1); */
+    /*} */
+    /*else { */
+    /*str = */
+    /*g_strdup_printf ("Übergang: Zustand %u → %u", (pos / 2), */
+    /*(pos / 2) + 1); */
+    /*} */
 
-    /*gtk_label_set_text (GTK_LABEL (priv->description), str);*/
+    /*gtk_label_set_text (GTK_LABEL (priv->description), str); */
 
-    /*g_free (str);*/
+    /*g_free (str); */
 }
 
 void
@@ -502,14 +519,16 @@ energy_control_factor_changed (MyWindow * self, GtkWidget * box)
 }
 
 void
-my_window_environment_init (MyWindow * self) {
+my_window_environment_init (MyWindow * self)
+{
     MyWindowPrivate *priv = my_window_get_instance_private (self);
 
-    priv->box = my_intensity_box_new();
+    priv->box = my_intensity_box_new ();
 
-    gtk_container_add(GTK_CONTAINER(priv->environment), GTK_WIDGET(priv->box));
+    gtk_container_add (GTK_CONTAINER (priv->environment),
+                       GTK_WIDGET (priv->box));
 
-    g_object_set(priv->box, "delta-energy", 10.0, NULL);
+    g_object_set (priv->box, "delta-energy", ENERGY_FACTOR * 100.0, NULL);
 }
 
 void
@@ -535,6 +554,17 @@ my_window_energy_control_init (MyWindow * self)
                               G_CALLBACK (energy_control_factor_changed), self);
 }
 
+SystemSettings
+my_window_get_system_settings (MyWindow * self)
+{
+
+    MyWindowPrivate *priv = my_window_get_instance_private (self);
+
+    g_return_if_fail (MY_IS_WINDOW (self));
+
+    return priv->ss;
+}
+
 FlowArrowSettings
 my_window_get_flow_arrow_settings (MyWindow * self)
 {
@@ -544,6 +574,59 @@ my_window_get_flow_arrow_settings (MyWindow * self)
     g_return_if_fail (MY_IS_WINDOW (self));
 
     return priv->fas;
+}
+
+static void
+_update_preview (GtkFileChooser * file_chooser, GtkWidget * preview)
+{
+    GdkPixbuf *pixbuf;
+    char *filename;
+    gboolean have_preview;
+
+    filename = gtk_file_chooser_get_preview_filename (file_chooser);
+
+    if (filename == NULL) {
+        gtk_file_chooser_set_preview_widget_active (file_chooser, FALSE);
+
+        return;
+    }
+
+    pixbuf = gdk_pixbuf_new_from_file_at_size (filename, 256, 400, NULL);
+    have_preview = (pixbuf != NULL);
+
+    g_free (filename);
+
+    gtk_image_set_from_pixbuf (GTK_IMAGE (preview), pixbuf);
+
+    if (pixbuf)
+        g_object_unref (pixbuf);
+
+    gtk_file_chooser_set_preview_widget_active (file_chooser, have_preview);
+}
+
+void
+my_window_system_settings_init (MyWindow * self)
+{
+    GtkWidget *preview;
+
+    MyWindowPrivate *priv = my_window_get_instance_private (self);
+
+    priv->ss.popover = gtk_popover_new (GTK_WIDGET (priv->canvas));
+
+    gtk_popover_set_position (GTK_POPOVER (priv->ss.popover), GTK_POS_BOTTOM);
+
+    gtk_container_add (GTK_CONTAINER (priv->ss.popover), priv->ss.box);
+
+    gtk_container_set_border_width (GTK_CONTAINER (priv->ss.popover), 10);
+    gtk_widget_show_all (priv->ss.box);
+
+    preview = gtk_image_new ();
+
+    gtk_file_chooser_set_preview_widget (GTK_FILE_CHOOSER
+                                         (priv->ss.filechooserbutton), preview);
+
+    g_signal_connect (priv->ss.filechooserbutton, "update-preview",
+                      G_CALLBACK (_update_preview), preview);
 }
 
 void
@@ -614,9 +697,10 @@ my_window_new (GtkApplication * app)
     my_window_populate (self);
 
     my_window_style_init (self);
-    my_window_environment_init(self);
+    my_window_environment_init (self);
     my_window_energy_control_init (self);
     my_window_flow_arrow_settings_init (self);
+    my_window_system_settings_init (self);
 
     gtk_application_set_accels_for_action (app, "win.zoom-in", zoom_in_accels);
     gtk_application_set_accels_for_action (app, "win.zoom-out",
@@ -637,8 +721,8 @@ my_window_add_arrow (GSimpleAction * simple,
     gchar *msg = {
         "Click the system to which you want to add an energy flow"
     };
-    /*contextid = gtk_statusbar_get_context_id (priv->statusbar1, msg);*/
-    /*gtk_statusbar_push (priv->statusbar1, contextid, msg);*/
+    /*contextid = gtk_statusbar_get_context_id (priv->statusbar1, msg); */
+    /*gtk_statusbar_push (priv->statusbar1, contextid, msg); */
     my_canvas_set_add_arrow_mode (priv->canvas);
 }
 

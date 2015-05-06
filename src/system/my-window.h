@@ -59,6 +59,12 @@ typedef struct {
     GtkAdjustment *adj;
 } FlowArrowSettings;
 
+typedef struct {
+    GtkWidget *popover;
+    GtkWidget *box;
+    GtkWidget *filechooserbutton;
+} SystemSettings;
+
 struct _MyWindow
 {
     GtkApplicationWindow parent;
@@ -112,6 +118,9 @@ my_window_get_change_view_radio_button (MyWindow * self);
 
 FlowArrowSettings
 my_window_get_flow_arrow_settings (MyWindow * self);
+
+SystemSettings
+my_window_get_system_settings (MyWindow * self);
 
 gdouble
 my_window_get_metric_prefix_factor (MyWindow * self);
