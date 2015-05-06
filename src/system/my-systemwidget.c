@@ -397,6 +397,12 @@ void
 my_system_widget_button_properties_clicked (MySystemWidget * self,
                                             gpointer data)
 {
+    GdkRectangle rect;
+    GdkDeviceManager *device_manager;
+    GdkDisplay *display;
+    GdkWindow *window;
+    GdkDevice *device;
+    gint x, y;
     GtkWidget *toplevel;
     SystemSettings ss;
 
@@ -408,10 +414,21 @@ my_system_widget_button_properties_clicked (MySystemWidget * self,
 
     ss = my_window_get_system_settings (MY_WINDOW (toplevel));
 
+    window = gtk_widget_get_window (GTK_WIDGET (my_window_get_canvas(MY_WINDOW(toplevel))));
+    display = gdk_window_get_display (window);
+    device_manager = gdk_display_get_device_manager (display);
+    device = gdk_device_manager_get_client_pointer (device_manager);
+
+    gdk_window_get_device_position (window, device, &x, &y, NULL);
+
+    rect.x = x;
+    rect.y = y;
+    rect.width = 2;
+    rect.height = 2;
+
     my_system_widget_properties_dialog_show (GTK_WINDOW (toplevel), self);
 
-    gtk_popover_set_relative_to (GTK_POPOVER (ss.popover),
-                                 priv->button_properties);
+    gtk_popover_set_pointing_to (GTK_POPOVER (ss.popover), &rect);
 
     g_signal_connect_swapped (ss.popover, "closed",
                               G_CALLBACK (my_system_widget_properties_close), self);
