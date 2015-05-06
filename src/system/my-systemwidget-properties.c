@@ -84,65 +84,60 @@ my_system_widget_properties_dialog_setup (GtkWindow * window)
     widgets[MODEL_SPECIFIC][WIDGET_SYSTEM_LABEL] = ss.entry;
     widgets[MODEL_SPECIFIC][WIDGET_FILECHOOSER_PIC] = ss.filechooserbutton;
 
-    for (i = 0; i < N_MODEL; i++) {
+    gchar *str;
 
-        for (j = 0; j < N_WIDGETS; j++) {
+    str =
+        g_strdup_printf ("%s%s", widget_names[j],
+                         system_model_suffix[i]);
 
-            if (!GTK_IS_WIDGET (widgets[i][j]))
-                continue;
+    gchar *path;
 
-            gchar *str;
+    g_object_get (system_model[i], "picture-path", &path, NULL);
 
-            str =
-                g_strdup_printf ("%s%s", widget_names[j],
-                                 system_model_suffix[i]);
-
-            if (j == WIDGET_FILECHOOSER_PIC) {
-
-                gchar *path;
-
-                g_object_get (system_model[i], "picture-path", &path, NULL);
-
-                if (path != NULL) {
-                    gtk_file_chooser_set_filename (GTK_FILE_CHOOSER
-                                                   (widgets[i][j]), path);
-                }
-
-                filter = gtk_file_filter_new ();
-
-                gtk_file_filter_set_name (filter, "jpg");
-                gtk_file_filter_add_mime_type (filter, "image/*");
-
-                gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (widgets[i][j]),
-                                             filter);
-
-                filter = gtk_file_filter_new ();
-
-                gtk_file_filter_set_name (filter, "All files");
-                gtk_file_filter_add_pattern (filter, "*");
-
-                gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (widgets[i][j]),
-                                             filter);
-                gtk_file_chooser_set_filter (GTK_FILE_CHOOSER (widgets[i][j]),
-                                             filter);
-
-                popover_handler_file_set =
-                    g_signal_connect (widgets[i][j], "file-set",
-                                      G_CALLBACK (file_chooser_file_set), NULL);
-            }
-            else if (j == WIDGET_SYSTEM_LABEL) {
-                gtk_entry_set_text(GTK_ENTRY(widgets[i][j]), "");
-
-                popover_binding[POPOVER_BINDING_LABEL] =
-                    g_object_bind_property (system_model[i], "label",
-                                            widgets[i][j], "text",
-                                            G_BINDING_BIDIRECTIONAL |
-                                            G_BINDING_SYNC_CREATE);
-            }
-
-            g_free (str);
-        }
+    if (path != NULL) {
+        gtk_file_chooser_set_filename (GTK_FILE_CHOOSER
+                                       (ss.filechooserbutton), path);
     }
+
+    filter = gtk_file_filter_new ();
+
+    gtk_file_filter_set_name (filter, "All files");
+    gtk_file_filter_add_pattern (filter, "*");
+
+    gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (ss.filechooserbutton),
+                                 filter);
+
+    filter = gtk_file_filter_new ();
+
+    gtk_file_filter_set_name (filter, "Bilder");
+    gtk_file_filter_add_pattern (filter, "*.jpg");
+    gtk_file_filter_add_pattern (filter, "*.Jpg");
+    gtk_file_filter_add_pattern (filter, "*.png");
+    gtk_file_filter_add_pattern (filter, "*.JPG");
+    gtk_file_filter_add_pattern (filter, "*.png");
+    gtk_file_filter_add_pattern (filter, "*.svg");
+    gtk_file_filter_add_pattern (filter, "*.SVG");
+    gtk_file_filter_add_pattern (filter, "*.bmp");
+    gtk_file_filter_add_pattern (filter, "*.BMP");
+
+    gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (ss.filechooserbutton),
+                                 filter);
+
+    gtk_file_chooser_set_filter (GTK_FILE_CHOOSER (ss.filechooserbutton),
+                                 filter);
+
+    popover_handler_file_set =
+        g_signal_connect (ss.filechooserbutton, "file-set",
+                          G_CALLBACK (file_chooser_file_set), NULL);
+
+    gtk_entry_set_text(GTK_ENTRY(ss.entry), "");
+
+    popover_binding[POPOVER_BINDING_LABEL] =
+        g_object_bind_property (system_model[i], "label",
+                                ss.entry, "text",
+                                G_BINDING_BIDIRECTIONAL |
+                                G_BINDING_SYNC_CREATE);
+    g_free (str);
 }
 
 void
