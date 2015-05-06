@@ -4,24 +4,16 @@
   <requires lib="gtk+" version="3.12"/>
   <!-- interface-local-resource-path /home/johannes/Bildung/Programming/c/Gtk/goffice-fi-01/data -->
   <!-- interface-css-provider-path style.css -->
-  <object class="GtkImage" id="pref">
-    <property name="width_request">8</property>
-    <property name="height_request">3</property>
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="icon_name">preferences-system-symbolic</property>
-  </object>
   <template class="MySystemWidget" parent="GtkEventBox">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <property name="events">GDK_POINTER_MOTION_MASK | GDK_BUTTON_MOTION_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON2_MOTION_MASK | GDK_BUTTON3_MOTION_MASK</property>
     <property name="hexpand">True</property>
     <property name="vexpand">True</property>
-    <property name="above_child">True</property>
     <child>
       <object class="GtkGrid" id="grid1">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="can_focus">True</property>
         <property name="margin_left">20</property>
         <property name="margin_right">20</property>
         <property name="margin_top">20</property>
@@ -32,7 +24,8 @@
             <property name="can_focus">False</property>
             <property name="halign">center</property>
             <property name="valign">center</property>
-            <property name="label" translatable="yes">System 1</property>
+            <property name="margin_bottom">10</property>
+            <property name="justify">center</property>
             <property name="ellipsize">end</property>
             <style>
               <class name="SystemTitle"/>
@@ -45,13 +38,28 @@
           </packing>
         </child>
         <child>
-          <object class="GtkOverlay" id="overlay1">
+          <object class="GtkButton" id="button_properties">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="hexpand">True</property>
-            <property name="vexpand">True</property>
+            <property name="receives_default">True</property>
+            <property name="margin_top">10</property>
+            <property name="relief">half</property>
             <child>
-              <object class="GtkStack" id="stack">
+              <object class="GtkArrow" id="arrow1">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="arrow_type">down</property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">2</property>
+            <property name="width">3</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkStack" id="stack">
             <property name="visible">True</property>
             <!--<property name="can_focus">True</property>-->
             <property name="transition-type">crossfade</property>
@@ -72,25 +80,6 @@
                 <property name="name">real</property>
                 <property name="title" translatable="yes">Real</property>
               </packing>
-            </child>
-          </object>
-            </child>
-            <child type="overlay">
-              <object class="GtkButton" id="button_properties">
-                <property name="width_request">1</property>
-                <property name="height_request">3</property>
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="receives_default">False</property>
-                <property name="halign">end</property>
-                <property name="valign">end</property>
-                <property name="margin_right">5</property>
-                <property name="margin_bottom">5</property>
-                <property name="image">pref</property>
-                <style>
-                  <class name="EditProperties"/>
-                </style>
-              </object>
             </child>
           </object>
           <packing>

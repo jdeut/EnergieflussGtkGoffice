@@ -408,10 +408,11 @@ my_system_widget_button_properties_clicked (MySystemWidget * self,
 
     ss = my_window_get_system_settings (MY_WINDOW (toplevel));
 
-    gtk_popover_set_relative_to (GTK_POPOVER (ss.popover), priv->button_properties);
-    gtk_widget_show (ss.popover);
+    my_system_widget_properties_dialog_show (GTK_WINDOW (toplevel), self);
 
-    /*my_system_widget_properties_dialog_show (GTK_WINDOW (toplevel), self);*/
+    gtk_popover_set_relative_to (GTK_POPOVER (ss.popover), priv->button_properties);
+
+    gtk_widget_show (ss.popover);
 }
 
 void

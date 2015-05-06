@@ -315,6 +315,13 @@ my_window_class_init (MyWindowClass * klass)
     /* bind system settings widgets to private struct */
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
+                                               "entry",
+                                               FALSE,
+                                               G_PRIVATE_OFFSET (MyWindow,
+                                                                 ss.
+                                                                 entry));
+
+    gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "filechooserbutton",
                                                FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,

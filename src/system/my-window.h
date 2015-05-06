@@ -61,6 +61,7 @@ typedef struct {
 
 typedef struct {
     GtkWidget *popover;
+    GtkWidget *entry;
     GtkWidget *box;
     GtkWidget *filechooserbutton;
 } SystemSettings;

@@ -41,26 +41,31 @@ file_chooser_file_set (GtkFileChooserButton * button, gint * i)
 }
 
 static void
-my_system_widget_properties_dialog_setup (GtkBuilder * builder,
-                                          GtkWindow * window)
+my_system_widget_properties_dialog_setup (GtkWindow * window)
 {
     GtkWidget *dialog;
+    SystemSettings ss;
     gint i, j;
 
     GtkFileFilter *filter;
 
+    ss = my_window_get_system_settings(MY_WINDOW(window));
+
+    widgets[MODEL_SPECIFIC][WIDGET_SYSTEM_LABEL] = ss.entry;
+    widgets[MODEL_SPECIFIC][WIDGET_FILECHOOSER_PIC] = ss.filechooserbutton;
 
     for (i = 0; i < N_MODEL; i++) {
 
         for (j = 0; j < N_WIDGETS; j++) {
+
+            if(!GTK_IS_WIDGET(widgets[i][j]))
+                continue;
 
             gchar *str;
 
             str =
                 g_strdup_printf ("%s%s", widget_names[j],
                                  system_model_suffix[i]);
-
-            widgets[i][j] = GTK_WIDGET (gtk_builder_get_object (builder, str));
 
             if (j == WIDGET_FILECHOOSER_PIC) {
 
@@ -100,52 +105,18 @@ my_system_widget_properties_dialog_setup (GtkBuilder * builder,
             g_free (str);
         }
     }
-
-    dialog =
-        GTK_WIDGET (gtk_builder_get_object
-                    (builder, "system_widget_properties_editor_dialog"));
-
-    g_signal_connect (dialog, "response",
-                      G_CALLBACK (gtk_widget_destroy), NULL);
-
-    if (window) {
-        gtk_window_set_screen (GTK_WINDOW (dialog),
-                               gtk_window_get_screen (window));
-    }
-
-    preferences_dialog = dialog;
-
-    g_object_add_weak_pointer (G_OBJECT (dialog),
-                               (gpointer *) & preferences_dialog);
-
-    gtk_window_set_transient_for (GTK_WINDOW (dialog), window);
-
-    gtk_widget_show (dialog);
 }
 
 void
 my_system_widget_properties_dialog_show (GtkWindow * window,
                                          MySystemWidget * system_widget)
 {
-    GtkBuilder *builder;
     MyTimelineModel *timeline;
-    GtkWidget *toplevel;
     guint id;
-
-    if (preferences_dialog != NULL) {
-        gtk_window_present (GTK_WINDOW (preferences_dialog));
-        return;
-    }
 
     g_return_if_fail (MY_IS_WINDOW (window));
 
     timeline = my_window_get_timeline (MY_WINDOW (window));
-
-    builder = gtk_builder_new ();
-
-    gtk_builder_add_from_resource (builder,
-                                   "/org/gtk/myapp/my-system-widget-properties.ui",
-                                   NULL);
 
     g_object_get (system_widget, "specific-model",
                   &system_model[MODEL_SPECIFIC], "id", &id, NULL);
@@ -157,7 +128,5 @@ my_system_widget_properties_dialog_show (GtkWindow * window,
     g_return_if_fail (MY_IS_SYSTEM_MODEL (system_model[MODEL_SPECIFIC]));
     g_return_if_fail (MY_IS_SYSTEM_MODEL (system_model[MODEL_GENERIC]));
 
-    my_system_widget_properties_dialog_setup (builder, window);
-
-    g_object_unref (builder);
+    my_system_widget_properties_dialog_setup (window);
 }
