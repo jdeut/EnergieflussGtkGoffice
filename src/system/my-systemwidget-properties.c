@@ -90,14 +90,6 @@ my_system_widget_properties_dialog_setup (GtkWindow * window)
 
     filter = gtk_file_filter_new ();
 
-    gtk_file_filter_set_name (filter, "All files");
-    gtk_file_filter_add_pattern (filter, "*");
-
-    gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (ss.filechooserbutton),
-                                 filter);
-
-    filter = gtk_file_filter_new ();
-
     gtk_file_filter_set_name (filter, "Bilder");
     gtk_file_filter_add_pattern (filter, "*.jpg");
     gtk_file_filter_add_pattern (filter, "*.Jpg");
@@ -109,8 +101,8 @@ my_system_widget_properties_dialog_setup (GtkWindow * window)
     gtk_file_filter_add_pattern (filter, "*.bmp");
     gtk_file_filter_add_pattern (filter, "*.BMP");
 
-    gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (ss.filechooserbutton),
-                                 filter);
+    /*gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (ss.filechooserbutton),*/
+                                 /*filter);*/
 
     gtk_file_chooser_set_filter (GTK_FILE_CHOOSER (ss.filechooserbutton),
                                  filter);
