@@ -73,26 +73,15 @@ file_chooser_file_set (GtkFileChooserButton * button, gint * i)
 static void
 my_system_widget_properties_dialog_setup (GtkWindow * window)
 {
-    GtkWidget *dialog;
     SystemSettings ss;
-    gint i, j;
 
     GtkFileFilter *filter;
 
     ss = my_window_get_system_settings (MY_WINDOW (window));
 
-    widgets[MODEL_SPECIFIC][WIDGET_SYSTEM_LABEL] = ss.entry;
-    widgets[MODEL_SPECIFIC][WIDGET_FILECHOOSER_PIC] = ss.filechooserbutton;
-
-    gchar *str;
-
-    str =
-        g_strdup_printf ("%s%s", widget_names[j],
-                         system_model_suffix[i]);
-
     gchar *path;
 
-    g_object_get (system_model[i], "picture-path", &path, NULL);
+    g_object_get (system_model[MODEL_SPECIFIC], "picture-path", &path, NULL);
 
     if (path != NULL) {
         gtk_file_chooser_set_filename (GTK_FILE_CHOOSER
@@ -111,14 +100,14 @@ my_system_widget_properties_dialog_setup (GtkWindow * window)
 
     gtk_file_filter_set_name (filter, "Bilder");
     gtk_file_filter_add_pattern (filter, "*.jpg");
-    /*gtk_file_filter_add_pattern (filter, "*.Jpg");*/
-    /*gtk_file_filter_add_pattern (filter, "*.png");*/
-    /*gtk_file_filter_add_pattern (filter, "*.JPG");*/
-    /*gtk_file_filter_add_pattern (filter, "*.png");*/
-    /*gtk_file_filter_add_pattern (filter, "*.svg");*/
-    /*gtk_file_filter_add_pattern (filter, "*.SVG");*/
-    /*gtk_file_filter_add_pattern (filter, "*.bmp");*/
-    /*gtk_file_filter_add_pattern (filter, "*.BMP");*/
+    gtk_file_filter_add_pattern (filter, "*.Jpg");
+    gtk_file_filter_add_pattern (filter, "*.png");
+    gtk_file_filter_add_pattern (filter, "*.JPG");
+    gtk_file_filter_add_pattern (filter, "*.png");
+    gtk_file_filter_add_pattern (filter, "*.svg");
+    gtk_file_filter_add_pattern (filter, "*.SVG");
+    gtk_file_filter_add_pattern (filter, "*.bmp");
+    gtk_file_filter_add_pattern (filter, "*.BMP");
 
     gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (ss.filechooserbutton),
                                  filter);
@@ -133,11 +122,10 @@ my_system_widget_properties_dialog_setup (GtkWindow * window)
     gtk_entry_set_text(GTK_ENTRY(ss.entry), "");
 
     popover_binding[POPOVER_BINDING_LABEL] =
-        g_object_bind_property (system_model[i], "label",
+        g_object_bind_property (system_model[MODEL_SPECIFIC], "label",
                                 ss.entry, "text",
                                 G_BINDING_BIDIRECTIONAL |
                                 G_BINDING_SYNC_CREATE);
-    g_free (str);
 }
 
 void
