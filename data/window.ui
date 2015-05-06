@@ -660,6 +660,11 @@
     <property name="can_focus">False</property>
     <property name="icon_name">list-add-symbolic</property>
   </object>
+  <object class="GtkImage" id="image_props">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="icon_name">emblem-system-symbolic</property>
+  </object>
   <object class="GtkImage" id="image_edit_delete">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
@@ -746,9 +751,9 @@
               <object class="GtkButton" id="energy_control_button">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">x</property>
                 <property name="halign">end</property>
                 <property name="valign">end</property>
+                <property name="image">image_props</property>
                 <property name="margin_bottom">10</property>
                 <property name="margin_right">10</property>
               </object>
@@ -986,7 +991,40 @@
                   <object class="GtkLabel" id="label2">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Arrow</property>
+                    <property name="label" translatable="yes">Energiepfeil</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <child>
+                  <object class="GtkButton">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <property name="halign">start</property>
+                    <property name="action_name">win.destroy-object</property>
+                    <property name="image">image_edit_delete</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Objekt löschen</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -998,7 +1036,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">2</property>
+                <property name="position">3</property>
               </packing>
             </child>
           </object>
