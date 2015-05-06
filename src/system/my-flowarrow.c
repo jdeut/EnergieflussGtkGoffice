@@ -2,8 +2,6 @@
 
 #include <json-glib/json-glib.h>
 
-#define ENERGY_FACTOR 1./4.
-
 enum
 {
     PROP_0,
