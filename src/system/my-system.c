@@ -197,9 +197,9 @@ calculate_anchor_of_dest (cairo_rectangle_t from, cairo_rectangle_t dest)
 
     alpha = atan2 (dy, dx);
 
-    /*g_print("from.x: %5.0f, from.y: %5.0f, dest.x: %5.0f, dest.y: %5.0f\n", from.x, from.y, dest.x, dest.y);*/
-    /*g_print("from.width: %5.0f, from.height: %5.0f, dest.width: %5.0f, dest.height: %5.0f\n", from.width, from.height, dest.width, dest.height);*/
-    /*g_print("dx: %5.0f, dy: %5.0f, alpha: %f\n", dx, dy, alpha * 180.0 / G_PI);*/
+    /*g_print("from.x: %5.0f, from.y: %5.0f, dest.x: %5.0f, dest.y: %5.0f\n", from.x, from.y, dest.x, dest.y); */
+    /*g_print("from.width: %5.0f, from.height: %5.0f, dest.width: %5.0f, dest.height: %5.0f\n", from.width, from.height, dest.width, dest.height); */
+    /*g_print("dx: %5.0f, dy: %5.0f, alpha: %f\n", dx, dy, alpha * 180.0 / G_PI); */
 
     anchor = MY_ANCHOR_NORTH;
 
@@ -426,18 +426,18 @@ my_system_coordinates_changed (MySystem * self,
         if (primary_system != self && secondary_system != self) {
             continue;
         }
-        
-        my_flow_arrow_update(l->data);
 
-        /*if (MY_IS_SYSTEM (primary_system)) {*/
-            /*my_system_draw_energy_flow_distribute_arrows (primary_system,*/
-                                                          /*group_arrows);*/
-        /*}*/
+        my_flow_arrow_update (l->data);
 
-        /*if (MY_IS_SYSTEM (secondary_system)) {*/
-            /*my_system_draw_energy_flow_distribute_arrows (secondary_system,*/
-                                                          /*group_arrows);*/
-        /*}*/
+        /*if (MY_IS_SYSTEM (primary_system)) { */
+        /*my_system_draw_energy_flow_distribute_arrows (primary_system, */
+        /*group_arrows); */
+        /*} */
+
+        /*if (MY_IS_SYSTEM (secondary_system)) { */
+        /*my_system_draw_energy_flow_distribute_arrows (secondary_system, */
+        /*group_arrows); */
+        /*} */
     }
 }
 
@@ -578,3 +578,25 @@ my_system_finalize (GObject * object)
 }
 
 /* begin public methods */
+
+void
+my_system_destroy (MySystem * self)
+{
+    GocCanvas *canvas;
+    MyTimelineModel *timeline;
+    MySystemPrivate *priv = my_system_get_instance_private (self);
+
+    g_return_if_fail (MY_IS_SYSTEM (self));
+
+    g_object_get (self, "canvas", &canvas, NULL);
+
+    timeline =
+        my_window_get_timeline (MY_WINDOW
+                                (gtk_widget_get_toplevel
+                                 (GTK_WIDGET (canvas))));
+
+    my_timeline_model_remove_object (timeline, self);
+
+    goc_item_destroy (GOC_ITEM (priv->drag_point[DRAG_POINT_NW]));
+    goc_item_destroy (GOC_ITEM (self));
+}

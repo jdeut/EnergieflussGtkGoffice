@@ -101,9 +101,6 @@ my_system_widget_properties_dialog_setup (GtkWindow * window)
     gtk_file_filter_add_pattern (filter, "*.bmp");
     gtk_file_filter_add_pattern (filter, "*.BMP");
 
-    /*gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (ss.filechooserbutton),*/
-                                 /*filter);*/
-
     gtk_file_chooser_set_filter (GTK_FILE_CHOOSER (ss.filechooserbutton),
                                  filter);
 

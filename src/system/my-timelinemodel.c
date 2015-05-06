@@ -344,6 +344,7 @@ my_timeline_model_remove_object (MyTimelineModel * self, gpointer object)
     g_return_if_fail (MY_IS_TIMELINE_MODEL (self));
 
     if (MY_IS_SYSTEM (object)) {
+        g_ptr_array_remove (priv->systems, object);
     }
     else if (MY_IS_FLOW_ARROW (object)) {
 

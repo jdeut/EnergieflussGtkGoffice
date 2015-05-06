@@ -126,6 +126,10 @@ my_window_get_system_settings (MyWindow * self);
 gdouble
 my_window_get_metric_prefix_factor (MyWindow * self);
 
+void
+my_window_destroy_object (GSimpleAction * simple,
+                     GVariant * parameter, gpointer data);
+
 G_END_DECLS
 
 #endif /* __MY_WINDOW_H__ */

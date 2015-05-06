@@ -74,6 +74,7 @@ G_DEFINE_TYPE_WITH_PRIVATE (MyWindow, my_window, GTK_TYPE_APPLICATION_WINDOW);
 
 static GActionEntry win_entries[] = {
     {"add-arrow", my_window_add_arrow, NULL, NULL, NULL},
+    {"destroy-object", my_window_destroy_object, NULL, NULL, NULL},
     {"add-system", my_window_add_system, NULL, NULL, NULL},
     {"zoom-in", my_window_zoom_in, NULL, NULL, NULL},
     {"zoom-out", my_window_zoom_out, NULL, NULL, NULL},
@@ -714,6 +715,17 @@ my_window_new (GtkApplication * app)
                                            zoom_out_accels);
 
     return self;
+}
+
+void
+my_window_destroy_object (GSimpleAction * simple,
+                     GVariant * parameter, gpointer data)
+{
+    MyWindowPrivate *priv;
+
+    priv = my_window_get_instance_private (data);
+
+    my_canvas_set_destroy_object_mode (priv->canvas);
 }
 
 void

@@ -58,6 +58,9 @@ void
 my_canvas_set_add_system_mode (MyCanvas * self);
 
 void
+my_canvas_set_destroy_object_mode (MyCanvas * self);
+
+void
 my_canvas_all_drag_points_set_visible (MyCanvas * self, gboolean visible);
 
 void

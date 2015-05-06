@@ -54,6 +54,8 @@ MyAnchorType
 calculate_anchor_of_dest (cairo_rectangle_t from, cairo_rectangle_t to);
 void 
 my_system_get_allocation (MySystem * self, cairo_rectangle_t * alloc);
+void
+my_system_destroy (MySystem * self);
 
 G_END_DECLS
 

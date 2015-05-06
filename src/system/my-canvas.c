@@ -20,6 +20,7 @@ struct _MyCanvasPrivate
     gdouble offsetx, offsety;
     guint add_arrow_mode;
     guint add_system_mode;
+    guint destroy_object_mode;
     gboolean scrolling;
     MyTimelineModel *timeline;
 };
@@ -132,6 +133,7 @@ my_canvas_init (MyCanvas * self)
     priv->active_item = NULL;
     priv->add_arrow_mode = FALSE;
     priv->add_system_mode = FALSE;
+    priv->destroy_object_mode = FALSE;
     priv->scrolling = FALSE;
 
     for (i = 0; i <= N_GROUPS; i++) {
@@ -353,6 +355,15 @@ my_canvas_drag_begin_button_1 (GocCanvas * canvas, GdkEventButton * event,
 
             priv->active_item = GOC_ITEM (point);
         }
+    }
+    else if (priv->destroy_object_mode) {
+
+        if(MY_IS_SYSTEM(priv->active_item)) {
+            my_system_destroy(MY_SYSTEM(priv->active_item));
+        }
+
+        priv->destroy_object_mode = FALSE;
+        priv->active_item = NULL;
     }
     else {
         priv->add_arrow_mode = FALSE;
@@ -606,7 +617,20 @@ my_canvas_set_add_system_mode (MyCanvas * self)
 
     g_return_if_fail (MY_IS_CANVAS (self));
 
+    priv->destroy_object_mode = FALSE;
     priv->add_system_mode = TRUE;
+}
+
+void
+my_canvas_set_destroy_object_mode (MyCanvas * self)
+{
+    MyCanvasPrivate *priv = my_canvas_get_instance_private (MY_CANVAS (self));
+
+    g_return_if_fail (MY_IS_CANVAS (self));
+
+    priv->add_system_mode = FALSE;
+    priv->add_arrow_mode = FALSE;
+    priv->destroy_object_mode = TRUE;
 }
 
 void
@@ -616,6 +640,7 @@ my_canvas_set_add_arrow_mode (MyCanvas * self)
 
     g_return_if_fail (MY_IS_CANVAS (self));
 
+    priv->destroy_object_mode = FALSE;
     priv->add_arrow_mode = TRUE;
 }
 
