@@ -410,7 +410,11 @@ my_system_widget_button_properties_clicked (MySystemWidget * self,
 
     my_system_widget_properties_dialog_show (GTK_WINDOW (toplevel), self);
 
-    gtk_popover_set_relative_to (GTK_POPOVER (ss.popover), priv->button_properties);
+    gtk_popover_set_relative_to (GTK_POPOVER (ss.popover),
+                                 priv->button_properties);
+
+    g_signal_connect_swapped (ss.popover, "closed",
+                              G_CALLBACK (my_system_widget_properties_close), self);
 
     gtk_widget_show (ss.popover);
 }

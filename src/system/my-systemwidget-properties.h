@@ -9,4 +9,7 @@ void
 my_system_widget_properties_dialog_show (GtkWindow * window,
                                          MySystemWidget * widget);
 
+void
+my_system_widget_properties_close (MySystemWidget * self, GtkPopover * popover);
+
 #endif

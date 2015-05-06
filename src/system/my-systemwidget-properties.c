@@ -22,8 +22,38 @@ static gchar *widget_names[N_WIDGETS] = { "label_", "filechooserbutton_pic_" };
 
 static GtkWidget *widgets[N_MODEL][N_WIDGETS];
 
+enum
+{
+    POPOVER_BINDING_LABEL,
+    N_POPOVER_BINDINGS
+};
+
+GBinding *popover_binding[N_POPOVER_BINDINGS];
+
+glong popover_handler_file_set;
+
 static GtkWidget *preferences_dialog = NULL;
 static MySystem *my_system;
+
+void
+my_system_widget_properties_close (MySystemWidget * self, GtkPopover * popover)
+{
+    GtkWidget * toplevel;
+    SystemSettings ss;
+    
+    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
+    ss = my_window_get_system_settings (MY_WINDOW (toplevel));
+
+    if(G_IS_BINDING(popover_binding[POPOVER_BINDING_LABEL])) {
+        g_binding_unbind (popover_binding[POPOVER_BINDING_LABEL]);
+    }
+
+    if (g_signal_handler_is_connected
+        (ss.filechooserbutton, popover_handler_file_set)) {
+        g_signal_handler_disconnect (ss.filechooserbutton,
+                                     popover_handler_file_set);
+    }
+}
 
 void
 file_chooser_file_set (GtkFileChooserButton * button, gint * i)
@@ -49,7 +79,7 @@ my_system_widget_properties_dialog_setup (GtkWindow * window)
 
     GtkFileFilter *filter;
 
-    ss = my_window_get_system_settings(MY_WINDOW(window));
+    ss = my_window_get_system_settings (MY_WINDOW (window));
 
     widgets[MODEL_SPECIFIC][WIDGET_SYSTEM_LABEL] = ss.entry;
     widgets[MODEL_SPECIFIC][WIDGET_FILECHOOSER_PIC] = ss.filechooserbutton;
@@ -58,7 +88,7 @@ my_system_widget_properties_dialog_setup (GtkWindow * window)
 
         for (j = 0; j < N_WIDGETS; j++) {
 
-            if(!GTK_IS_WIDGET(widgets[i][j]))
+            if (!GTK_IS_WIDGET (widgets[i][j]))
                 continue;
 
             gchar *str;
@@ -73,8 +103,9 @@ my_system_widget_properties_dialog_setup (GtkWindow * window)
 
                 g_object_get (system_model[i], "picture-path", &path, NULL);
 
-                if(path != NULL) {
-                    gtk_file_chooser_set_filename (GTK_FILE_CHOOSER(widgets[i][j]), path);
+                if (path != NULL) {
+                    gtk_file_chooser_set_filename (GTK_FILE_CHOOSER
+                                                   (widgets[i][j]), path);
                 }
 
                 filter = gtk_file_filter_new ();
@@ -95,11 +126,18 @@ my_system_widget_properties_dialog_setup (GtkWindow * window)
                 gtk_file_chooser_set_filter (GTK_FILE_CHOOSER (widgets[i][j]),
                                              filter);
 
-                g_signal_connect (widgets[i][j], "file-set",
-                                  G_CALLBACK (file_chooser_file_set), NULL);
+                popover_handler_file_set =
+                    g_signal_connect (widgets[i][j], "file-set",
+                                      G_CALLBACK (file_chooser_file_set), NULL);
             }
             else if (j == WIDGET_SYSTEM_LABEL) {
-                g_object_bind_property (system_model[i], "label", widgets[i][j], "text", G_BINDING_BIDIRECTIONAL | G_BINDING_SYNC_CREATE); 
+                gtk_entry_set_text(GTK_ENTRY(widgets[i][j]), "");
+
+                popover_binding[POPOVER_BINDING_LABEL] =
+                    g_object_bind_property (system_model[i], "label",
+                                            widgets[i][j], "text",
+                                            G_BINDING_BIDIRECTIONAL |
+                                            G_BINDING_SYNC_CREATE);
             }
 
             g_free (str);
