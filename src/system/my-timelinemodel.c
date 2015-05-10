@@ -344,7 +344,20 @@ my_timeline_model_remove_object (MyTimelineModel * self, gpointer object)
     g_return_if_fail (MY_IS_TIMELINE_MODEL (self));
 
     if (MY_IS_SYSTEM (object)) {
+
+        MySystemWidget *system_widget;
+        MySystemModel *generic_model, *specific_model;
+
+        g_object_get(object, "widget", &system_widget, NULL); 
+        g_object_get(system_widget, "generic-model", &generic_model, NULL); 
+        g_object_get(system_widget, "specific-model", &specific_model, NULL); 
+
+        g_assert(g_ptr_array_remove (priv->std_systems_data, generic_model));
+        if(G_IS_OBJECT(specific_model)) {
+            g_ptr_array_remove (priv->tl_systems_data, specific_model);
+        }
         g_ptr_array_remove (priv->systems, object);
+
     }
     else if (MY_IS_FLOW_ARROW (object)) {
 

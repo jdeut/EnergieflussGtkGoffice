@@ -361,9 +361,14 @@ my_canvas_drag_begin_button_1 (GocCanvas * canvas, GdkEventButton * event,
         if(MY_IS_SYSTEM(priv->active_item)) {
             my_system_destroy(MY_SYSTEM(priv->active_item));
         }
+        if(MY_IS_FLOW_ARROW(priv->active_item)) {
+            goc_item_destroy(GOC_ITEM(priv->active_item));
+        }
 
         priv->destroy_object_mode = FALSE;
         priv->active_item = NULL;
+
+        return FALSE;
     }
     else {
         priv->add_arrow_mode = FALSE;

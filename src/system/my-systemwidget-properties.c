@@ -7,20 +7,7 @@ enum
     N_MODEL
 };
 
-static gchar *system_model_suffix[N_MODEL] = { "specific", "generic" };
-
 static MySystemModel *system_model[N_MODEL];
-
-enum
-{
-    WIDGET_SYSTEM_LABEL,
-    WIDGET_FILECHOOSER_PIC,
-    N_WIDGETS
-};
-
-static gchar *widget_names[N_WIDGETS] = { "label_", "filechooserbutton_pic_" };
-
-static GtkWidget *widgets[N_MODEL][N_WIDGETS];
 
 enum
 {
@@ -32,21 +19,19 @@ GBinding *popover_binding[N_POPOVER_BINDINGS];
 
 glong popover_handler_file_set;
 
-static GtkWidget *preferences_dialog = NULL;
-static MySystem *my_system;
-
 void
 my_system_widget_properties_close (MySystemWidget * self, GtkPopover * popover)
 {
     GtkWidget * toplevel;
     SystemSettings ss;
     
-    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
-    ss = my_window_get_system_settings (MY_WINDOW (toplevel));
+    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (popover));
 
     if(G_IS_BINDING(popover_binding[POPOVER_BINDING_LABEL])) {
         g_binding_unbind (popover_binding[POPOVER_BINDING_LABEL]);
     }
+
+    ss = my_window_get_system_settings (MY_WINDOW (toplevel));
 
     if (g_signal_handler_is_connected
         (ss.filechooserbutton, popover_handler_file_set)) {
@@ -64,10 +49,7 @@ file_chooser_file_set (GtkFileChooserButton * button, gint * i)
 
     g_return_if_fail (fn != NULL);
 
-    if (GTK_WIDGET (button) == widgets[MODEL_SPECIFIC][WIDGET_FILECHOOSER_PIC])
-        g_object_set (system_model[MODEL_SPECIFIC], "picture-path", fn, NULL);
-    else
-        g_object_set (system_model[MODEL_GENERIC], "picture-path", fn, NULL);
+    g_object_set (system_model[MODEL_GENERIC], "picture-path", fn, NULL);
 }
 
 static void
@@ -81,7 +63,7 @@ my_system_widget_properties_dialog_setup (GtkWindow * window)
 
     gchar *path;
 
-    g_object_get (system_model[MODEL_SPECIFIC], "picture-path", &path, NULL);
+    g_object_get (system_model[MODEL_GENERIC], "picture-path", &path, NULL);
 
     if (path != NULL) {
         gtk_file_chooser_set_filename (GTK_FILE_CHOOSER
@@ -111,7 +93,7 @@ my_system_widget_properties_dialog_setup (GtkWindow * window)
     gtk_entry_set_text(GTK_ENTRY(ss.entry), "");
 
     popover_binding[POPOVER_BINDING_LABEL] =
-        g_object_bind_property (system_model[MODEL_SPECIFIC], "label",
+        g_object_bind_property (system_model[MODEL_GENERIC], "label",
                                 ss.entry, "text",
                                 G_BINDING_BIDIRECTIONAL |
                                 G_BINDING_SYNC_CREATE);
@@ -128,14 +110,13 @@ my_system_widget_properties_dialog_show (GtkWindow * window,
 
     timeline = my_window_get_timeline (MY_WINDOW (window));
 
-    g_object_get (system_widget, "specific-model",
-                  &system_model[MODEL_SPECIFIC], "id", &id, NULL);
+    /*g_object_get (system_widget, "specific-model",*/
+                  /*&system_model[MODEL_SPECIFIC], "id", &id, NULL);*/
+
     g_object_get (system_widget, "generic-model", &system_model[MODEL_GENERIC],
                   "id", &id, NULL);
 
-    my_system = my_timeline_get_system_with_id (timeline, id);
-
-    g_return_if_fail (MY_IS_SYSTEM_MODEL (system_model[MODEL_SPECIFIC]));
+    /*g_return_if_fail (MY_IS_SYSTEM_MODEL (system_model[MODEL_SPECIFIC]));*/
     g_return_if_fail (MY_IS_SYSTEM_MODEL (system_model[MODEL_GENERIC]));
 
     my_system_widget_properties_dialog_setup (window);

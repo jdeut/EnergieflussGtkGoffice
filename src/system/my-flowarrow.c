@@ -42,6 +42,8 @@ enum
     CANVAS_CHANGED_SECONDARY_SYSTEM_UPDATE_INTENSITY_BOX,
     CANVAS_CHANGED_TRANSFER_TYPE,
     CANVAS_CHANGED_LABEL_TEXT,
+    PRIMARY_SYSTEM_CHANGED,
+    SECONDARY_SYSTEM_CHANGED,
     FLOW_ARROW_CHANGED_X1,
     FLOW_ARROW_CHANGED_Y1,
     DRAG_POINT_NW_CHANGED_X,
@@ -70,6 +72,10 @@ my_flow_arrow_sync_coordinate_with_drag_point_coordinate (MyFlowArrow * self,
                                                           gpointer data);
 gdouble my_flow_arrow_get_preferred_width (MyFlowArrow * self);
 gdouble my_flow_arrow_get_unit_factor (MyFlowArrow * self);
+static void my_flow_arrow_primary_system_changed (MyFlowArrow * self);
+static void my_flow_arrow_secondary_system_changed (MyFlowArrow * self);
+void _primary_system_finalized (gpointer data, GObject * old);
+void _secondary_system_finalized (gpointer data, GObject * old);
 
 
 typedef struct
@@ -209,11 +215,27 @@ my_flow_arrow_set_property (GObject * object,
             break;
 
         case PROP_PRIMARY_SYSTEM:
+
+            if (MY_IS_SYSTEM (priv->primary_system))
+                g_object_weak_unref (G_OBJECT (priv->primary_system),
+                                     _primary_system_finalized, self);
+
             priv->primary_system = MY_SYSTEM (g_value_get_object (value));
+
+            g_object_weak_ref (G_OBJECT (priv->primary_system),
+                               _primary_system_finalized, self);
             break;
 
         case PROP_SECONDARY_SYSTEM:
-            priv->secondary_system = g_value_get_object (value);
+            if (MY_IS_SYSTEM (priv->secondary_system))
+                g_object_weak_unref (G_OBJECT (priv->secondary_system),
+                                     _secondary_system_finalized, self);
+
+            priv->secondary_system = MY_SYSTEM (g_value_get_object (value));
+
+            if(G_IS_OBJECT(priv->secondary_system))
+                g_object_weak_ref (G_OBJECT (priv->secondary_system),
+                                   _secondary_system_finalized, self);
             break;
 
         case PROP_ENERGY_QUANTITY:
@@ -892,37 +914,39 @@ my_flow_arrow_update_intensity_box_of_associated_systems (MyFlowArrow * self,
     MyCanvas *canvas;
     GList *la, *ls;
 
-    g_object_get(GOC_ITEM(self), "canvas", &canvas, NULL);
+    g_object_get (GOC_ITEM (self), "canvas", &canvas, NULL);
 
     GocGroup *group_arrows = canvas->group[GROUP_ARROWS];
     GocGroup *group_systems = canvas->group[GROUP_SYSTEMS];
 
     for (ls = group_systems->children; ls != NULL; ls = ls->next) {
 
-        gdouble energy_sum=0;
+        gdouble energy_sum = 0;
 
         for (la = group_arrows->children; la != NULL; la = la->next) {
 
             MySystem *primary, *secondary;
             gdouble energy;
 
-            g_object_get(la->data, "primary-system", &primary, "secondary-system", &secondary, "energy-quantity", &energy, NULL);
+            g_object_get (la->data, "primary-system", &primary,
+                          "secondary-system", &secondary, "energy-quantity",
+                          &energy, NULL);
 
-            if(MY_SYSTEM(ls->data) == MY_SYSTEM(primary)) {
+            if (MY_SYSTEM (ls->data) == MY_SYSTEM (primary)) {
                 energy_sum += energy;
             }
-            else if(MY_SYSTEM(ls->data) == MY_SYSTEM(secondary)) {
+            else if (MY_SYSTEM (ls->data) == MY_SYSTEM (secondary)) {
                 energy_sum -= energy;
             }
         }
 
-        g_object_get(ls->data, "widget", &widget, NULL);
+        g_object_get (ls->data, "widget", &widget, NULL);
 
-        ib = my_system_widget_get_intensity_box(MY_SYSTEM_WIDGET(widget));
+        ib = my_system_widget_get_intensity_box (MY_SYSTEM_WIDGET (widget));
 
-        g_object_set(ib, "delta-energy", ENERGY_FACTOR*energy_sum, NULL);
+        g_object_set (ib, "delta-energy", ENERGY_FACTOR * energy_sum, NULL);
 
-        g_object_unref(widget);
+        g_object_unref (widget);
     }
 }
 
@@ -1249,6 +1273,28 @@ my_flow_arrow_update (MyFlowArrow * self)
     g_object_notify (G_OBJECT (self), "transfer-type");
 }
 
+void
+_secondary_system_finalized (gpointer data, GObject * old)
+{
+    MyFlowArrow *self = data;
+
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+
+    priv->secondary_system = NULL;
+
+    g_object_set(self, "secondary-system", NULL, NULL);
+
+    my_flow_arrow_update(self);
+}
+
+void
+_primary_system_finalized (gpointer data, GObject * old)
+{
+    MyFlowArrow *self = data;
+
+    goc_item_destroy(GOC_ITEM(self));
+}
+
 static void
 my_flow_arrow_sync_coordinate_with_drag_point_coordinate (MyFlowArrow * self,
                                                           GParamSpec * pspec,
@@ -1294,9 +1340,9 @@ my_flow_arrow_sync_drag_point_coordinate_with_self_coordinate (MyFlowArrow *
 
     gdouble x_dp, y_dp;
 
-    guint handler[] =
-        { FLOW_ARROW_CHANGED_Y1, DRAG_POINT_NW_CHANGED_X,
-    DRAG_POINT_NW_CHANGED_Y, FLOW_ARROW_CHANGED_X1 };
+    guint handler[] = { FLOW_ARROW_CHANGED_Y1, DRAG_POINT_NW_CHANGED_X,
+        DRAG_POINT_NW_CHANGED_Y, FLOW_ARROW_CHANGED_X1
+    };
     guint n;
 
     g_object_get (point, "x", &x_dp, "y", &y_dp, NULL);
@@ -1414,17 +1460,15 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
                           "linked-item", self, NULL);
     }
 
-    priv->
-        handler_instance[CANVAS_CHANGED_ENERGY_QUANTITY_UPDATE_INTENSITY_BOX] =
-        self;
+    priv->handler_instance[CANVAS_CHANGED_ENERGY_QUANTITY_UPDATE_INTENSITY_BOX]
+        = self;
     priv->handler[CANVAS_CHANGED_ENERGY_QUANTITY_UPDATE_INTENSITY_BOX] =
         g_signal_connect (self, "notify::energy-quantity",
                           G_CALLBACK
                           (my_flow_arrow_update_intensity_box_of_associated_systems),
                           NULL);
 
-    priv->
-        handler_instance[CANVAS_CHANGED_PRIMARY_SYSTEM_UPDATE_INTENSITY_BOX] =
+    priv->handler_instance[CANVAS_CHANGED_PRIMARY_SYSTEM_UPDATE_INTENSITY_BOX] =
         self;
     priv->handler[CANVAS_CHANGED_PRIMARY_SYSTEM_UPDATE_INTENSITY_BOX] =
         g_signal_connect (self, "notify::primary-system",
@@ -1432,9 +1476,8 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
                           (my_flow_arrow_update_intensity_box_of_associated_systems),
                           NULL);
 
-    priv->
-        handler_instance[CANVAS_CHANGED_SECONDARY_SYSTEM_UPDATE_INTENSITY_BOX] =
-        self;
+    priv->handler_instance[CANVAS_CHANGED_SECONDARY_SYSTEM_UPDATE_INTENSITY_BOX]
+        = self;
     priv->handler[CANVAS_CHANGED_SECONDARY_SYSTEM_UPDATE_INTENSITY_BOX] =
         g_signal_connect (self, "notify::secondary-system",
                           G_CALLBACK
@@ -1600,6 +1643,14 @@ my_flow_arrow_finalize (GObject * object)
     if (MY_IS_DRAG_POINT (priv->drag_point)) {
         goc_item_destroy (GOC_ITEM (priv->drag_point));
     }
+
+    if (MY_IS_SYSTEM (priv->primary_system))
+        g_object_weak_unref (G_OBJECT (priv->primary_system),
+                             _primary_system_finalized, self);
+
+    if (MY_IS_SYSTEM (priv->secondary_system))
+        g_object_weak_unref (G_OBJECT (priv->secondary_system),
+                             _secondary_system_finalized, self);
 
     g_free (priv->arrow_start);
     g_free (priv->arrow_end);
