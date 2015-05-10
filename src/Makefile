@@ -50,11 +50,13 @@ $(GRESOURCE_TARGET_BASENAME).h: $(GRESOURCE)
 
 win32bundle: main
 ifneq (, $(findstring MSYS, $(SYS)))
-	  mkdir -p bundle
-	  cp `ldd main.exe | perl -ne 'if (/\s(\/mingw64\/\S*dll)/) { print $$1, " " }'` bundle
-	  cp main.exe bundle
-	  mkdir -p bundle/share/icons/Adwaita
-	  cp -r /mingw64/share/icons/Adwaita/* bundle/share/icons/Adwaita
+	mkdir -p bundle
+	cp `ldd main.exe | perl -ne 'if (/\s(\/mingw64\/\S*dll)/) { print $$1, " " }'` bundle
+	cp main.exe bundle
+	mkdir -p bundle/share/icons/Adwaita
+	cp -r /mingw64/share/icons/Adwaita/* bundle/share/icons/Adwaita
+	mkdir -p bundle/share/glib-2.0/schemas
+	cp -r /mingw64/share/glib-2.0/schemas/* bundle/share/glib-2.0/schemas
 endif
 
 doc: $(OBJ)
