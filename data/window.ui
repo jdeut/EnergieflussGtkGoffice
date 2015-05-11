@@ -311,10 +311,10 @@
         <col id="0" translatable="yes">Strahlung</col>
         <col id="1">2</col>
       </row>
-      <row>
-        <col id="0" translatable="yes">Masse</col>
-        <col id="1">3</col>
-      </row>
+      <!--<row>-->
+        <!--<col id="0" translatable="yes">Masse</col>-->
+        <!--<col id="1">3</col>-->
+      <!--</row>-->
     </data>
   </object>
   <object class="GtkBox" id="flow_arrow_box">
