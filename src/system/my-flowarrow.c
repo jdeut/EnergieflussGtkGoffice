@@ -394,7 +394,7 @@ settings_adjust_step_increment_to_unit (MyFlowArrow * self)
 
     unit_factor = my_flow_arrow_get_unit_factor (self);
 
-    gtk_adjustment_set_step_increment (fas.adj, 1.0 / unit_factor);
+    gtk_adjustment_set_step_increment (fas.adj, 35.0 / unit_factor);
 }
 
 void
@@ -835,7 +835,7 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
         g_param_spec_double ("energy-quantity",
                              "energy-quantity",
                              "The energy quantity that is transfered. E > 0 means energy flows in the system an E < 0 means energy flows out of the system.",
-                             -G_MAXDOUBLE, G_MAXDOUBLE, -100,
+                             -G_MAXDOUBLE, G_MAXDOUBLE, -3600.0,
                              G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
     obj_properties[PROP_PRIMARY_SYSTEM] =
@@ -875,7 +875,7 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
         g_param_spec_uint ("energy-unit",
                            "energy-unit",
                            "energy-unit",
-                           0, G_MAXUINT, UNIT_JOULE,
+                           0, G_MAXUINT, UNIT_WATTHOUR,
                            G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
     g_object_class_install_properties (gobject_class,

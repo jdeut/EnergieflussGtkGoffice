@@ -24,6 +24,7 @@ void my_window_show_energy_amount_of_flow_arrows_state_change (GSimpleAction *
                                                                GVariant * state,
                                                                gpointer data);
 void energy_control_value_changed (MyWindow * self, GtkAdjustment * adj);
+void energy_control_factor_changed (MyWindow * self, GtkWidget * box);
 
 enum
 {
@@ -78,7 +79,7 @@ static GActionEntry win_entries[] = {
     {"add-system", my_window_add_system, NULL, NULL, NULL},
     {"zoom-in", my_window_zoom_in, NULL, NULL, NULL},
     {"zoom-out", my_window_zoom_out, NULL, NULL, NULL},
-    {"change-view", NULL, "s", "\"niveaus\"",
+    {"change-view", NULL, "s", "\"real\"",
      my_window_change_view_state_change},
     {"show-drag-points", my_window_show_drag_points, NULL, "true",
      my_window_show_drag_points_state_change},
@@ -181,28 +182,28 @@ my_window_populate_canvas (MyWindow * self)
 
     priv = my_window_get_instance_private (self);
 
-    GocItem *item, *item1;
+    /*GocItem *item, *item1;*/
 
-    item = g_object_new (MY_TYPE_SYSTEM, "x", 100.0, "y", 100.0, NULL);
+    /*item = g_object_new (MY_TYPE_SYSTEM, "x", 100.0, "y", 100.0, NULL);*/
 
-    my_timeline_model_add_object (priv->timeline, item);
+    /*my_timeline_model_add_object (priv->timeline, item);*/
 
-    item1 = g_object_new (MY_TYPE_SYSTEM, "x", 800.0, "y", 100.0, NULL);
+    /*item1 = g_object_new (MY_TYPE_SYSTEM, "x", 800.0, "y", 100.0, NULL);*/
 
-    my_timeline_model_add_object (priv->timeline, item1);
+    /*my_timeline_model_add_object (priv->timeline, item1);*/
 
     g_object_get (priv->timeline, "adjustment", &adjust, NULL);
 
     gtk_adjustment_set_value (adjust, 2);
 
-    item =
-        g_object_new (MY_TYPE_FLOW_ARROW, "primary-system", item,
-                      "secondary-system", item1, "label-text", "TEST",
-                      "energy-quantity", -100.0, NULL);
+    /*item =*/
+        /*g_object_new (MY_TYPE_FLOW_ARROW, "primary-system", item,*/
+                      /*"secondary-system", item1, "label-text", "TEST",*/
+                      /*"energy-quantity", -100.0, NULL);*/
 
-    my_timeline_model_add_object (priv->timeline, item);
+    /*my_timeline_model_add_object (priv->timeline, item);*/
 
-    g_object_notify (G_OBJECT (item1), "x");
+    /*g_object_notify (G_OBJECT (item1), "x");*/
 }
 
 void
@@ -239,7 +240,16 @@ my_window_populate (MyWindow * self)
     /*G_BINDING_BIDIRECTIONAL); */
     /*} */
 
+    GtkTreeIter iter;
+    GtkTreeModel *model = gtk_combo_box_get_model(priv->es.prefix);
+
+    gtk_tree_model_get_iter_from_string(model, &iter, "2");
+
+    gtk_combo_box_set_active_iter(priv->es.prefix, &iter);
+
     my_canvas_set_timeline (priv->canvas, timeline);
+
+    energy_control_factor_changed(self, NULL);
 
     my_window_populate_canvas (self);
 }
