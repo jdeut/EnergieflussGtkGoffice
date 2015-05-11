@@ -626,6 +626,16 @@ my_canvas_set_add_system_mode (MyCanvas * self)
     priv->add_system_mode = TRUE;
 }
 
+gboolean
+my_canvas_is_destroy_object_mode (MyCanvas * self)
+{
+    MyCanvasPrivate *priv = my_canvas_get_instance_private (MY_CANVAS (self));
+
+    g_return_if_fail (MY_IS_CANVAS (self));
+
+    return priv->destroy_object_mode;
+}
+
 void
 my_canvas_set_destroy_object_mode (MyCanvas * self)
 {

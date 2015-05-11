@@ -533,8 +533,8 @@ my_window_environment_init (MyWindow * self)
 
     priv->box = my_intensity_box_new ();
 
-    gtk_container_add (GTK_CONTAINER (priv->environment),
-                       GTK_WIDGET (priv->box));
+    /*gtk_container_add (GTK_CONTAINER (priv->environment),*/
+                       /*GTK_WIDGET (priv->box));*/
 
     g_object_set (priv->box, "delta-energy", ENERGY_FACTOR * 100.0, NULL);
 }

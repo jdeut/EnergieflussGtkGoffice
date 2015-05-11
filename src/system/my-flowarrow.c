@@ -690,6 +690,10 @@ my_flow_arrow_button_pressed (GocItem * item, int button, double xd, double yd)
     GdkDevice *device;
     gint x, y;
 
+    if(my_canvas_is_destroy_object_mode(MY_CANVAS(item->canvas))) {
+        return FALSE;
+    }
+
     MyFlowArrow *self = MY_FLOW_ARROW (item);
     MyFlowArrowClass *class = MY_FLOW_ARROW_GET_CLASS (self);
     GocItemClass *parent_class = g_type_class_peek_parent (class);
@@ -831,7 +835,7 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
         g_param_spec_double ("energy-quantity",
                              "energy-quantity",
                              "The energy quantity that is transfered. E > 0 means energy flows in the system an E < 0 means energy flows out of the system.",
-                             -G_MAXDOUBLE, G_MAXDOUBLE, -10,
+                             -G_MAXDOUBLE, G_MAXDOUBLE, -100,
                              G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
     obj_properties[PROP_PRIMARY_SYSTEM] =
