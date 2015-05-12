@@ -31,6 +31,7 @@ enum
     PROP_0,
     PROP_TIMELINE,
     PROP_PREFIX,
+    PROP_ZOOM_FACTOR,
     N_PROPERTIES
 };
 
@@ -116,6 +117,15 @@ my_window_set_property (GObject * object,
             priv->prefix = g_value_get_uint (value);
             break;
 
+        case PROP_ZOOM_FACTOR:
+            priv->zoom_factor = g_value_get_double (value);
+
+            if(GOC_IS_CANVAS(priv->canvas))
+                goc_canvas_set_pixels_per_unit (GOC_CANVAS (priv->canvas),
+                                                priv->zoom_factor);
+
+            break;
+
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
             break;
@@ -138,6 +148,10 @@ my_window_get_property (GObject * object,
 
         case PROP_PREFIX:
             g_value_set_uint (value, priv->prefix);
+            break;
+
+        case PROP_ZOOM_FACTOR:
+            g_value_set_double (value, priv->zoom_factor);
             break;
 
         default:
@@ -182,28 +196,28 @@ my_window_populate_canvas (MyWindow * self)
 
     priv = my_window_get_instance_private (self);
 
-    /*GocItem *item, *item1;*/
+    /*GocItem *item, *item1; */
 
-    /*item = g_object_new (MY_TYPE_SYSTEM, "x", 100.0, "y", 100.0, NULL);*/
+    /*item = g_object_new (MY_TYPE_SYSTEM, "x", 100.0, "y", 100.0, NULL); */
 
-    /*my_timeline_model_add_object (priv->timeline, item);*/
+    /*my_timeline_model_add_object (priv->timeline, item); */
 
-    /*item1 = g_object_new (MY_TYPE_SYSTEM, "x", 800.0, "y", 100.0, NULL);*/
+    /*item1 = g_object_new (MY_TYPE_SYSTEM, "x", 800.0, "y", 100.0, NULL); */
 
-    /*my_timeline_model_add_object (priv->timeline, item1);*/
+    /*my_timeline_model_add_object (priv->timeline, item1); */
 
     g_object_get (priv->timeline, "adjustment", &adjust, NULL);
 
     gtk_adjustment_set_value (adjust, 2);
 
-    /*item =*/
-        /*g_object_new (MY_TYPE_FLOW_ARROW, "primary-system", item,*/
-                      /*"secondary-system", item1, "label-text", "TEST",*/
-                      /*"energy-quantity", -100.0, NULL);*/
+    /*item = */
+    /*g_object_new (MY_TYPE_FLOW_ARROW, "primary-system", item, */
+    /*"secondary-system", item1, "label-text", "TEST", */
+    /*"energy-quantity", -100.0, NULL); */
 
-    /*my_timeline_model_add_object (priv->timeline, item);*/
+    /*my_timeline_model_add_object (priv->timeline, item); */
 
-    /*g_object_notify (G_OBJECT (item1), "x");*/
+    /*g_object_notify (G_OBJECT (item1), "x"); */
 }
 
 void
@@ -241,15 +255,15 @@ my_window_populate (MyWindow * self)
     /*} */
 
     GtkTreeIter iter;
-    GtkTreeModel *model = gtk_combo_box_get_model(priv->es.prefix);
+    GtkTreeModel *model = gtk_combo_box_get_model (priv->es.prefix);
 
-    gtk_tree_model_get_iter_from_string(model, &iter, "2");
+    gtk_tree_model_get_iter_from_string (model, &iter, "2");
 
-    gtk_combo_box_set_active_iter(priv->es.prefix, &iter);
+    gtk_combo_box_set_active_iter (priv->es.prefix, &iter);
 
     my_canvas_set_timeline (priv->canvas, timeline);
 
-    energy_control_factor_changed(self, NULL);
+    energy_control_factor_changed (self, NULL);
 
     my_window_populate_canvas (self);
 }
@@ -282,6 +296,13 @@ my_window_class_init (MyWindowClass * klass)
                            "",
                            0, G_MAXUINT, FACTOR_ONE,
                            G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
+
+    obj_properties[PROP_ZOOM_FACTOR] =
+        g_param_spec_double ("zoom-factor",
+                             "zoom-factor",
+                             "",
+                             0, G_MAXDOUBLE, 1,
+                             G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
     g_object_class_install_properties (gobject_class,
                                        N_PROPERTIES, obj_properties);
@@ -329,15 +350,13 @@ my_window_class_init (MyWindowClass * klass)
                                                "entry",
                                                FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                 ss.
-                                                                 entry));
+                                                                 ss.entry));
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "filechooserbutton",
                                                FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                 ss.
-                                                                 filechooserbutton));
+                                                                 ss.filechooserbutton));
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "system_settings_box",
@@ -351,8 +370,7 @@ my_window_class_init (MyWindowClass * klass)
                                                "flow_arrow_ubertragungsform",
                                                FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                 fas.
-                                                                 transfer_type));
+                                                                 fas.transfer_type));
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "flow_arrow_box", FALSE,
@@ -363,7 +381,8 @@ my_window_class_init (MyWindowClass * klass)
                                                "flow_arrow_energy_quantity",
                                                FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                 fas.energy_quantity));
+                                                                 fas.
+                                                                 energy_quantity));
 
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "flow_arrow_label", FALSE,
@@ -543,8 +562,8 @@ my_window_environment_init (MyWindow * self)
 
     priv->box = my_intensity_box_new ();
 
-    /*gtk_container_add (GTK_CONTAINER (priv->environment),*/
-                       /*GTK_WIDGET (priv->box));*/
+    /*gtk_container_add (GTK_CONTAINER (priv->environment), */
+    /*GTK_WIDGET (priv->box)); */
 
     g_object_set (priv->box, "delta-energy", ENERGY_FACTOR * 100.0, NULL);
 }
@@ -672,7 +691,6 @@ my_window_init (MyWindow * self)
     priv = my_window_get_instance_private (self);
 
     priv->timeline = NULL;
-    priv->zoom_factor = 1;
     priv->energy = 1000;
 
     for (i = 0; i < N_MODEL_HANDLER; i++) {
@@ -729,7 +747,7 @@ my_window_new (GtkApplication * app)
 
 void
 my_window_destroy_object (GSimpleAction * simple,
-                     GVariant * parameter, gpointer data)
+                          GVariant * parameter, gpointer data)
 {
     MyWindowPrivate *priv;
 
@@ -976,11 +994,8 @@ my_window_zoom_in (GSimpleAction * simple, GVariant * parameter, gpointer data)
     priv = my_window_get_instance_private (data);
 
     if (priv->zoom_factor < 1.6) {
-        priv->zoom_factor += 0.2;
+        g_object_set (data, "zoom-factor", priv->zoom_factor + 0.2, NULL);
     }
-
-    goc_canvas_set_pixels_per_unit (GOC_CANVAS (priv->canvas),
-                                    priv->zoom_factor);
 
     my_canvas_center_system_bounds (priv->canvas);
 }
@@ -993,11 +1008,8 @@ my_window_zoom_out (GSimpleAction * simple, GVariant * parameter, gpointer data)
     priv = my_window_get_instance_private (data);
 
     if (priv->zoom_factor > 0.5) {
-        priv->zoom_factor -= 0.2;
+        g_object_set (data, "zoom-factor", priv->zoom_factor - 0.2, NULL);
     }
-
-    goc_canvas_set_pixels_per_unit (GOC_CANVAS (priv->canvas),
-                                    priv->zoom_factor);
 
     my_canvas_center_system_bounds (priv->canvas);
 }
