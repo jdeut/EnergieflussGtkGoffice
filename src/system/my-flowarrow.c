@@ -1460,7 +1460,7 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
 
     if (!MY_IS_DRAG_POINT (priv->drag_point)) {
         priv->drag_point = (MyDragPoint *)
-            goc_item_new (group_dragpoints, MY_TYPE_DRAG_POINT, "radius", 10.0,
+            goc_item_new (group_dragpoints, MY_TYPE_DRAG_POINT,
                           "linked-item", self, NULL);
     }
 

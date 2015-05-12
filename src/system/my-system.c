@@ -517,7 +517,7 @@ my_system_canvas_changed (MySystem * self, GParamSpec * pspec, gpointer data)
 
     priv->drag_point[DRAG_POINT_NW] = (MyDragPoint *)
         goc_item_new (group_dragpoints, MY_TYPE_DRAG_POINT, "x", x, "y", y,
-                      "radius", 10.0, "linked-item", self, NULL);
+                      "linked-item", self, NULL);
 
     priv->handler[DRAG_POINT_NW_CHANGED_X] =
         g_signal_connect_swapped (priv->drag_point[DRAG_POINT_NW], "notify::x",
