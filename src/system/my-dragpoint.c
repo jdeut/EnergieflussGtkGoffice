@@ -214,11 +214,15 @@ my_drag_point_canvas_changed (MyDragPoint * self, GParamSpec * pspec,
     GVariant *state;
     GtkWindow *window;
 
-    my_drag_point_update (self);
-
     window =
         gtk_application_get_active_window (GTK_APPLICATION
                                            (g_application_get_default ()));
+
+    if(!G_IS_OBJECT(window)) {
+        return;
+    }
+
+    my_drag_point_update (self);
 
     action =
         g_action_map_lookup_action (G_ACTION_MAP (window), "show-drag-points");
