@@ -229,7 +229,7 @@ my_intensity_box_delta_energy_changed (MyIntensityBox * self,
 
     priv = my_intensity_box_get_instance_private (self);
 
-    window = (MyWindow *) gtk_widget_get_toplevel (GTK_WIDGET (self));
+    window = (MyWindow *) my_application_get_active_window();
     
     if(!MY_IS_WINDOW(window))
         return;

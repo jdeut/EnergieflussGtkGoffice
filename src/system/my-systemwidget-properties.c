@@ -22,16 +22,16 @@ glong popover_handler_file_set;
 void
 my_system_widget_properties_close (MySystemWidget * self, GtkPopover * popover)
 {
-    GtkWidget * toplevel;
+    GtkWidget * activewindow;
     SystemSettings ss;
     
-    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (popover));
+    activewindow = (GtkWidget *) my_application_get_active_window();
 
     if(G_IS_BINDING(popover_binding[POPOVER_BINDING_LABEL])) {
         g_binding_unbind (popover_binding[POPOVER_BINDING_LABEL]);
     }
 
-    ss = my_window_get_system_settings (MY_WINDOW (toplevel));
+    ss = my_window_get_system_settings (MY_WINDOW (activewindow));
 
     if (g_signal_handler_is_connected
         (ss.filechooserbutton, popover_handler_file_set)) {

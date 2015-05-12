@@ -384,13 +384,13 @@ settings_adjust_step_increment_to_unit (MyFlowArrow * self)
 {
     MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
-    GtkWidget *toplevel;
+    GtkWindow *window;
     gdouble unit_factor;
     FlowArrowSettings fas;
 
-    toplevel = my_canvas_get_toplevel (MY_CANVAS (GOC_ITEM (self)->canvas));
+    window = my_application_get_active_window();
 
-    fas = my_window_get_flow_arrow_settings (MY_WINDOW (toplevel));
+    fas = my_window_get_flow_arrow_settings (MY_WINDOW (window));
 
     unit_factor = my_flow_arrow_get_unit_factor (self);
 
@@ -491,13 +491,13 @@ gchar *
 my_flow_arrow_prefix_get_name (MyFlowArrow * self)
 {
 
-    GtkWidget *toplevel;
+    GtkWidget *activewindow;
     gchar *str;
     guint factor;
 
 
-    toplevel = my_canvas_get_toplevel (MY_CANVAS (GOC_ITEM (self)->canvas));
-    factor = my_window_get_metric_prefix (MY_WINDOW (toplevel));
+    activewindow = (GtkWidget *) my_application_get_active_window();
+    factor = my_window_get_metric_prefix (MY_WINDOW (activewindow));
 
     switch (factor) {
         case FACTOR_MILLI:
@@ -570,15 +570,15 @@ my_flow_arrow_popover_sync_controls_with_props (MyFlowArrow * self)
     GtkTreeModel *model;
     gboolean valid;
 
-    GtkWidget *toplevel;
+    GtkWidget *activewindow;
 
-    toplevel = my_canvas_get_toplevel (MY_CANVAS (GOC_ITEM (self)->canvas));
+    activewindow = (GtkWidget *) my_application_get_active_window();
 
-    fas = my_window_get_flow_arrow_settings (MY_WINDOW (toplevel));
+    fas = my_window_get_flow_arrow_settings (MY_WINDOW (activewindow));
 
     g_object_get (self, "transfer-type", &transfer_type, NULL);
     g_object_get (self, "energy-unit", &unit, NULL);
-    g_object_get (toplevel, "metric-prefix", &metric_prefix, NULL);
+    g_object_get (activewindow, "metric-prefix", &metric_prefix, NULL);
 
     model = gtk_combo_box_get_model (fas.transfer_type);
 
@@ -682,7 +682,7 @@ my_flow_arrow_button_pressed (GocItem * item, int button, double xd, double yd)
         my_flow_arrow_get_instance_private (MY_FLOW_ARROW (item));
 
     FlowArrowSettings fas;
-    GtkWidget *toplevel;
+    GtkWidget *activewindow;
     GdkRectangle rect;
     GdkDeviceManager *device_manager;
     GdkDisplay *display;
@@ -700,7 +700,7 @@ my_flow_arrow_button_pressed (GocItem * item, int button, double xd, double yd)
 
     parent_class->button_pressed (GOC_ITEM (self), button, x, y);
 
-    toplevel = my_canvas_get_toplevel (MY_CANVAS (item->canvas));
+    activewindow = (GtkWidget *) my_application_get_active_window();
 
     window = gtk_widget_get_window (GTK_WIDGET (item->canvas));
     display = gdk_window_get_display (window);
@@ -714,7 +714,7 @@ my_flow_arrow_button_pressed (GocItem * item, int button, double xd, double yd)
     rect.width = 2;
     rect.height = 2;
 
-    fas = my_window_get_flow_arrow_settings (MY_WINDOW (toplevel));
+    fas = my_window_get_flow_arrow_settings (MY_WINDOW (activewindow));
 
     gtk_popover_set_pointing_to (GTK_POPOVER (fas.popover), &rect);
     gtk_widget_show (fas.popover);
@@ -1369,17 +1369,16 @@ my_flow_arrow_is_energy_amount_visible (MyFlowArrow * self)
 {
     MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
-    MyWindow *app_window;
+    GtkWindow *activewindow;
     GSimpleAction *show_energy_amount;
     GVariant *state;
 
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
-    app_window = (MyWindow *)
-        my_canvas_get_toplevel (MY_CANVAS (GOC_ITEM (self)->canvas));
+    activewindow = my_application_get_active_window();
 
     show_energy_amount =
-        (GSimpleAction *) g_action_map_lookup_action (G_ACTION_MAP (app_window),
+        (GSimpleAction *) g_action_map_lookup_action (G_ACTION_MAP (activewindow),
                                                       "show-energy-amount-of-flow-arrows");
 
     g_object_get (show_energy_amount, "state", &state, NULL);
@@ -1424,7 +1423,7 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
 
     MyCanvas *canvas;
     GocGroup *group_dragpoints;
-    MyWindow *app_window;
+    GtkWindow *activewindow;
     GSimpleAction *show_energy_amount;
     guint i;
 
@@ -1448,10 +1447,10 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
 
     g_object_unref (canvas);
 
-    app_window = (MyWindow *) my_canvas_get_toplevel (canvas);
+    activewindow = my_application_get_active_window();
 
     show_energy_amount =
-        (GSimpleAction *) g_action_map_lookup_action (G_ACTION_MAP (app_window),
+        (GSimpleAction *) g_action_map_lookup_action (G_ACTION_MAP (activewindow),
                                                       "show-energy-amount-of-flow-arrows");
 
     group_dragpoints = canvas->group[GROUP_ARROW_DRAGPOINTS];
@@ -1533,9 +1532,9 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
                                   (my_flow_arrow_sync_drag_point_coordinate_with_self_coordinate),
                                   self);
 
-    priv->handler_instance[APP_WINDOW_CHANGED_METRIC_PREFIX] = app_window;
+    priv->handler_instance[APP_WINDOW_CHANGED_METRIC_PREFIX] = activewindow;
     priv->handler[APP_WINDOW_CHANGED_METRIC_PREFIX] =
-        g_signal_connect_swapped (app_window, "notify::metric-prefix",
+        g_signal_connect_swapped (activewindow, "notify::metric-prefix",
                                   G_CALLBACK
                                   (my_flow_arrow_app_window_changed_metric_prefix),
                                   self);

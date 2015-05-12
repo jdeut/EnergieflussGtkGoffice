@@ -288,16 +288,16 @@ model_handler_picture_path_changed (MySystemWidget * self, GParamSpec * pspec,
 
     if (err) {
 
-        GtkWidget *toplevel;
+        GtkWidget *activewindow;
         gchar *str;
 
-        toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
+        activewindow = (GtkWidget *) my_application_get_active_window();
 
         str =
             g_strdup_printf ("Failed to load file '%s' into pixbuf",
                              picture_path);
 
-        my_window_caution (toplevel, str);
+        my_window_caution (activewindow, str);
         g_free (str);
         g_error_free (err);
 
@@ -403,18 +403,18 @@ my_system_widget_button_properties_clicked (MySystemWidget * self,
     GdkWindow *window;
     GdkDevice *device;
     gint x, y;
-    GtkWidget *toplevel;
+    GtkWidget *activewindow;
     SystemSettings ss;
 
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
 
-    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
+    activewindow = (GtkWidget *) my_application_get_active_window();
 
-    g_return_if_fail (MY_IS_WINDOW (toplevel));
+    g_return_if_fail (MY_IS_WINDOW (activewindow));
 
-    ss = my_window_get_system_settings (MY_WINDOW (toplevel));
+    ss = my_window_get_system_settings (MY_WINDOW (activewindow));
 
-    window = gtk_widget_get_window (GTK_WIDGET (my_window_get_canvas(MY_WINDOW(toplevel))));
+    window = gtk_widget_get_window (GTK_WIDGET (my_window_get_canvas(MY_WINDOW(activewindow))));
     display = gdk_window_get_display (window);
     device_manager = gdk_display_get_device_manager (display);
     device = gdk_device_manager_get_client_pointer (device_manager);
@@ -426,7 +426,7 @@ my_system_widget_button_properties_clicked (MySystemWidget * self,
     rect.width = 2;
     rect.height = 2;
 
-    my_system_widget_properties_dialog_show (GTK_WINDOW (toplevel), self);
+    my_system_widget_properties_dialog_show (GTK_WINDOW (activewindow), self);
 
     gtk_popover_set_pointing_to (GTK_POPOVER (ss.popover), &rect);
 
@@ -572,13 +572,13 @@ static void
 my_system_widget_translate_to_canvas_coordinates (MySystemWidget * self,
                                                   gdouble * x, gdouble * y)
 {
-    GtkWidget *toplevel;
+    GtkWidget *activewindow;
     gint dest_x, dest_y;
     MyCanvas *canvas;
 
-    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
+    activewindow = (GtkWidget *) my_application_get_active_window();
 
-    canvas = my_window_get_canvas (MY_WINDOW (toplevel));
+    canvas = my_window_get_canvas (MY_WINDOW (activewindow));
 
     gtk_widget_translate_coordinates (GTK_WIDGET (self), GTK_WIDGET (canvas),
                                       (gint) * x, (gint) * y, &dest_x, &dest_y);
@@ -591,12 +591,12 @@ gboolean
 my_system_widget_begin_drag (MySystemWidget * self, GdkEventButton * event,
                              gpointer data)
 {
-    GtkWidget *toplevel;
+    GtkWidget *activewindow;
     MyCanvas *canvas;
 
-    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
+    activewindow = (GtkWidget *) my_application_get_active_window();
 
-    canvas = my_window_get_canvas (MY_WINDOW (toplevel));
+    canvas = my_window_get_canvas (MY_WINDOW (activewindow));
 
     my_canvas_begin_drag (GOC_CANVAS (canvas), event, self);
 
@@ -607,12 +607,12 @@ gboolean
 my_system_widget_is_dragged (MySystemWidget * self, GdkEventMotion * event,
                              gpointer data)
 {
-    GtkWidget *toplevel;
+    GtkWidget *activewindow;
     MyCanvas *canvas;
 
-    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
+    activewindow = (GtkWidget *) my_application_get_active_window();
 
-    canvas = my_window_get_canvas (MY_WINDOW (toplevel));
+    canvas = my_window_get_canvas (MY_WINDOW (activewindow));
 
     my_canvas_is_dragged (GOC_CANVAS (canvas), event, self);
 
@@ -624,12 +624,12 @@ my_system_widget_end_drag (MySystemWidget * self, GdkEvent * event,
                            gpointer data)
 {
 
-    GtkWidget *toplevel;
+    GtkWidget *activewindow;
     MyCanvas *canvas;
 
-    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
+    activewindow = (GtkWidget *) my_application_get_active_window();
 
-    canvas = my_window_get_canvas (MY_WINDOW (toplevel));
+    canvas = my_window_get_canvas (MY_WINDOW (activewindow));
 
     my_canvas_end_drag (GOC_CANVAS (canvas), event, self);
 
@@ -640,7 +640,7 @@ void
 my_system_widget_realized (MySystemWidget * self, gpointer data)
 {
     MyTimelineModel *timeline;
-    GtkWidget *toplevel;
+    GtkWidget *activewindow;
     MySystem *system;
 
     GVariant *state;
@@ -649,9 +649,10 @@ my_system_widget_realized (MySystemWidget * self, gpointer data)
 
     MySystemWidgetPrivate *priv = my_system_widget_get_instance_private (self);
 
-    toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self));
-    g_return_if_fail (MY_IS_WINDOW (toplevel));
-    timeline = my_window_get_timeline (MY_WINDOW (toplevel));
+    activewindow = (GtkWidget *) my_application_get_active_window();
+
+    g_return_if_fail (MY_IS_WINDOW (activewindow));
+    timeline = my_window_get_timeline (MY_WINDOW (activewindow));
     g_return_if_fail (MY_IS_TIMELINE_MODEL (timeline));
 
     g_signal_connect_swapped (timeline, "current-pos-changed",
@@ -676,7 +677,7 @@ my_system_widget_realized (MySystemWidget * self, gpointer data)
 
     /* sync with the current visible stack container */
     action =
-        g_action_map_lookup_action (G_ACTION_MAP (toplevel), "change-view");
+        g_action_map_lookup_action (G_ACTION_MAP (activewindow), "change-view");
 
     state = g_action_get_state (action);
 

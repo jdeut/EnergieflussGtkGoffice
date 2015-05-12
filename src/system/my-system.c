@@ -592,8 +592,7 @@ my_system_destroy (MySystem * self)
 
     timeline =
         my_window_get_timeline (MY_WINDOW
-                                (gtk_widget_get_toplevel
-                                 (GTK_WIDGET (canvas))));
+                                (my_application_get_active_window()));
 
     my_timeline_model_remove_object (timeline, self);
 

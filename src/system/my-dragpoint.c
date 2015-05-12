@@ -175,10 +175,7 @@ my_drag_point_update (MyDragPoint * self)
 
     gdouble zf, radius;
 
-    window =
-        (GtkWidget *)
-        gtk_application_get_active_window (GTK_APPLICATION
-                                           (g_application_get_default ()));
+    window = (GtkWidget *) my_application_get_active_window();
 
     g_object_get (window, "zoom-factor", &zf, NULL);
     g_object_set (self, "radius", RADIUS / (sqrt (zf)), NULL);
@@ -214,9 +211,7 @@ my_drag_point_canvas_changed (MyDragPoint * self, GParamSpec * pspec,
     GVariant *state;
     GtkWindow *window;
 
-    window =
-        gtk_application_get_active_window (GTK_APPLICATION
-                                           (g_application_get_default ()));
+    window = my_application_get_active_window();
 
     if(!G_IS_OBJECT(window)) {
         return;
@@ -249,9 +244,7 @@ my_drag_point_init (MyDragPoint * self)
 
     g_object_set (self, "radius", RADIUS, NULL);
 
-    app = g_application_get_default ();
-
-    window = gtk_application_get_active_window (GTK_APPLICATION (app));
+    window = my_application_get_active_window();
 
     g_signal_connect_swapped (window, "notify::zoom-factor",
                               G_CALLBACK (_window_zoom_factor_changed), self);
