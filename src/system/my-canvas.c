@@ -108,16 +108,6 @@ my_canvas_class_init (MyCanvasClass * klass)
                                        N_PROPERTIES, obj_properties);
 }
 
-GtkWidget *
-my_canvas_get_toplevel (MyCanvas * self)
-{
-    MyCanvasPrivate *priv = my_canvas_get_instance_private (self);
-
-    g_return_if_fail (MY_IS_CANVAS (self));
-
-    return gtk_widget_get_toplevel (GTK_WIDGET (self));
-}
-
 static void
 my_canvas_init (MyCanvas * self)
 {
