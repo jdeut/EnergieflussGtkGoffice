@@ -233,7 +233,7 @@ my_flow_arrow_set_property (GObject * object,
 
             priv->secondary_system = MY_SYSTEM (g_value_get_object (value));
 
-            if(G_IS_OBJECT(priv->secondary_system))
+            if (G_IS_OBJECT (priv->secondary_system))
                 g_object_weak_ref (G_OBJECT (priv->secondary_system),
                                    _secondary_system_finalized, self);
             break;
@@ -388,7 +388,7 @@ settings_adjust_step_increment_to_unit (MyFlowArrow * self)
     gdouble unit_factor;
     FlowArrowSettings fas;
 
-    window = my_application_get_active_window();
+    window = my_application_get_active_window ();
 
     fas = my_window_get_flow_arrow_settings (MY_WINDOW (window));
 
@@ -496,7 +496,7 @@ my_flow_arrow_prefix_get_name (MyFlowArrow * self)
     guint factor;
 
 
-    activewindow = (GtkWidget *) my_application_get_active_window();
+    activewindow = (GtkWidget *) my_application_get_active_window ();
     factor = my_window_get_metric_prefix (MY_WINDOW (activewindow));
 
     switch (factor) {
@@ -572,7 +572,7 @@ my_flow_arrow_popover_sync_controls_with_props (MyFlowArrow * self)
 
     GtkWidget *activewindow;
 
-    activewindow = (GtkWidget *) my_application_get_active_window();
+    activewindow = (GtkWidget *) my_application_get_active_window ();
 
     fas = my_window_get_flow_arrow_settings (MY_WINDOW (activewindow));
 
@@ -675,11 +675,10 @@ my_flow_arrow_popover_closed (MyFlowArrow * self, GtkPopover * popover)
                                      priv->popover_handler[i]);
 }
 
-static gboolean
-my_flow_arrow_button_pressed (GocItem * item, int button, double xd, double yd)
+static void
+my_flow_arrow_popover_show (MyFlowArrow * self)
 {
-    MyFlowArrowPrivate *priv =
-        my_flow_arrow_get_instance_private (MY_FLOW_ARROW (item));
+    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
     FlowArrowSettings fas;
     GtkWidget *activewindow;
@@ -690,19 +689,9 @@ my_flow_arrow_button_pressed (GocItem * item, int button, double xd, double yd)
     GdkDevice *device;
     gint x, y;
 
-    if(my_canvas_is_destroy_object_mode(MY_CANVAS(item->canvas))) {
-        return FALSE;
-    }
+    activewindow = (GtkWidget *) my_application_get_active_window ();
 
-    MyFlowArrow *self = MY_FLOW_ARROW (item);
-    MyFlowArrowClass *class = MY_FLOW_ARROW_GET_CLASS (self);
-    GocItemClass *parent_class = g_type_class_peek_parent (class);
-
-    parent_class->button_pressed (GOC_ITEM (self), button, x, y);
-
-    activewindow = (GtkWidget *) my_application_get_active_window();
-
-    window = gtk_widget_get_window (GTK_WIDGET (item->canvas));
+    window = gtk_widget_get_window (GTK_WIDGET (GOC_ITEM (self)->canvas));
     display = gdk_window_get_display (window);
     device_manager = gdk_display_get_device_manager (display);
     device = gdk_device_manager_get_client_pointer (device_manager);
@@ -727,6 +716,25 @@ my_flow_arrow_button_pressed (GocItem * item, int button, double xd, double yd)
         g_signal_connect_swapped (fas.popover, "closed",
                                   G_CALLBACK (my_flow_arrow_popover_closed),
                                   self);
+}
+
+static gboolean
+my_flow_arrow_button_pressed (GocItem * item, int button, double xd, double yd)
+{
+    MyFlowArrowPrivate *priv =
+        my_flow_arrow_get_instance_private (MY_FLOW_ARROW (item));
+
+    if (my_canvas_is_destroy_object_mode (MY_CANVAS (item->canvas))) {
+        return FALSE;
+    }
+
+    MyFlowArrow *self = MY_FLOW_ARROW (item);
+    MyFlowArrowClass *class = MY_FLOW_ARROW_GET_CLASS (self);
+    GocItemClass *parent_class = g_type_class_peek_parent (class);
+
+    parent_class->button_pressed (GOC_ITEM (self), button, xd, yd);
+
+    my_flow_arrow_popover_show (MY_FLOW_ARROW (item));
 
     return FALSE;
 }
@@ -1038,6 +1046,12 @@ my_flow_arrow_get_preferred_width (MyFlowArrow * self)
     return width_label + width_arrow_tip + 30.0;
 }
 
+_label_widget_clicked (MyFlowArrow * self, GdkEvent * event,
+                       GtkWidget * eventbox)
+{
+    my_flow_arrow_popover_show(self);
+}
+
 GtkWidget *
 init_label_widget (MyFlowArrow * self)
 {
@@ -1050,6 +1064,9 @@ init_label_widget (MyFlowArrow * self)
     gchar *str_energy;
 
     eventbox = gtk_event_box_new ();
+
+    g_signal_connect_swapped (eventbox, "button-press-event",
+                              G_CALLBACK (_label_widget_clicked), self);
 
     context = gtk_widget_get_style_context (eventbox);
     gtk_style_context_add_class (context, "label");
@@ -1286,9 +1303,9 @@ _secondary_system_finalized (gpointer data, GObject * old)
 
     priv->secondary_system = NULL;
 
-    g_object_set(self, "secondary-system", NULL, NULL);
+    g_object_set (self, "secondary-system", NULL, NULL);
 
-    my_flow_arrow_update(self);
+    my_flow_arrow_update (self);
 }
 
 void
@@ -1296,7 +1313,7 @@ _primary_system_finalized (gpointer data, GObject * old)
 {
     MyFlowArrow *self = data;
 
-    goc_item_destroy(GOC_ITEM(self));
+    goc_item_destroy (GOC_ITEM (self));
 }
 
 static void
@@ -1375,11 +1392,11 @@ my_flow_arrow_is_energy_amount_visible (MyFlowArrow * self)
 
     g_return_if_fail (MY_IS_FLOW_ARROW (self));
 
-    activewindow = my_application_get_active_window();
+    activewindow = my_application_get_active_window ();
 
-    show_energy_amount =
-        (GSimpleAction *) g_action_map_lookup_action (G_ACTION_MAP (activewindow),
-                                                      "show-energy-amount-of-flow-arrows");
+    show_energy_amount = (GSimpleAction *)
+        g_action_map_lookup_action (G_ACTION_MAP (activewindow),
+                                    "show-energy-amount-of-flow-arrows");
 
     g_object_get (show_energy_amount, "state", &state, NULL);
 
@@ -1447,11 +1464,11 @@ my_flow_arrow_canvas_changed (MyFlowArrow * self,
 
     g_object_unref (canvas);
 
-    activewindow = my_application_get_active_window();
+    activewindow = my_application_get_active_window ();
 
-    show_energy_amount =
-        (GSimpleAction *) g_action_map_lookup_action (G_ACTION_MAP (activewindow),
-                                                      "show-energy-amount-of-flow-arrows");
+    show_energy_amount = (GSimpleAction *)
+        g_action_map_lookup_action (G_ACTION_MAP (activewindow),
+                                    "show-energy-amount-of-flow-arrows");
 
     group_dragpoints = canvas->group[GROUP_ARROW_DRAGPOINTS];
 
