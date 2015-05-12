@@ -15,12 +15,12 @@ struct _MyApplicationPrivate
     GtkWidget *window;
 };
 
-G_DEFINE_TYPE_WITH_PRIVATE (MyApplication, my_application, GTK_TYPE_APPLICATION);
+G_DEFINE_TYPE_WITH_PRIVATE (MyApplication, my_application,
+                            GTK_TYPE_APPLICATION);
 
 static const GActionEntry my_application_app_entries[] = {
     {"quit", my_application_quit, NULL, NULL, NULL}
 };
-
 
 GQuark
 my_application_error_quark (void)
@@ -39,6 +39,18 @@ my_application_startup (GApplication * app)
                                      (my_application_app_entries), app);
 }
 
+GtkApplication *
+my_application_get_app ()
+{
+    return (GtkApplication *) g_application_get_default ();
+}
+
+GtkWindow *
+my_application_get_active_window ()
+{
+    return gtk_application_get_active_window (my_application_get_app ());
+}
+
 static void
 my_application_activate (GApplication * app)
 {
@@ -49,9 +61,9 @@ my_application_activate (GApplication * app)
 
     priv = my_application_get_instance_private (self);
 
-    priv->window = (GtkWidget *) my_window_new(GTK_APPLICATION(app));
+    priv->window = (GtkWidget *) my_window_new (GTK_APPLICATION (app));
 
-    /*gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(priv->window));*/
+    /*gtk_application_add_window(GTK_APPLICATION(app), GTK_WINDOW(priv->window)); */
 
     gtk_window_set_role (GTK_WINDOW (priv->window), "MyGtkTraining");
 
@@ -81,7 +93,7 @@ my_application_class_init (MyApplicationClass * klass)
 
     gobject_class->finalize = my_application_finalize;
     gobject_class->dispose = my_application_dispose;
-    /*gobject_class->constructed = constructed;*/
+    /*gobject_class->constructed = constructed; */
 
     gapplication_class->startup = my_application_startup;
     gapplication_class->activate = my_application_activate;

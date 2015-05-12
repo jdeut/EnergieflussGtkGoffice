@@ -43,5 +43,11 @@ void
 my_application_quit (GSimpleAction * simple, GVariant * parameter,
                      gpointer data);
 
+GtkApplication *
+my_application_get_app ();
+
+GtkWindow *
+my_application_get_active_window ();
+
 G_END_DECLS
 #endif /* __MY_APPLICATION_H__ */
