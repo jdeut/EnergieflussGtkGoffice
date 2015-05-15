@@ -223,21 +223,6 @@ static void
 my_intensity_box_delta_energy_changed (MyIntensityBox * self,
                                        GParamSpec * pspec, gpointer data)
 {
-    MyIntensityBoxPrivate *priv;
-    gdouble factor;
-    MyWindow *window;
-
-    priv = my_intensity_box_get_instance_private (self);
-
-    window = (MyWindow *) my_application_get_active_window();
-    
-    if(!MY_IS_WINDOW(window))
-        return;
-
-    factor = my_window_get_metric_prefix_factor (window);
-
-    priv->delta_e /= factor;
-
     gtk_widget_queue_draw(GTK_WIDGET(self));
 }
 
