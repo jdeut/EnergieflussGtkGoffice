@@ -24,13 +24,13 @@ void my_window_show_energy_amount_of_flow_arrows_state_change (GSimpleAction *
                                                                GVariant * state,
                                                                gpointer data);
 void energy_control_value_changed (MyWindow * self, GtkAdjustment * adj);
-void energy_control_factor_changed (MyWindow * self, GtkWidget * box);
 
 enum
 {
     PROP_0,
     PROP_TIMELINE,
-    PROP_PREFIX,
+    PROP_METRIC_PREFIX,
+    PROP_ENERGY_SCALE_FACTOR,
     PROP_ZOOM_FACTOR,
     N_PROPERTIES
 };
@@ -61,9 +61,9 @@ struct _MyWindowPrivate
     SystemSettings ss;
 
     gdouble zoom_factor;
-    gdouble energy;
+    gdouble energyscalefactor;
 
-    guint prefix;
+    guint metricprefix;
 
     gulong handler_model[N_MODEL_HANDLER];
 
@@ -113,14 +113,18 @@ my_window_set_property (GObject * object,
             }
             break;
 
-        case PROP_PREFIX:
-            priv->prefix = g_value_get_uint (value);
+        case PROP_METRIC_PREFIX:
+            priv->metricprefix = g_value_get_uint (value);
+            break;
+
+        case PROP_ENERGY_SCALE_FACTOR:
+            priv->energyscalefactor = g_value_get_double (value);
             break;
 
         case PROP_ZOOM_FACTOR:
             priv->zoom_factor = g_value_get_double (value);
 
-            if(GOC_IS_CANVAS(priv->canvas))
+            if (GOC_IS_CANVAS (priv->canvas))
                 goc_canvas_set_pixels_per_unit (GOC_CANVAS (priv->canvas),
                                                 priv->zoom_factor);
 
@@ -146,8 +150,12 @@ my_window_get_property (GObject * object,
             g_value_set_object (value, priv->timeline);
             break;
 
-        case PROP_PREFIX:
-            g_value_set_uint (value, priv->prefix);
+        case PROP_METRIC_PREFIX:
+            g_value_set_uint (value, priv->metricprefix);
+            break;
+
+        case PROP_ENERGY_SCALE_FACTOR:
+            g_value_set_double (value, priv->energyscalefactor);
             break;
 
         case PROP_ZOOM_FACTOR:
@@ -247,6 +255,8 @@ my_window_populate (MyWindow * self)
     my_timeline_model_append_to_timeline (timeline);
     my_timeline_model_append_to_timeline (timeline);
 
+    my_canvas_set_timeline (priv->canvas, timeline);
+
     /*if (GTK_IS_SCALE (priv->scale)) { */
     /*g_object_bind_property (timeline, "adjustment", priv->scale, */
     /*"adjustment", */
@@ -254,16 +264,15 @@ my_window_populate (MyWindow * self)
     /*G_BINDING_BIDIRECTIONAL); */
     /*} */
 
-    GtkTreeIter iter;
-    GtkTreeModel *model = gtk_combo_box_get_model (priv->es.prefix);
+    /*GtkTreeIter iter; */
+    /*GtkTreeModel *model = gtk_combo_box_get_model (priv->es.metricprefix); */
 
-    gtk_tree_model_get_iter_from_string (model, &iter, "2");
+    /*gtk_tree_model_get_iter_from_string (model, &iter, "2"); */
 
-    gtk_combo_box_set_active_iter (priv->es.prefix, &iter);
+    /*gtk_combo_box_set_active_iter (priv->es.metricprefix, &iter); */
 
-    my_canvas_set_timeline (priv->canvas, timeline);
 
-    energy_control_factor_changed (self, NULL);
+    g_object_set (self, "metric-prefix", FACTOR_KILO, NULL);
 
     my_window_populate_canvas (self);
 }
@@ -290,12 +299,19 @@ my_window_class_init (MyWindowClass * klass)
                              "timeline model",
                              MY_TYPE_TIMELINE_MODEL, G_PARAM_READWRITE);
 
-    obj_properties[PROP_PREFIX] =
+    obj_properties[PROP_METRIC_PREFIX] =
         g_param_spec_uint ("metric-prefix",
                            "metric-prefix",
                            "",
                            0, G_MAXUINT, FACTOR_ONE,
                            G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
+
+    obj_properties[PROP_ENERGY_SCALE_FACTOR] =
+        g_param_spec_double ("energy-scale-factor",
+                             "energy-scale-factor",
+                             "",
+                             0, G_MAXDOUBLE, 1.0/50.0,
+                             G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
     obj_properties[PROP_ZOOM_FACTOR] =
         g_param_spec_double ("zoom-factor",
@@ -342,7 +358,7 @@ my_window_class_init (MyWindowClass * klass)
     gtk_widget_class_bind_template_child_full (GTK_WIDGET_CLASS (klass),
                                                "energy_control_factor", FALSE,
                                                G_PRIVATE_OFFSET (MyWindow,
-                                                                 es.prefix));
+                                                                 es.metricprefix));
 
     /* bind system settings widgets to private struct */
 
@@ -496,7 +512,7 @@ my_window_get_metric_prefix (MyWindow * self)
 
     g_return_if_fail (MY_IS_WINDOW (self));
 
-    return priv->prefix;
+    return priv->metricprefix;
 }
 
 gdouble
@@ -507,7 +523,7 @@ my_window_get_metric_prefix_factor (MyWindow * self)
 
     g_return_if_fail (MY_IS_WINDOW (self));
 
-    switch (priv->prefix) {
+    switch (priv->metricprefix) {
         case FACTOR_MILLI:
             return 0.001;
         case FACTOR_ONE:
@@ -523,38 +539,6 @@ my_window_get_metric_prefix_factor (MyWindow * self)
     }
 }
 
-
-void
-energy_control_factor_changed (MyWindow * self, GtkWidget * box)
-{
-
-    MyWindowPrivate *priv = my_window_get_instance_private (self);
-
-    /*gdouble factor, unit_factor; */
-    /*gdouble energy; */
-    /*GtkAdjustment *adjust; */
-
-    priv->prefix = factor_combobox_get_active_prefix (priv->es.prefix);
-
-    g_object_notify (G_OBJECT (self), "metric-prefix");
-
-    /*unit_factor = unit_factor_combobox_get_active_unit_factor (priv->es.unit); */
-
-    /*g_print ("%f %f\n", factor, unit_factor); */
-
-    /*energy = priv->energy / (factor * unit_factor); */
-
-    /*g_print ("%f\n", energy); */
-
-    /*g_signal_handlers_block_by_func (priv->es.adj, energy_control_value_changed, */
-    /*self); */
-
-    /*gtk_adjustment_set_value (priv->es.adj, energy); */
-
-    /*g_signal_handlers_unblock_by_func (priv->es.adj, */
-    /*energy_control_value_changed, self); */
-}
-
 void
 my_window_environment_init (MyWindow * self)
 {
@@ -565,7 +549,7 @@ my_window_environment_init (MyWindow * self)
     /*gtk_container_add (GTK_CONTAINER (priv->environment), */
     /*GTK_WIDGET (priv->box)); */
 
-    g_object_set (priv->box, "delta-energy", ENERGY_FACTOR * 100.0, NULL);
+    /*g_object_set (priv->box, "delta-energy", ENERGY_FACTOR * 100.0, NULL); */
 }
 
 void
@@ -587,8 +571,12 @@ my_window_energy_control_init (MyWindow * self)
                               G_CALLBACK (my_window_energy_control_clicked),
                               self);
 
-    g_signal_connect_swapped (priv->es.prefix, "changed",
-                              G_CALLBACK (energy_control_factor_changed), self);
+    g_object_bind_property (priv->es.metricprefix, "active", self,
+                            "metric-prefix",
+                            G_BINDING_BIDIRECTIONAL | G_BINDING_SYNC_CREATE);
+
+    g_object_set (self, "metric-prefix", FACTOR_KILO, NULL);
+
 }
 
 SystemSettings
@@ -691,7 +679,6 @@ my_window_init (MyWindow * self)
     priv = my_window_get_instance_private (self);
 
     priv->timeline = NULL;
-    priv->energy = 1000;
 
     for (i = 0; i < N_MODEL_HANDLER; i++) {
         priv->handler_model[i] = 0;
@@ -1022,4 +1009,15 @@ my_window_add_system (GSimpleAction * simple,
 
     priv = my_window_get_instance_private (data);
     my_canvas_set_add_system_mode (priv->canvas);
+}
+
+gdouble
+my_window_get_energy_scale_factor (MyWindow * self)
+{
+
+    MyWindowPrivate *priv = my_window_get_instance_private (self);
+
+    g_return_if_fail (MY_IS_WINDOW (self));
+
+    return priv->energyscalefactor;
 }

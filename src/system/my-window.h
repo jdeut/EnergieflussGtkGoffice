@@ -44,7 +44,7 @@ typedef struct {
     GtkWidget *box;
     GtkWidget *spinbutton;
     GtkComboBox *unit;
-    GtkComboBox *prefix;
+    GtkComboBox *metricprefix;
     GtkAdjustment *adj;
 } EnergySettings;
 
@@ -125,6 +125,9 @@ my_window_get_system_settings (MyWindow * self);
 
 gdouble
 my_window_get_metric_prefix_factor (MyWindow * self);
+
+gdouble
+my_window_get_energy_scale_factor (MyWindow * self);
 
 void
 my_window_destroy_object (GSimpleAction * simple,
