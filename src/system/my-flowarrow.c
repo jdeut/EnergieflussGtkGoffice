@@ -94,7 +94,7 @@ typedef struct
     gint primary_anchor, secondary_anchor;
 
     gdouble energy_quantity;
-    gdouble prefix_factor;
+    gdouble oldmetricprefix;
 
     gchar *label_text;
 
@@ -461,8 +461,7 @@ my_flow_arrow_energy_quantity_transform_to_metric_and_unit (MyFlowArrow * self)
 
     MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
-    return priv->energy_quantity / (priv->prefix_factor *
-                                    my_flow_arrow_get_unit_factor (self));
+    return priv->energy_quantity / (my_flow_arrow_get_unit_factor (self));
 }
 
 gchar *
@@ -525,14 +524,11 @@ binding_energy_quantitiy_transform_to (GBinding * binding,
                                        const GValue * from_value,
                                        GValue * to_value, MyFlowArrow * self)
 {
-    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
-
     gdouble energy_quantity;
 
     energy_quantity = g_value_get_double (from_value);
 
-    energy_quantity /= priv->prefix_factor *
-        my_flow_arrow_get_unit_factor (self);
+    energy_quantity /= my_flow_arrow_get_unit_factor (self);
 
     g_value_set_double (to_value, energy_quantity);
 
@@ -544,14 +540,11 @@ binding_energy_quantitiy_transform_from (GBinding * binding,
                                          const GValue * from_value,
                                          GValue * to_value, MyFlowArrow * self)
 {
-    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
-
     gdouble energy_quantity;
 
     energy_quantity = g_value_get_double (from_value);
 
-    energy_quantity *=
-        priv->prefix_factor * my_flow_arrow_get_unit_factor (self);
+    energy_quantity *= my_flow_arrow_get_unit_factor (self);
 
     g_value_set_double (to_value, energy_quantity);
 
@@ -876,7 +869,7 @@ my_flow_arrow_class_init (MyFlowArrowClass * klass)
         g_param_spec_uint ("transfer-type",
                            "transfer-type",
                            "transfer type",
-                           0, G_MAXUINT, 0,
+                           0, G_MAXUINT, MY_TRANSFER_WORK,
                            G_PARAM_CONSTRUCT | G_PARAM_READWRITE);
 
     obj_properties[PROP_UNIT] =
@@ -956,7 +949,7 @@ my_flow_arrow_update_intensity_box_of_associated_systems (MyFlowArrow * self,
 
         ib = my_system_widget_get_intensity_box (MY_SYSTEM_WIDGET (widget));
 
-        g_object_set (ib, "delta-energy", ENERGY_FACTOR * energy_sum, NULL);
+        g_object_set (ib, "delta-energy", my_window_get_energy_scale_factor(MY_WINDOW(my_application_get_active_window())) * energy_sum, NULL);
 
         g_object_unref (widget);
     }
@@ -967,6 +960,7 @@ my_flow_arrow_energy_quantity_changed (MyFlowArrow * self,
                                        GParamSpec * pspec, gpointer data)
 {
     MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
+    MyWindow *activewindow = (MyWindow *) my_application_get_active_window();
     gdouble a, b, c;
 
     GOStyle *style;
@@ -978,7 +972,7 @@ my_flow_arrow_energy_quantity_changed (MyFlowArrow * self,
 
     /* factor 1/4 scales 250pixels to 1000 */
     style->line.width =
-        ABS (ENERGY_FACTOR * priv->energy_quantity / priv->prefix_factor);
+        ABS (my_window_get_energy_scale_factor(activewindow) * priv->energy_quantity);
 
     if (priv->energy_quantity < 0) {
         tmp = priv->arrow_end;
@@ -1100,6 +1094,7 @@ init_label_widget (MyFlowArrow * self)
         energy_quantity =
             ABS (my_flow_arrow_energy_quantity_transform_to_metric_and_unit
                  (self));
+
         prefix = my_flow_arrow_prefix_get_name (self);
         unit = my_flow_arrow_unit_get_name (self);
 
@@ -1418,16 +1413,6 @@ my_flow_arrow_app_window_changed_metric_prefix (MyFlowArrow * self,
                                                 GParamSpec * pspec,
                                                 MyWindow * window)
 {
-    MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
-
-    gdouble factor;
-
-    factor = my_window_get_metric_prefix_factor (window);
-
-    priv->energy_quantity *= factor / priv->prefix_factor;
-
-    priv->prefix_factor = factor;
-
     g_object_notify (G_OBJECT (self), "energy-quantity");
     g_object_notify (G_OBJECT (self), "label-text");
 }
@@ -1624,9 +1609,7 @@ my_flow_arrow_init (MyFlowArrow * self)
     priv->arrow_start = g_new0 (GOArrow, 1);
     priv->arrow_end = g_new0 (GOArrow, 1);
     priv->provider = gtk_css_provider_new ();
-    priv->prefix_factor = 1.0;
-    priv->transfer_type = MY_TRANSFER_WORK;
-    priv->unit = UNIT_JOULE;
+    priv->oldmetricprefix = 1.0;
 
     style = go_style_dup (go_styled_object_get_style (GO_STYLED_OBJECT (self)));
     style->line.cap = CAIRO_LINE_CAP_ROUND;

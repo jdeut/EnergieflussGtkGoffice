@@ -17,8 +17,6 @@ G_BEGIN_DECLS
 
 #define MY_FLOW_ARROW_ERROR                (my_flow_arrow_error_quark ())
 
-#define ENERGY_FACTOR 1./200.
-
 typedef struct _MyFlowArrow MyFlowArrow;
 typedef struct _MyFlowArrowClass MyFlowArrowClass;
 
