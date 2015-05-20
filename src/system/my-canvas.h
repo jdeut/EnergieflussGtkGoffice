@@ -92,6 +92,9 @@ my_canvas_center_system_bounds (MyCanvas * canvas);
 GtkWidget *
 my_canvas_get_toplevel (MyCanvas * self);
 
+void
+my_canvas_update_systems_intensity_box (MyCanvas * self);
+
 G_END_DECLS
 
 #endif /* __MY_CANVAS_H__ */

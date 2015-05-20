@@ -31,7 +31,8 @@ static void my_canvas_class_init (MyCanvasClass * klass);
 static void my_canvas_init (MyCanvas * self);
 static void my_canvas_finalize (GObject *);
 static void my_canvas_dispose (GObject *);
-void my_canvas_group_add_item (MyCanvas * self, GocGroup * group, GocItem * item);
+void my_canvas_group_add_item (MyCanvas * self, GocGroup * group,
+                               GocItem * item);
 
 
 G_DEFINE_TYPE_WITH_PRIVATE (MyCanvas, my_canvas, GOC_TYPE_CANVAS);
@@ -326,7 +327,7 @@ my_canvas_drag_begin_button_1 (GocCanvas * canvas, GdkEventButton * event,
                           priv->active_item, "x1", x_cv, "y1", y_cv,
                           "x0", x_cv, "y0", y_cv, NULL);
 
-        my_flow_arrow_begin_drag(arrow);
+        my_flow_arrow_begin_drag (arrow);
 
         if (!my_timeline_model_add_object (priv->timeline, arrow)) {
 
@@ -348,11 +349,12 @@ my_canvas_drag_begin_button_1 (GocCanvas * canvas, GdkEventButton * event,
     }
     else if (priv->destroy_object_mode) {
 
-        if(MY_IS_SYSTEM(priv->active_item)) {
-            my_system_destroy(MY_SYSTEM(priv->active_item));
+        if (MY_IS_SYSTEM (priv->active_item)) {
+            my_system_destroy (MY_SYSTEM (priv->active_item));
         }
-        if(MY_IS_FLOW_ARROW(priv->active_item)) {
-            goc_item_destroy(GOC_ITEM(priv->active_item));
+        if (MY_IS_FLOW_ARROW (priv->active_item)) {
+            goc_item_destroy (GOC_ITEM (priv->active_item));
+            my_canvas_update_systems_intensity_box(self);
         }
 
         priv->destroy_object_mode = FALSE;
@@ -705,4 +707,52 @@ my_canvas_set_timeline (MyCanvas * self, MyTimelineModel * model)
                               G_CALLBACK
                               (my_canvas_model_arrow_added_at_current_index),
                               self);
+}
+
+void
+my_canvas_update_systems_intensity_box (MyCanvas * self)
+{
+
+    MyIntensityBox *ib;
+    GtkWidget *widget;
+
+    MyCanvas *canvas;
+    GList *la, *ls;
+
+    GocGroup *group_arrows = self->group[GROUP_ARROWS];
+    GocGroup *group_systems = self->group[GROUP_SYSTEMS];
+
+    for (ls = group_systems->children; ls != NULL; ls = ls->next) {
+
+        gdouble energy_sum = 0;
+
+        for (la = group_arrows->children; la != NULL; la = la->next) {
+
+            MySystem *primary, *secondary;
+            gdouble energy;
+
+            g_object_get (la->data, "primary-system", &primary,
+                          "secondary-system", &secondary, "energy-quantity",
+                          &energy, NULL);
+
+            if (MY_SYSTEM (ls->data) == MY_SYSTEM (primary)) {
+                energy_sum += energy;
+            }
+            else if (MY_SYSTEM (ls->data) == MY_SYSTEM (secondary)) {
+                energy_sum -= energy;
+            }
+        }
+
+        g_object_get (ls->data, "widget", &widget, NULL);
+
+        ib = my_system_widget_get_intensity_box (MY_SYSTEM_WIDGET (widget));
+
+        g_object_set (ib, "delta-energy",
+                      my_window_get_energy_scale_factor (MY_WINDOW
+                                                         (my_application_get_active_window
+                                                          ())) * energy_sum,
+                      NULL);
+
+        g_object_unref (widget);
+    }
 }

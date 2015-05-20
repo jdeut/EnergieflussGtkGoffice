@@ -913,46 +913,11 @@ my_flow_arrow_update_intensity_box_of_associated_systems (MyFlowArrow * self,
 {
     MyFlowArrowPrivate *priv = my_flow_arrow_get_instance_private (self);
 
-    MyIntensityBox *ib;
-    GtkWidget *widget;
-
     MyCanvas *canvas;
-    GList *la, *ls;
 
     g_object_get (GOC_ITEM (self), "canvas", &canvas, NULL);
 
-    GocGroup *group_arrows = canvas->group[GROUP_ARROWS];
-    GocGroup *group_systems = canvas->group[GROUP_SYSTEMS];
-
-    for (ls = group_systems->children; ls != NULL; ls = ls->next) {
-
-        gdouble energy_sum = 0;
-
-        for (la = group_arrows->children; la != NULL; la = la->next) {
-
-            MySystem *primary, *secondary;
-            gdouble energy;
-
-            g_object_get (la->data, "primary-system", &primary,
-                          "secondary-system", &secondary, "energy-quantity",
-                          &energy, NULL);
-
-            if (MY_SYSTEM (ls->data) == MY_SYSTEM (primary)) {
-                energy_sum += energy;
-            }
-            else if (MY_SYSTEM (ls->data) == MY_SYSTEM (secondary)) {
-                energy_sum -= energy;
-            }
-        }
-
-        g_object_get (ls->data, "widget", &widget, NULL);
-
-        ib = my_system_widget_get_intensity_box (MY_SYSTEM_WIDGET (widget));
-
-        g_object_set (ib, "delta-energy", my_window_get_energy_scale_factor(MY_WINDOW(my_application_get_active_window())) * energy_sum, NULL);
-
-        g_object_unref (widget);
-    }
+    my_canvas_update_systems_intensity_box(canvas);
 }
 
 static void
